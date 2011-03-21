@@ -1,0 +1,60 @@
+== Intro ==
+
+This is a work in progress. Please do send patches.
+
+== TODO ==
+
+There are some TODOs and FIXMEs in the source code, additionally, what
+needs to be done is:
+
+* Switch to Plack. Plack allows the redirector to run as a cgi or the many
+variations that exist. Using it should also make it easier to add an
+option to serve the file ourselves. Some mirror admins are interested
+in doing that to offload their mirrors.
+
+* Use the zebra dump parser to, try to, make better decisions.
+
+* Add a mirror checker. It should check for invalid, out of date
+mirrors, etc.
+
+== Getting started ==
+
+Required packages:
+    libgeo-ip-perl
+    wget
+
+Run ./update.sh, it will download the geoip databases, the mirrors
+list, and build the database used by the redirector.
+
+Check the first lines of redir.pl for the rest
+
+== Real life testing ==
+
+If using apache, assuming you have the redir script in a /cgi alias
+with +execcgi, you can:
+
+   RewriteEngine On
+   RewriteRule ^/(debian-(security|backports|volatile|cdimage)/.*) /cgi/redir.pl?mirror=$2&url=$1 [PT]
+   RewriteRule ^/(.*) /cgi/redir.pl?url=$1 [PT]
+
+You can for example make it listen on 127.0.1.10, setup a vhost, add
+use the following on your sources.list:
+
+    deb http://127.0.1.10/debian/ sid main
+    deb-src http://127.0.1.10/debian/ sid main
+
+    deb http://127.0.1.10/debian-security/ testing/updates main
+    deb http://security.debian.org/ testing/updates main
+
+== Understanding the db ==
+
+The database consists of indexes that are supposed to provide fast and
+cheap lookups.
+
+In order to save space on the database, a few unusual things are done.
+For example, hash entries with undef as value are valid. undef is smaller
+in a Storable database than an integer.
+Any script using the database should therefore test for 'exists' instead
+of 'defined'.
+
+To better understand what the database looks like, run ./dump-db.pl | pager
