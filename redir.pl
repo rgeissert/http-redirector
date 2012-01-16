@@ -37,6 +37,7 @@ use List::Util qw(shuffle);
 our $metric = ''; # alt: taxicab (default) | euclidean
 our $xtra_headers = 1;
 my $add_links = 1;
+my $random_sort = 1;
 my $db_store = 'db';
 my $mirror_type = 'archive';
 my %mirror_prefixes = (
@@ -193,7 +194,8 @@ for my $h (@sorted_hosts) {
     }
 }
 
-$host = (shuffle (@close_hosts))[0];
+$host = (shuffle (@close_hosts))[0]
+    if ($random_sort);
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 print "Location: http://".$host.$url."\r\n";
