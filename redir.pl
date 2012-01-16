@@ -34,6 +34,7 @@ use Geo::IP;
 use Storable qw(retrieve);
 use List::Util qw(shuffle);
 
+our $metric = ''; # alt: taxicab (default) | euclidean
 my $db_store = 'db';
 my $mirror_type = 'archive';
 my %mirror_prefixes = (
@@ -51,6 +52,7 @@ my $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
 # the geoipv6 db and wish the user our best
 
 sub fullfils_request($$$$);
+sub calculate_distance($$$$);
 
 my @ARCHITECTURES_REGEX = (
     qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
@@ -130,7 +132,8 @@ if ($host eq '') {
     	next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
 	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	$hosts{$host} = 1;
+	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
+				    $r->longitude, $r->latitude);
     }
 }
 
@@ -143,7 +146,8 @@ if ($host eq '') {
     	next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
 	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	$hosts{$host} = 1;
+	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
+				    $r->longitude, $r->latitude);
     }
 }
 
@@ -163,7 +167,12 @@ print "Location: http://".$host.$url."\r\n";
 # A client strictly adhering to the RFC would ignore these since we
 # don't provide a digest, and we wont.
 for my $host (keys %hosts) {
-    print "Link: http://".$host.$url."; rel=duplicate; pri=$hosts{$host}\r\n";
+    my $priority = $hosts{$host};
+
+    $priority *= 100 if ($metric eq 'euclidean');
+    $priority = sprintf("%.0f", $priority);
+
+    print "Link: http://".$host.$url."; rel=duplicate; pri=$priority\r\n";
 }
 
 print "\r\n";
@@ -180,4 +189,14 @@ sub fullfils_request($$$$) {
     return 0 if ($arch ne '' && !exists($rdb->{'arch'}{$arch}{$id}) && !exists($rdb->{'arch'}{'any'}{$id}));
 
     return 1;
+}
+
+sub calculate_distance($$$$) {
+    my ($x1, $y1, $x2, $y2) = @_;
+
+    if ($metric eq 'euclidean') {
+	return sqrt(($x1-$x2)**2 + ($y1-$y2)**2);
+    } else {
+	return (abs($x1-$x2) + abs($y1+$y2));
+    }
 }

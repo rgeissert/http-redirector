@@ -291,6 +291,7 @@ sub process_entry($) {
     my $country = $r->country_code || 'A1';
     my ($listed_country) = split /\s+/, $entry->{'country'};
     my $continent = $r->continent_code || 'XX';
+    my ($lat, $lon) = ($r->latitude, $r->longitude);
 
     # A1: Anonymous proxies
     # A2: Satellite providers
@@ -318,6 +319,9 @@ sub process_entry($) {
 
     $entry->{'type'} = lc $entry->{'type'}
 	if (defined ($entry->{'type'}));
+
+    $entry->{'lat'} = $lat;
+    $entry->{'lon'} = $lon;
 
     foreach my $type (@mirror_types) {
 	delete $entry->{$type.'-ftp'};
