@@ -256,7 +256,7 @@ sub process_entry($) {
 	}
     }
 
-    if (!defined($r) || !defined($as)) {
+    if (!defined($r) || !$as) {
 	print STDERR "warning: GeoIP/AS db lookup failed for $entry->{'site'}\n";
 	return;
     }
