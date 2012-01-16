@@ -120,11 +120,6 @@ my $host = '';
 my %hosts;
 my $match_type = '';
 
-# TODO:
-# a list of mirrors that fullfil the request should be generated
-# and then a weight calculated, to finally decide what mirror will be
-# used (mirrors with equal weight should be chosen at random, at least)
-
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
     my $mirror = $db->{'all'}{$match};
