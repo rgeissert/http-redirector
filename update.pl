@@ -53,7 +53,8 @@ if ($update_list) {
     # TODO: use LWP
     system('wget',
 	    '-N',
-	    'http://cvs.debian.org/webwml/webwml/english/mirror/Mirrors.masterlist'
+	    '-OMirrors.masterlist',
+	    'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
 	) and die ("wget Mirrors.masterlist failed: $?");
 
 =foo
