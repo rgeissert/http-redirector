@@ -91,7 +91,7 @@ foreach my $mirror_type (@mirror_types) {
 
     $db{$mirror_type} = shared_clone({
 	'country' => {}, 'ipv6' => {}, 'arch' => {},
-	'all' => {}, 'AS' => {}
+	'all' => {}, 'AS' => {}, 'continent' => {}
     });
     $semaphore{$mirror_type} = Thread::Semaphore->new();
 }
@@ -290,6 +290,7 @@ sub process_entry($) {
     }
     my $country = ($r && $r->country_code) || 'A1';
     my ($listed_country) = split /\s+/, $entry->{'country'};
+    my $continent = $r->continent_code || 'XX';
 
     # A1: Anonymous proxies
     # A2: Satellite providers
@@ -355,11 +356,14 @@ sub process_entry($) {
 	    unless (exists ($db{$type}{'AS'}{$as}));
 	$db{$type}{'country'}{$country} = shared_clone({})
 	    unless (exists ($db{$type}{'country'}{$country}));
+	$db{$type}{'continent'}{$continent} = shared_clone({})
+	    unless (exists ($db{$type}{'continent'}{$continent}));
 
 	$db{$type}{'all'}{$id} = undef;
 	$db{$type}{'ipv6'}{$id} = undef
 	    if (defined ($entry->{'ipv6'}) && $entry->{'ipv6'} eq 'yes');
 	$db{$type}{'country'}{$country}{$id} = undef;
+	$db{$type}{'continent'}{$continent}{$id} = undef;
 	push @{$db{$type}{'AS'}{$as}}, $id;
 
 	foreach my $arch (keys %archs) {

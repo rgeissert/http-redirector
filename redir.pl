@@ -132,6 +132,19 @@ if ($host eq '') {
     }
 }
 
+print "X-Continent: ".$r->continent_code."\r\n";
+# match by continent
+if ($host eq '') {
+    foreach my $match (keys %{$rdb->{'continent'}{$r->continent_code}}) {
+	my $mirror = $db->{'all'}{$match};
+
+    	next unless fullfils_request($rdb, $match, $arch, $ipv6);
+
+	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+	last;
+    }
+}
+
 # something went awry, we don't know how to handle this user, we failed
 # let's make another attempt:
 if ($host eq '' && $mirror_type eq 'archive') {
