@@ -35,6 +35,7 @@ use Storable qw(retrieve);
 use List::Util qw(shuffle);
 
 our $metric = ''; # alt: taxicab (default) | euclidean
+our $xtra_headers = 1;
 my $db_store = 'db';
 my $mirror_type = 'archive';
 my %mirror_prefixes = (
@@ -54,6 +55,7 @@ my $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
 sub fullfils_request($$$$);
 sub calculate_distance($$$$);
 sub stddevp;
+sub print_xtra($$);
 
 my @ARCHITECTURES_REGEX;
 
@@ -90,14 +92,14 @@ my $r = $g_city->record_by_addr($IP);
 my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
 my $arch = '';
 
-print "X-IP: $IP\r\n";
+print_xtra('IP', $IP);
 if (!defined($r) || !defined($as)) {
     # TODO: handle error
     $as = '';
     $r = undef;
 }
 
-print "X-AS: ".$as."\r\n";
+print_xtra('AS', $as);
 
 my $url = $q->param('url') || '';
 if (defined($mirror_prefixes{$mirror_type})) {
@@ -106,7 +108,7 @@ if (defined($mirror_prefixes{$mirror_type})) {
 }
 $url =~ s,//,/,g;
 
-print "X-URL: $url\r\n";
+print_xtra('URL', $url);
 
 foreach my $r (@ARCHITECTURES_REGEX) {
     if ($url =~ m/$r/) {
@@ -114,7 +116,7 @@ foreach my $r (@ARCHITECTURES_REGEX) {
 	last;
     }
 }
-print "X-Arch: ".$arch."\r\n";
+print_xtra('Arch', $arch);
 
 my $host = '';
 my %hosts;
@@ -131,7 +133,7 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
     $match_type = 'AS';
 }
 
-print "X-Country: ".$r->country_code."\r\n";
+print_xtra('Country', $r->country_code);
 # match by country
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$r->country_code}}) {
@@ -146,7 +148,7 @@ if (!$match_type) {
     }
 }
 
-print "X-Continent: ".$r->continent_code."\r\n";
+print_xtra('Continent', $r->continent_code);
 # match by continent
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'continent'}{$r->continent_code}}) {
@@ -178,9 +180,9 @@ my $dev = stddevp(values %hosts);
 # Closest host (or one of many), to use as the base distance
 $host = $sorted_hosts[0];
 
-print "X-Std-Dev: $dev\r\n";
-print "X-Population: ".scalar(@sorted_hosts)."\r\n";
-print "X-Closest-Distance: $hosts{$host}\r\n";
+print_xtra('Std-Dev', $dev);
+print_xtra('Population', scalar(@sorted_hosts));
+print_xtra('Closest-Distance', $hosts{$host});
 
 for my $h (@sorted_hosts) {
     # NOTE: this might need some additional work, as we should probably
@@ -191,8 +193,8 @@ for my $h (@sorted_hosts) {
 }
 
 $host = (shuffle (@close_hosts))[0];
-print "X-Distance: $hosts{$host}\r\n";
-print "X-Match-Type: $match_type\r\n";
+print_xtra('Distance', $hosts{$host});
+print_xtra('Match-Type', $match_type);
 print "Location: http://".$host.$url."\r\n";
 
 # RFC6249-like link rels
@@ -249,4 +251,9 @@ sub stddevp {
     $var -= $avg**2;
 
     $stddev = sqrt($var);
+}
+
+sub print_xtra($$) {
+    print "X-$_[0]: $_[1]\r\n"
+	if ($xtra_headers);
 }
