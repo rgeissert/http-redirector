@@ -288,7 +288,7 @@ sub process_entry($) {
 	print STDERR "warning: GeoIP/AS db lookup failed for $entry->{'site'}\n";
 	return;
     }
-    my $country = ($r && $r->country_code) || 'A1';
+    my $country = $r->country_code || 'A1';
     my ($listed_country) = split /\s+/, $entry->{'country'};
     my $continent = $r->continent_code || 'XX';
 
