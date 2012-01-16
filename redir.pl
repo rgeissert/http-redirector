@@ -59,6 +59,8 @@ my @ARCHITECTURES_REGEX = (
     qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
     qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.deb$',
     qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.gz$',
+    qr'^indices/files(?:/components)?/arch-([^.]+).*$',
+    qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
 );
 
 our $db = retrieve($db_store);
