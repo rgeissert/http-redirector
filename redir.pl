@@ -32,6 +32,7 @@ my $q = new CGI::Simple;
 
 use Geo::IP;
 use Storable qw(retrieve);
+use List::Util qw(shuffle);
 
 my $db_store = 'db';
 my $mirror_type = 'archive';
@@ -103,6 +104,7 @@ foreach my $r (@ARCHITECTURES_REGEX) {
 print "X-Arch: ".$arch."\r\n";
 
 my $host = '';
+my %hosts;
 
 # TODO:
 # a list of mirrors that fullfil the request should be generated
@@ -116,7 +118,7 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
     next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
     $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-    last;
+    $hosts{$host} = 1;
 }
 
 print "X-Country: ".$r->country_code."\r\n";
@@ -128,7 +130,7 @@ if ($host eq '') {
     	next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
 	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	last;
+	$hosts{$host} = 1;
     }
 }
 
@@ -141,7 +143,7 @@ if ($host eq '') {
     	next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
 	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	last;
+	$hosts{$host} = 1;
     }
 }
 
@@ -154,6 +156,7 @@ if ($host eq '' && $mirror_type eq 'archive') {
 # TODO: if ($host eq '') { not a request for archive, but we don't know
 #   where we should redirect the user to }
 
+$host = (shuffle (keys %hosts))[0];
 print "Location: http://".$host.$url."\r\n\r\n";
 
 exit;
