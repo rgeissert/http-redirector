@@ -55,13 +55,23 @@ sub fullfils_request($$$$);
 sub calculate_distance($$$$);
 sub stddevp;
 
-my @ARCHITECTURES_REGEX = (
-    qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
-    qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.deb$',
-    qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.gz$',
-    qr'^indices/files(?:/components)?/arch-([^.]+).*$',
-    qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
-);
+my @ARCHITECTURES_REGEX;
+
+$mirror_type = $q->param('mirror') || 'archive';
+
+if ($mirror_type eq 'cdimage') {
+    @ARCHITECTURES_REGEX = (
+	qr'^(?:\d|current)[^/]*/([^/]+)/',
+    );
+} else {
+    @ARCHITECTURES_REGEX = (
+	qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
+	qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.deb$',
+	qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.gz$',
+	qr'^indices/files(?:/components)?/arch-([^.]+).*$',
+	qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
+    );
+}
 
 our $db = retrieve($db_store);
 
@@ -71,8 +81,6 @@ my $IP = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
 $IP = '8.8.8.8' if ($IP eq '127.0.1.1');
 $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 ####
-
-$mirror_type = $q->param('mirror') || 'archive';
 
 # Make a shortcut
 my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
