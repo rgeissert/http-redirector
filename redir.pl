@@ -157,7 +157,16 @@ if ($host eq '' && $mirror_type eq 'archive') {
 #   where we should redirect the user to }
 
 $host = (shuffle (keys %hosts))[0];
-print "Location: http://".$host.$url."\r\n\r\n";
+print "Location: http://".$host.$url."\r\n";
+
+# RFC6249-like link rels
+# A client strictly adhering to the RFC would ignore these since we
+# don't provide a digest, and we wont.
+for my $host (keys %hosts) {
+    print "Link: http://".$host.$url."; rel=duplicate; pri=$hosts{$host}\r\n";
+}
+
+print "\r\n";
 
 exit;
 
