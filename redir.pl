@@ -110,6 +110,7 @@ print "X-Arch: ".$arch."\r\n";
 
 my $host = '';
 my %hosts;
+my $match_type = '';
 
 # TODO:
 # a list of mirrors that fullfil the request should be generated
@@ -124,11 +125,12 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
 
     $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
     $hosts{$host} = 1;
+    $match_type = 'AS';
 }
 
 print "X-Country: ".$r->country_code."\r\n";
 # match by country
-if ($host eq '') {
+if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$r->country_code}}) {
 	my $mirror = $db->{'all'}{$match};
 
@@ -137,12 +139,13 @@ if ($host eq '') {
 	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
 	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $r->longitude, $r->latitude);
+	$match_type = 'country';
     }
 }
 
 print "X-Continent: ".$r->continent_code."\r\n";
 # match by continent
-if ($host eq '') {
+if (!$match_type) {
     foreach my $match (keys %{$rdb->{'continent'}{$r->continent_code}}) {
 	my $mirror = $db->{'all'}{$match};
 
@@ -151,13 +154,15 @@ if ($host eq '') {
 	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
 	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $r->longitude, $r->latitude);
+	$match_type = 'continent';
     }
 }
 
 # something went awry, we don't know how to handle this user, we failed
 # let's make another attempt:
-if ($host eq '' && $mirror_type eq 'archive') {
+if (!$match_type && $mirror_type eq 'archive') {
     $hosts{'cdn.debian.net/debian/'} = 1;
+    $match_type = 'catch-all';
 }
 
 # TODO: if ($host eq '') { not a request for archive, but we don't know
@@ -183,6 +188,7 @@ for my $h (@sorted_hosts) {
 
 $host = (shuffle (@close_hosts))[0];
 print "X-Distance: $hosts{$host}\r\n";
+print "X-Match-Type: $match_type\r\n";
 print "Location: http://".$host.$url."\r\n";
 
 # RFC6249-like link rels
