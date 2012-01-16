@@ -62,7 +62,8 @@ our $db = retrieve($db_store);
 ####
 my $IP = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
 # for testing purposes
-$IP = '8.8.8.8' if ($IP eq '127.0.0.1' || $IP eq '127.0.1.1');
+$IP = '8.8.8.8' if ($IP eq '127.0.1.1');
+$IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 ####
 
 $mirror_type = $q->param('mirror') || 'archive';
