@@ -323,6 +323,28 @@ sub process_entry($) {
     $entry->{'lat'} = $lat;
     $entry->{'lon'} = $lon;
 
+    if (defined($entry->{'bandwidth'})) {
+	my $bw = 0;
+	if ($entry->{'bandwidth'} =~ m/([\d.]+)\s*([tgm])/i) {
+	    my ($quantity, $unit) = ($1, $2);
+	    $unit = lc $unit;
+	    while ($unit ne 'm') {
+		if ($unit eq 't') {
+		    $quantity *= 1000;
+		    $unit = 'g';
+		}
+		if ($unit eq 'g') {
+		    $quantity *= 1000;
+		    $unit = 'm';
+		}
+	    }
+	    $bw = $quantity;
+	} else {
+	    print STDERR "warning: unknown bandwidth format ($entry->{'bandwidth'}) for $entry->{'site'}\n";
+	}
+	$entry->{'bandwidth'} = $bw;
+    }
+
     foreach my $type (@mirror_types) {
 	delete $entry->{$type.'-ftp'};
 	delete $entry->{$type.'-rsync'};
