@@ -237,10 +237,24 @@ sub process_entry($) {
     # However: we can't control what IP the client will connect to, and
     #	we can't guarantee that accessing the mirror with a different
     #	Host will actually work. Meh.
-    $r = $g_city->record_by_addr($ips[0]);
+    for my $ip (@ips) {
+	my $m_record = $g_city->record_by_addr($ip);
+	# Split result, original format is: "AS123 Foo Bar corp"
+	my ($m_as) = split /\s+/, ($g_as->org_by_addr($ip) || '');
 
-    # Split result, original format is: "AS123 Foo Bar corp"
-    ($as) = split /\s+/, ($g_as->org_by_addr($ips[0]) || '');
+	if (!defined($r)) {
+	    $r = $m_record;
+	} elsif ($r->city ne $m_record->city) {
+	    print STDERR "warning: ".$entry->{'site'}." resolves to IPs in different".
+			" cities (".$r->city." != ".$m_record->city.")\n";
+	}
+	if (!$as) {
+	    $as = $m_as;
+	} elsif ($as ne $m_as) {
+	    print STDERR "warning: ".$entry->{'site'}." resolves to multiple different".
+			" AS' ($as != $m_as)\n";
+	}
+    }
 
     if (!defined($r) || !defined($as)) {
 	print STDERR "warning: GeoIP/AS db lookup failed for $entry->{'site'}\n";
