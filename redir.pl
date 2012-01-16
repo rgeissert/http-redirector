@@ -198,7 +198,7 @@ print "Location: http://".$host.$url."\r\n";
 for my $host (@close_hosts) {
     my $priority = $hosts{$host};
 
-    $priority *= 100 if ($metric eq 'euclidean');
+    $priority *= 100;
     $priority = sprintf("%.0f", $priority);
 
     print "Link: http://".$host.$url."; rel=duplicate; pri=$priority\r\n";
