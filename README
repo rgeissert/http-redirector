@@ -17,6 +17,8 @@ in doing that to offload their mirrors.
 * Add a mirror checker. It should check for invalid, out of date
 mirrors, etc.
 
+* Better IPv6 support.
+
 == Getting started ==
 
 Required packages:
