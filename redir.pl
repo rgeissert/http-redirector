@@ -176,6 +176,7 @@ my $dev = stddevp(values %hosts);
 $host = $sorted_hosts[0];
 
 print "X-Std-Dev: $dev\r\n";
+print "X-Population: ".scalar(@sorted_hosts)."\r\n";
 print "X-Closest-Distance: $hosts{$host}\r\n";
 
 for my $h (@sorted_hosts) {
