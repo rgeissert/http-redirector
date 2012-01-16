@@ -36,6 +36,7 @@ use List::Util qw(shuffle);
 
 our $metric = ''; # alt: taxicab (default) | euclidean
 our $xtra_headers = 1;
+my $add_links = 1;
 my $db_store = 'db';
 my $mirror_type = 'archive';
 my %mirror_prefixes = (
@@ -197,16 +198,18 @@ print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 print "Location: http://".$host.$url."\r\n";
 
-# RFC6249-like link rels
-# A client strictly adhering to the RFC would ignore these since we
-# don't provide a digest, and we wont.
-for my $host (@close_hosts) {
-    my $priority = $hosts{$host};
+if ($add_links) {
+    # RFC6249-like link rels
+    # A client strictly adhering to the RFC would ignore these since we
+    # don't provide a digest, and we wont.
+    for my $host (@close_hosts) {
+	my $priority = $hosts{$host};
 
-    $priority *= 100;
-    $priority = sprintf("%.0f", $priority);
+	$priority *= 100;
+	$priority = sprintf("%.0f", $priority);
 
-    print "Link: http://".$host.$url."; rel=duplicate; pri=$priority\r\n";
+	print "Link: http://".$host.$url."; rel=duplicate; pri=$priority\r\n";
+    }
 }
 
 print "\r\n";
