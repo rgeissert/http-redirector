@@ -53,6 +53,7 @@ my $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
 
 sub fullfils_request($$$$);
 sub calculate_distance($$$$);
+sub stddevp;
 
 my @ARCHITECTURES_REGEX = (
     qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
@@ -160,13 +161,32 @@ if ($host eq '' && $mirror_type eq 'archive') {
 # TODO: if ($host eq '') { not a request for archive, but we don't know
 #   where we should redirect the user to }
 
-$host = (shuffle (keys %hosts))[0];
+my @sorted_hosts = sort { $hosts{$a} <=> $hosts{$b} } keys %hosts;
+my @close_hosts;
+my $dev = stddevp(values %hosts);
+
+# Closest host (or one of many), to use as the base distance
+$host = $sorted_hosts[0];
+
+print "X-Std-Dev: $dev\r\n";
+print "X-Closest-Distance: $hosts{$host}\r\n";
+
+for my $h (@sorted_hosts) {
+    # NOTE: this might need some additional work, as we should probably
+    # guarantee a certain amount of alt hosts to choose from
+    if (($hosts{$h} - $hosts{$host}) <= $dev) {
+	push @close_hosts, $h;
+    }
+}
+
+$host = (shuffle (@close_hosts))[0];
+print "X-Distance: $hosts{$host}\r\n";
 print "Location: http://".$host.$url."\r\n";
 
 # RFC6249-like link rels
 # A client strictly adhering to the RFC would ignore these since we
 # don't provide a digest, and we wont.
-for my $host (keys %hosts) {
+for my $host (@close_hosts) {
     my $priority = $hosts{$host};
 
     $priority *= 100 if ($metric eq 'euclidean');
@@ -199,4 +219,22 @@ sub calculate_distance($$$$) {
     } else {
 	return (abs($x1-$x2) + abs($y1+$y2));
     }
+}
+
+sub stddevp {
+    my ($avg, $var, $stddev) = (0, 0, 0);
+    local $_;
+
+    for (@_) {
+	$avg += $_;
+    }
+    $avg /= scalar(@_);
+
+    for (@_) {
+	$var += $_**2;
+    }
+    $var /= scalar(@_);
+    $var -= $avg**2;
+
+    $stddev = sqrt($var);
 }
