@@ -154,7 +154,7 @@ if ($host eq '') {
 # something went awry, we don't know how to handle this user, we failed
 # let's make another attempt:
 if ($host eq '' && $mirror_type eq 'archive') {
-    $host = 'cdn.debian.net/debian/';
+    $hosts{'cdn.debian.net/debian/'} = 1;
 }
 
 # TODO: if ($host eq '') { not a request for archive, but we don't know
