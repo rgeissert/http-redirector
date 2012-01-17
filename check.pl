@@ -38,7 +38,6 @@ my %masters = (
     'old' => 'archive.debian.org',
     'backports' => 'backports-master.debian.org',
     'security' => 'security-master.debian.org',
-    'volatile' => 'volatile-master.debian.org',
     'cdimage' => 'cdimage.debian.org',
 );
 my %traces;

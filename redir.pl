@@ -44,7 +44,6 @@ my %mirror_prefixes = (
     'archive' => '',
     'security' => '-security',
     'cdimage' => '-cd',
-    'volatile' => '-volatile',
     'backports' => '-backports',
 );
 
