@@ -23,7 +23,8 @@
 use strict;
 use warnings;
 
-use LWP::Simple qw();
+use LWP::UserAgent;
+use LWP::ConnCache;
 use Date::Parse;
 use Storable qw(retrieve store);
 
@@ -41,6 +42,13 @@ my %masters = (
     'cdimage' => 'cdimage.debian.org',
 );
 my %traces;
+our $ua = LWP::UserAgent->new();
+
+$ua->timeout();
+$ua->agent("MirrorChecker/0.1 ");
+$ua->conn_cache(LWP::ConnCache->new());
+$ua->max_redirects(1);
+$ua->max_size(1024);
 
 our $db = retrieve($db_store);
 
@@ -133,8 +141,10 @@ sub get_trace($$) {
     my ($base_url, $master) = @_;
     my $req_url = $base_url.'project/trace/'.$master;
 
-    my $trace = LWP::Simple::get($req_url);
-    return unless ($trace);
+    my $response = $ua->get($req_url);
+    return unless ($response->is_success);
+
+    my $trace = $response->decoded_content;
     my ($date) = split /\n/,$trace,2;
 
     return
@@ -166,5 +176,7 @@ sub test_arch($$$) {
     my $url = $base_url;
     $url .= sprintf($format, $arch);
 
-    return LWP::Simple::head($url);
+    my $response = $ua->head($url);
+
+    return $response->is_success;
 }
