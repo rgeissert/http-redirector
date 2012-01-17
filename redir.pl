@@ -39,7 +39,7 @@ our $xtra_headers = 1;
 my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
-my $mirror_type = 'archive';
+our $mirror_type = 'archive';
 my %mirror_prefixes = (
     'archive' => '',
     'security' => '-security',
@@ -226,9 +226,13 @@ sub fullfils_request($$$$) {
 
     my $mirror = $db->{'all'}{$id};
 
+    return 0 if (exists($mirror->{$mirror_type.'-disabled'}));
+
     return 0 if ($ipv6 && !exists($rdb->{'ipv6'}{$id}));
 
     return 0 if ($arch ne '' && !exists($rdb->{'arch'}{$arch}{$id}) && !exists($rdb->{'arch'}{'any'}{$id}));
+
+    return 0 if ($arch ne '' && exists($mirror->{$mirror_type.'-'.$arch.'-disabled'}));
 
     return 1;
 }
