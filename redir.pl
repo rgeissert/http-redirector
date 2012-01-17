@@ -121,6 +121,7 @@ foreach my $r (@ARCHITECTURES_REGEX) {
 	last;
     }
 }
+$arch = 'i386' if ($arch eq 'multi-arch');
 print_xtra('Arch', $arch);
 
 my $host = '';
