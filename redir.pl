@@ -104,11 +104,13 @@ if (!defined($r) || !defined($as)) {
 print_xtra('AS', $as);
 
 my $url = $q->param('url') || '';
+$url =~ s,//,/,g;
+$url =~ s,^/,,;
+
 if (defined($mirror_prefixes{$mirror_type})) {
     # FIXME: ugly
     $url =~ s,^debian$mirror_prefixes{$mirror_type}/,,;
 }
-$url =~ s,//,/,g;
 
 print_xtra('URL', $url);
 
