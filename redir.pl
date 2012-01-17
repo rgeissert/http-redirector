@@ -106,6 +106,7 @@ print_xtra('AS', $as);
 my $url = $q->param('url') || '';
 $url =~ s,//,/,g;
 $url =~ s,^/,,;
+$url =~ s, ,+,g;
 
 if (defined($mirror_prefixes{$mirror_type})) {
     # FIXME: ugly
