@@ -236,7 +236,7 @@ sub calculate_distance($$$$) {
     if ($metric eq 'euclidean') {
 	return sqrt(($x1-$x2)**2 + ($y1-$y2)**2);
     } else {
-	return (abs($x1-$x2) + abs($y1+$y2));
+	return (abs($x1-$x2) + abs($y1-$y2));
     }
 }
 
