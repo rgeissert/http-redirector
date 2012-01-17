@@ -95,13 +95,25 @@ for my $id (keys %{$db->{'all'}}) {
 
 for my $type (keys %traces) {
     my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
+    my $master_stamp = 0;
+
     for my $stamp (@stamps) {
 	my $disable = 0;
+
+	if ($master_stamp == 0) {
+	    if (scalar(@{$traces{$type}{$stamp}}) > 2) {
+		$master_stamp = $stamp;
+		print "Master stamp for $type: $stamp\n";
+	    } else {
+		print "Found stamp '$stamp' for $type, but ignored it (only ".
+		    join(', ', @{$traces{$type}{$stamp}}))." have it)\n";
+	    }
+	}
 
 	# TODO: determine better ways to decide whether a mirror should
 	# be disabled
 	$disable = 1
-	    if (($stamps[0] - $stamp) > 3600*12);
+	    if (($master_stamp - $stamp) > 3600*12);
 
 	if ($disable) {
 	    while (my $id = pop @{$traces{$type}{$stamp}}) {
