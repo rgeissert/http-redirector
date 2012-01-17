@@ -136,7 +136,7 @@ sub test_arch($$$) {
     my $format;
 
     if ($type eq 'archive') {
-	$format = 'dists/sid/main/binary-%s/Release';
+	$format = 'indices/files/arch-%s.files';
     } elsif ($type eq 'cdimage') {
 	$format = 'current/%s/';
     } elsif ($type eq 'backports') {
