@@ -14,8 +14,9 @@ in doing that to offload their mirrors.
 
 * Use the zebra dump parser to, try to, make better decisions.
 
-* Add a mirror checker. It should check for invalid, out of date
-mirrors, etc.
+* Improve the mirror checker. It should use multiple threads,
+persistent connections, redirection detection, ability to detect
+architectures only available in a limited set of releases, etc.
 
 * Better IPv6 support.
 
