@@ -99,10 +99,24 @@ for my $type (keys %traces) {
     }
 }
 
-store ($db, $db_store.'.new')
-    or die ("failed to store to $db_store.new: $!");
-rename ($db_store.'.new', $db_store)
-    or die("failed to rename $db_store.new: $!");
+{
+    # Storable doesn't clone the tied hash as needed
+    # so we have do it the ugly way:
+    my $VAR1;
+    {
+	use Data::Dumper;
+	$Data::Dumper::Purity = 1;
+	$Data::Dumper::Indent = 0;
+
+	my $clone = Dumper($db);
+	eval $clone;
+    }
+
+    store ($VAR1, $db_store.'.new')
+	or die ("failed to store to $db_store.new: $!");
+    rename ($db_store.'.new', $db_store)
+	or die("failed to rename $db_store.new: $!");
+}
 
 sub get_trace($$) {
     my ($base_url, $master) = @_;
