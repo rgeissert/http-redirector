@@ -125,7 +125,7 @@ for my $type (keys %traces) {
 		print "Master stamp for $type: $stamp\n";
 	    } else {
 		print "Found stamp '$stamp' for $type, but ignored it (only ".
-		    join(', ', @{$traces{$type}{$stamp}}))." have it)\n";
+		    join(', ', @{$traces{$type}{$stamp}})." have it)\n";
 	    }
 	}
 
