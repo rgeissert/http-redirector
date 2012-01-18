@@ -71,7 +71,7 @@ for my $id (keys %{$db->{'all'}}) {
 
 	if (!$trace) {
 	    $mirror->{$type.'-disabled'} = undef;
-	    print "Disabling $id/$type\n";
+	    print "Disabling $id/$type: bad trace\n";
 	    next;
 	} else {
 	    print "Re-enabling $id/$type\n"
@@ -106,7 +106,7 @@ for my $id (keys %{$db->{'all'}}) {
 
 	    if ($all_failed) {
 		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type\n";
+		print "Disabling $id/$type: all archs failed\n";
 	    }
 	}
     }
@@ -137,7 +137,7 @@ for my $type (keys %traces) {
 	if ($disable) {
 	    while (my $id = pop @{$traces{$type}{$stamp}}) {
 		$db->{'all'}{$id}{$type.'-disabled'} = undef;
-		print "Disabling $id/$type\n";
+		print "Disabling $id/$type: old master trace\n";
 	    }
 	}
     }
