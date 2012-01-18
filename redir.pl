@@ -202,6 +202,10 @@ for my $h (@sorted_hosts) {
     # guarantee a certain amount of alt hosts to choose from
     if (($hosts{$h} - $hosts{$host}) <= $dev) {
 	push @close_hosts, $h;
+    } else {
+	# the list is sorted, if we didn't accept this one won't accept
+	# the next
+	last;
     }
 }
 
