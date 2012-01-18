@@ -220,6 +220,8 @@ sub process_entry($) {
     if ($entry->{'type'} eq 'origin') {
 	foreach my $type (@mirror_types) {
 	    next unless (exists($entry->{$type.'-rsync'}));
+	    next if ($exclude_mirror_types{$type});
+
 	    $db{$type}{'master'} = $entry->{'site'};
 	}
 	return;
