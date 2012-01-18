@@ -263,6 +263,7 @@ sub stddevp {
     $var -= $avg**2;
 
     $stddev = sqrt($var);
+    return $stddev;
 }
 
 sub print_xtra($$) {
