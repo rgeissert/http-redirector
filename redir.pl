@@ -157,6 +157,7 @@ if (!$match_type) {
     my @continents = ($r->continent_code, @{$nearby_continents{$r->continent_code}});
 
     for my $continent (@continents) {
+	last if ($match_type);
 	foreach my $match (keys %{$rdb->{'continent'}{$continent}}) {
 	    my $mirror = $db->{'all'}{$match};
 
