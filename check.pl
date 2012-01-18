@@ -51,7 +51,7 @@ our $ua = LWP::UserAgent->new();
 $ua->timeout();
 $ua->agent("MirrorChecker/0.1 ");
 $ua->conn_cache(LWP::ConnCache->new());
-$ua->max_redirects(1);
+$ua->max_redirect(1);
 $ua->max_size(1024);
 
 our $db = retrieve($db_store);
