@@ -97,9 +97,8 @@ my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
 my $arch = '';
 
 print_xtra('IP', $IP);
-if (!defined($r) || !defined($as)) {
+if (!defined($r)) {
     # TODO: handle error
-    $as = '';
     $r = undef;
 }
 
