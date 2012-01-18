@@ -23,6 +23,7 @@
 use strict;
 use warnings;
 
+use Getopt::Long;
 use LWP::UserAgent;
 use LWP::ConnCache;
 use Date::Parse;
@@ -32,6 +33,9 @@ sub get_trace($$);
 sub test_arch($$$);
 
 my $db_store = 'db';
+my $check_archs = 0;
+
+GetOptions('check-architectures!' => \$check_archs);
 
 # FIXME: generate this list from Mirrors.masterlist
 my %masters = (
@@ -81,21 +85,23 @@ for my $id (keys %{$db->{'all'}}) {
 	    unless (exists($traces{$type}{$trace}));
 	push @{$traces{$type}{$trace}}, $id;
 
-	# Find the list of architectures supposedly included by the
-	# given mirror. There's no index for it, so the search is a bit
-	# more expensive
-	my @archs = keys %{$db->{$type}{'arch'}};
-	my $all_failed = 1;
-	for my $arch (@archs) {
-	    next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
-	    if (!test_arch($base_url, $type, $arch)) {
-		$mirror->{$type.'-'.$arch.'-disabled'} = undef;
-		print "Disabling $id/$type/$arch\n";
-	    } else {
-		print "Re-enabling $id/$type/$arch\n"
-		    if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
-		delete $mirror->{$type.'-'.$arch.'-disabled'};
-		$all_failed = 0;
+	if ($check_archs) {
+	    # Find the list of architectures supposedly included by the
+	    # given mirror. There's no index for it, so the search is a bit
+	    # more expensive
+	    my @archs = keys %{$db->{$type}{'arch'}};
+	    my $all_failed = 1;
+	    for my $arch (@archs) {
+		next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
+		if (!test_arch($base_url, $type, $arch)) {
+		    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
+		    print "Disabling $id/$type/$arch\n";
+		} else {
+		    print "Re-enabling $id/$type/$arch\n"
+			if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
+		    delete $mirror->{$type.'-'.$arch.'-disabled'};
+		    $all_failed = 0;
+		}
 	    }
 	}
     }
