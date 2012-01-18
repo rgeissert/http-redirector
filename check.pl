@@ -40,7 +40,7 @@ GetOptions('check-architectures!' => \$check_archs);
 my %traces;
 our $ua = LWP::UserAgent->new();
 
-$ua->timeout();
+$ua->timeout(10);
 $ua->agent("MirrorChecker/0.1 ");
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->max_redirect(1);
