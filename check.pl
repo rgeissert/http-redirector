@@ -178,5 +178,6 @@ sub test_arch($$$) {
 
     my $response = $ua->head($url);
 
-    return $response->is_success;
+    return 0 if (!$response->is_success);
+    return ($response->header('Content-Type') ne 'text/html');
 }
