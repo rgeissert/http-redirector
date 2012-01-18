@@ -214,22 +214,22 @@ sub parse_list($$) {
 sub process_entry($) {
     my $entry = shift;
 
-    my $type = lc $entry->{'type'} || 'unknown';
+    $entry->{'type'} = lc $entry->{'type'} || 'unknown';
 
-    return if ($type =~ m/^(?:unknown|geodns)$/);
+    return if ($entry->{'type'} =~ m/^(?:unknown|geodns)$/);
+    if ($entry->{'type'} eq 'origin') {
+	foreach my $type (@mirror_types) {
+	    next unless (exists($entry->{$type.'-rsync'}));
+	    $db{$type}{'master'} = $entry->{'site'};
+	}
+	return;
+    }
 
     if (!defined($entry->{'site'})) {
 	print STDERR "warning: mirror without site:\n";
 	require Data::Dumper;
 	print STDERR Data::Dumper::Dumper($entry);
 	return;
-    }
-
-    if ($type eq 'origin') {
-	foreach my $type (@mirror_types) {
-	    next unless (exists($entry->{$type.'-rsync'}));
-	    $db{$type}{'master'} = $entry->{'site'};
-	}
     }
 
     if (defined ($entry->{'includes'})) {
@@ -324,9 +324,6 @@ sub process_entry($) {
     # When used as hash key, it is converted to a string.
     # Better store it as a string everywhere:
     $id = sprintf('%x', $id);
-
-    $entry->{'type'} = lc $entry->{'type'}
-	if (defined ($entry->{'type'}));
 
     $entry->{'lat'} = $lat;
     $entry->{'lon'} = $lon;
