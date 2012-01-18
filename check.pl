@@ -24,8 +24,9 @@ use strict;
 use warnings;
 
 use Getopt::Long;
-use LWP::UserAgent;
-use LWP::ConnCache;
+use threads;
+use threads::shared;
+use Thread::Queue;
 use Date::Parse;
 use Storable qw(retrieve store);
 
@@ -36,16 +37,35 @@ sub check_mirror($);
 
 my $db_store = 'db';
 my $check_archs = 0;
+my $threads = 4;
 
-GetOptions('check-architectures!' => \$check_archs);
+GetOptions('check-architectures!' => \$check_archs,
+	    'j|threads=i' => \$threads);
 
-our %traces;
-our $ua = create_agent();
+our %traces :shared;
+our $ua;
+my $q = Thread::Queue->new();
+our $db :shared = shared_clone(retrieve($db_store));
 
-our $db = retrieve($db_store);
+$q->enqueue(keys %{$db->{'all'}});
 
-for my $id (keys %{$db->{'all'}}) {
-    check_mirror($id);
+while ($threads--) {
+    threads->create(
+	    sub {
+		use LWP::UserAgent;
+		use LWP::ConnCache;
+
+		$ua = create_agent();
+
+		while (my $id = $q->dequeue_nb()) {
+		    check_mirror($id);
+		}
+	    }
+	);
+}
+
+for my $thr (threads->list()) {
+    $thr->join();
 }
 
 for my $type (keys %traces) {
@@ -165,11 +185,14 @@ sub check_mirror($) {
 	     delete $mirror->{$type.'-disabled'};
 	}
 
-	$traces{$type} = {}
-	    unless (exists($traces{$type}));
-	$traces{$type}{$trace} = []
-	    unless (exists($traces{$type}{$trace}));
-	push @{$traces{$type}{$trace}}, $id;
+	{
+	    lock(%traces);
+	    $traces{$type} = shared_clone({})
+		unless (exists($traces{$type}));
+	    $traces{$type}{$trace} = shared_clone([])
+		unless (exists($traces{$type}{$trace}));
+	    push @{$traces{$type}{$trace}}, shared_clone($id);
+	}
 
 	if ($check_archs) {
 	    # Find the list of architectures supposedly included by the
