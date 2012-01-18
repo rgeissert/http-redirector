@@ -126,7 +126,7 @@ sub test_arch($$$) {
     my $response = $ua->head($url);
 
     return 0 if (!$response->is_success);
-    return ($response->header('Content-Type') ne 'text/html');
+    return ($response->header('Content-Type') ne 'text/html' || $type eq 'cdimage');
 }
 
 sub create_agent() {
