@@ -101,6 +101,8 @@ if (!defined($r)) {
     # sadly, we really depend on it. throw an error for now
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
+} else {
+    print "Status: 307 Temporary Redirect\r\n";
 }
 
 print_xtra('IP', $IP);
