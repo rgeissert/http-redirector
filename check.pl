@@ -103,6 +103,11 @@ for my $id (keys %{$db->{'all'}}) {
 		    $all_failed = 0;
 		}
 	    }
+
+	    if ($all_failed) {
+		$mirror->{$type.'-disabled'} = undef;
+		print "Disabling $id/$type\n";
+	    }
 	}
     }
 }
