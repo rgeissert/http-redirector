@@ -97,12 +97,13 @@ my $r = $g_city->record_by_addr($IP);
 my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
 my $arch = '';
 
-print_xtra('IP', $IP);
 if (!defined($r)) {
-    # TODO: handle error
-    $r = undef;
+    # sadly, we really depend on it. throw an error for now
+    print $q->header(-status => '501 Not Implemented');
+    exit;
 }
 
+print_xtra('IP', $IP);
 print_xtra('AS', $as);
 
 my $url = $q->param('url') || '';
