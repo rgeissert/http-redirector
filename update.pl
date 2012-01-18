@@ -91,7 +91,8 @@ foreach my $mirror_type (@mirror_types) {
 
     $db{$mirror_type} = shared_clone({
 	'country' => {}, 'ipv6' => {}, 'arch' => {},
-	'all' => {}, 'AS' => {}, 'continent' => {}
+	'all' => {}, 'AS' => {}, 'continent' => {},
+	'master' => ''
     });
     $semaphore{$mirror_type} = Thread::Semaphore->new();
 }
@@ -215,13 +216,20 @@ sub process_entry($) {
 
     my $type = lc $entry->{'type'} || 'unknown';
 
-    return if ($type =~ m/^(?:unknown|geodns|origin)$/);
+    return if ($type =~ m/^(?:unknown|geodns)$/);
 
     if (!defined($entry->{'site'})) {
 	print STDERR "warning: mirror without site:\n";
 	require Data::Dumper;
 	print STDERR Data::Dumper::Dumper($entry);
 	return;
+    }
+
+    if ($type eq 'origin') {
+	foreach my $type (@mirror_types) {
+	    next unless (exists($entry->{$type.'-rsync'}));
+	    $db{$type}{'master'} = $entry->{'site'};
+	}
     }
 
     if (defined ($entry->{'includes'})) {
