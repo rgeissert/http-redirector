@@ -40,7 +40,8 @@ my $check_archs = 0;
 my $threads = 4;
 
 GetOptions('check-architectures!' => \$check_archs,
-	    'j|threads=i' => \$threads);
+	    'j|threads=i' => \$threads,
+	    'db-store=s' => \$db_store);
 
 our %traces :shared;
 our $ua;
