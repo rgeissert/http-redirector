@@ -99,7 +99,7 @@ my $arch = '';
 
 if (!defined($r)) {
     # sadly, we really depend on it. throw an error for now
-    print $q->header(-status => '501 Not Implemented');
+    print "Status: 501 Not Implemented\r\n\r\n";
     exit;
 }
 
