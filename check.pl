@@ -31,6 +31,7 @@ use Storable qw(retrieve store);
 
 sub get_trace($$);
 sub test_arch($$$);
+sub create_agent();
 
 my $db_store = 'db';
 my $check_archs = 0;
@@ -38,13 +39,7 @@ my $check_archs = 0;
 GetOptions('check-architectures!' => \$check_archs);
 
 my %traces;
-our $ua = LWP::UserAgent->new();
-
-$ua->timeout(10);
-$ua->agent("MirrorChecker/0.1 ");
-$ua->conn_cache(LWP::ConnCache->new());
-$ua->max_redirect(1);
-$ua->max_size(1024);
+our $ua = create_agent();
 
 our $db = retrieve($db_store);
 
@@ -183,4 +178,16 @@ sub test_arch($$$) {
 
     return 0 if (!$response->is_success);
     return ($response->header('Content-Type') ne 'text/html');
+}
+
+sub create_agent() {
+    my $ua = LWP::UserAgent->new();
+
+    $ua->timeout(10);
+    $ua->agent("MirrorChecker/0.1 ");
+    $ua->conn_cache(LWP::ConnCache->new());
+    $ua->max_redirect(1);
+    $ua->max_size(1024);
+
+    return $ua;
 }
