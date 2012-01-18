@@ -32,71 +32,20 @@ use Storable qw(retrieve store);
 sub get_trace($$);
 sub test_arch($$$);
 sub create_agent();
+sub check_mirror($);
 
 my $db_store = 'db';
 my $check_archs = 0;
 
 GetOptions('check-architectures!' => \$check_archs);
 
-my %traces;
+our %traces;
 our $ua = create_agent();
 
 our $db = retrieve($db_store);
 
 for my $id (keys %{$db->{'all'}}) {
-    my $mirror = $db->{'all'}{$id};
-    my @mirror_types;
-
-    for my $k (keys %$mirror) {
-	next unless ($k =~ m/^(.+)-http$/);
-	push @mirror_types, $1;
-    }
-
-    for my $type (@mirror_types) {
-	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
-	my $trace = get_trace($base_url, $db->{$type}{'master'});
-
-	if (!$trace) {
-	    $mirror->{$type.'-disabled'} = undef;
-	    print "Disabling $id/$type: bad trace\n";
-	    next;
-	} else {
-	    print "Re-enabling $id/$type\n"
-		if (exists($mirror->{$type.'-disabled'}));
-	     delete $mirror->{$type.'-disabled'};
-	}
-
-	$traces{$type} = {}
-	    unless (exists($traces{$type}));
-	$traces{$type}{$trace} = []
-	    unless (exists($traces{$type}{$trace}));
-	push @{$traces{$type}{$trace}}, $id;
-
-	if ($check_archs) {
-	    # Find the list of architectures supposedly included by the
-	    # given mirror. There's no index for it, so the search is a bit
-	    # more expensive
-	    my @archs = keys %{$db->{$type}{'arch'}};
-	    my $all_failed = 1;
-	    for my $arch (@archs) {
-		next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
-		if (!test_arch($base_url, $type, $arch)) {
-		    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
-		    print "Disabling $id/$type/$arch\n";
-		} else {
-		    print "Re-enabling $id/$type/$arch\n"
-			if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
-		    delete $mirror->{$type.'-'.$arch.'-disabled'};
-		    $all_failed = 0;
-		}
-	    }
-
-	    if ($all_failed) {
-		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: all archs failed\n";
-	    }
-	}
-    }
+    check_mirror($id);
 }
 
 for my $type (keys %traces) {
@@ -190,4 +139,61 @@ sub create_agent() {
     $ua->max_size(1024);
 
     return $ua;
+}
+
+sub check_mirror($) {
+    my $id = shift;
+    my $mirror = $db->{'all'}{$id};
+    my @mirror_types;
+
+    for my $k (keys %$mirror) {
+	next unless ($k =~ m/^(.+)-http$/);
+	push @mirror_types, $1;
+    }
+
+    for my $type (@mirror_types) {
+	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
+	my $trace = get_trace($base_url, $db->{$type}{'master'});
+
+	if (!$trace) {
+	    $mirror->{$type.'-disabled'} = undef;
+	    print "Disabling $id/$type: bad trace\n";
+	    next;
+	} else {
+	    print "Re-enabling $id/$type\n"
+		if (exists($mirror->{$type.'-disabled'}));
+	     delete $mirror->{$type.'-disabled'};
+	}
+
+	$traces{$type} = {}
+	    unless (exists($traces{$type}));
+	$traces{$type}{$trace} = []
+	    unless (exists($traces{$type}{$trace}));
+	push @{$traces{$type}{$trace}}, $id;
+
+	if ($check_archs) {
+	    # Find the list of architectures supposedly included by the
+	    # given mirror. There's no index for it, so the search is a bit
+	    # more expensive
+	    my @archs = keys %{$db->{$type}{'arch'}};
+	    my $all_failed = 1;
+	    for my $arch (@archs) {
+		next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
+		if (!test_arch($base_url, $type, $arch)) {
+		    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
+		    print "Disabling $id/$type/$arch\n";
+		} else {
+		    print "Re-enabling $id/$type/$arch\n"
+			if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
+		    delete $mirror->{$type.'-'.$arch.'-disabled'};
+		    $all_failed = 0;
+		}
+	    }
+
+	    if ($all_failed) {
+		$mirror->{$type.'-disabled'} = undef;
+		print "Disabling $id/$type: all archs failed\n";
+	    }
+	}
+    }
 }
