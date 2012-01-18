@@ -41,6 +41,15 @@ my $random_sort = 1;
 my $db_store = 'db';
 our $mirror_type = 'archive';
 
+my %nearby_continents = (
+    'AF' => [ qw(EU AS) ],
+    'SA' => [ qw(NA EU) ],
+    'OC' => [ qw(NA AS) ],
+    'AS' => [ qw(EU) ],
+    'NA' => [ qw(EU) ],
+    'EU' => [ qw(NA) ],
+);
+
 my $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
 my $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
 
@@ -145,15 +154,24 @@ if (!$match_type) {
 print_xtra('Continent', $r->continent_code);
 # match by continent
 if (!$match_type) {
-    foreach my $match (keys %{$rdb->{'continent'}{$r->continent_code}}) {
-	my $mirror = $db->{'all'}{$match};
+    my @continents = ($r->continent_code, @{$nearby_continents{$r->continent_code}});
 
-    	next unless fullfils_request($rdb, $match, $arch, $ipv6);
+    for my $continent (@continents) {
+	foreach my $match (keys %{$rdb->{'continent'}{$continent}}) {
+	    my $mirror = $db->{'all'}{$match};
 
-	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
-				    $r->longitude, $r->latitude);
-	$match_type = 'continent';
+	    next unless fullfils_request($rdb, $match, $arch, $ipv6);
+
+	    $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+	    $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
+					$r->longitude, $r->latitude);
+
+	    if ($continent eq $r->continent_code) {
+		$match_type = 'continent';
+	    } else {
+		$match_type = 'nearby-continent';
+	    }
+	}
     }
 }
 
