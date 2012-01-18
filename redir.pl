@@ -40,12 +40,6 @@ my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
 our $mirror_type = 'archive';
-my %mirror_prefixes = (
-    'archive' => '',
-    'security' => '-security',
-    'cdimage' => '-cd',
-    'backports' => '-backports',
-);
 
 my $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
 my $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
@@ -106,11 +100,6 @@ my $url = $q->param('url') || '';
 $url =~ s,//,/,g;
 $url =~ s,^/,,;
 $url =~ s, ,+,g;
-
-if (defined($mirror_prefixes{$mirror_type})) {
-    # FIXME: ugly
-    $url =~ s,^debian$mirror_prefixes{$mirror_type}/,,;
-}
 
 print_xtra('URL', $url);
 
