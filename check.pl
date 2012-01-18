@@ -37,14 +37,6 @@ my $check_archs = 0;
 
 GetOptions('check-architectures!' => \$check_archs);
 
-# FIXME: generate this list from Mirrors.masterlist
-my %masters = (
-    'archive' => 'ftp-master.debian.org',
-    'old' => 'archive.debian.org',
-    'backports' => 'backports-master.debian.org',
-    'security' => 'security-master.debian.org',
-    'cdimage' => 'cdimage.debian.org',
-);
 my %traces;
 our $ua = LWP::UserAgent->new();
 
@@ -67,7 +59,7 @@ for my $id (keys %{$db->{'all'}}) {
 
     for my $type (@mirror_types) {
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
-	my $trace = get_trace($base_url, $masters{$type});
+	my $trace = get_trace($base_url, $db->{$type}{'master'});
 
 	if (!$trace) {
 	    $mirror->{$type.'-disabled'} = undef;
