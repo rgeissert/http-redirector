@@ -60,6 +60,7 @@ sub fullfils_request($$$$);
 sub calculate_distance($$$$);
 sub stddevp;
 sub print_xtra($$);
+sub find_arch($@);
 
 my @ARCHITECTURES_REGEX;
 
@@ -111,12 +112,7 @@ $url =~ s, ,+,g;
 
 print_xtra('URL', $url);
 
-foreach my $r (@ARCHITECTURES_REGEX) {
-    if ($url =~ m/$r/) {
-	$arch = $1;
-	last;
-    }
-}
+$arch = find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
 print_xtra('Arch', $arch);
 
@@ -280,4 +276,14 @@ sub stddevp {
 sub print_xtra($$) {
     print "X-$_[0]: $_[1]\r\n"
 	if ($xtra_headers);
+}
+
+sub find_arch($@) {
+    my $url = shift;
+    local $_;
+
+    foreach (@_) {
+	return $1 if ($url =~ m/$_/);
+    }
+    return '';
 }
