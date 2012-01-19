@@ -230,6 +230,7 @@ if ($add_links) {
 	my $priority = $hosts{$host};
 
 	$priority *= 100;
+	$priority = 1 if ($priority == 0);
 	$priority = sprintf("%.0f", $priority);
 
 	print "Link: http://".$host.$url."; rel=duplicate; pri=$priority\r\n";
