@@ -159,9 +159,10 @@ sub test_arch($$$) {
     $url .= sprintf($format, $arch);
 
     my $response = $ua->head($url);
+    my $content_type = $response->header('Content-Type') || '';
 
     return 0 if (!$response->is_success);
-    return ($response->header('Content-Type') ne 'text/html' || $type eq 'cdimage');
+    return ($content_type ne 'text/html' || $type eq 'cdimage');
 }
 
 sub create_agent() {
