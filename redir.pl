@@ -32,6 +32,12 @@ $CGI::Simple::POST_MAX = 0;
 $CGI::Simple::DISABLE_UPLOADS = 1;
 my $q = new CGI::Simple;
 
+# abort POST requests ASAP
+if ($q->request_method() eq 'POST') {
+    print "Status: 501 Not Implemented\r\n\r\n";
+    exit;
+}
+
 use Geo::IP;
 use Storable qw(retrieve);
 use List::Util qw(shuffle);
