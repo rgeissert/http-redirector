@@ -65,6 +65,7 @@ sub find_arch($@);
 my @ARCHITECTURES_REGEX;
 
 $mirror_type = $q->param('mirror') || 'archive';
+$mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
 if ($mirror_type eq 'cdimage') {
     @ARCHITECTURES_REGEX = (
