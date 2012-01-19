@@ -39,4 +39,5 @@ for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.gz GeoIPv6.dat.gz; do
 done
 cd - >/dev/null
 
-./update.pl -j 15
+./update.pl -j 15 --leave-new
+./check.pl --db-store db.new --check-architectures
