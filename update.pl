@@ -40,14 +40,15 @@ my @mirror_types = qw(www volatile archive old nonus
 my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile);
 
 # Options:
-my ($update_list, $threads) = (1, 4);
+my ($update_list, $threads, $leave_new) = (1, 4, 0);
 
 sub parse_list($$);
 sub process_entry($);
 sub fancy_get_host($);
 
 GetOptions('update-list!' => \$update_list,
-	    'j|threads=i' => \$threads);
+	    'j|threads=i' => \$threads,
+	    'leave-new' => \$leave_new);
 
 if ($update_list) {
     # TODO: use LWP
@@ -146,8 +147,10 @@ if (scalar(keys %{$db{'archive'}{'all'}}) < 10) {
 
     store ($VAR1, $db_store.'.new')
 	or die ("failed to store to $db_store.new: $!");
-    rename ($db_store.'.new', $db_store)
-	or die("failed to rename $db_store.new: $!");
+    unless ($leave_new) {
+	rename ($db_store.'.new', $db_store)
+	    or die("failed to rename $db_store.new: $!");
+    }
 }
 
 exit;
