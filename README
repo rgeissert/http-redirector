@@ -32,9 +32,8 @@ in doing that to offload their mirrors.
 
 * Use the zebra dump parser to, try to, make better decisions.
 
-* Improve the mirror checker. It should use multiple threads,
-ability to detect, architectures only available in a limited set of releases,
-etc.
+* Improve the mirror checker. It should check the trace file of the
+mirror itself, etc.
 
 * Better IPv6 support.
 
@@ -45,11 +44,8 @@ Required packages:
     wget
 
 Run ./update.sh, it will download the geoip databases, the mirrors
-list, and build the database used by the redirector.
-
-Run the ./check.pl script to disable mirrors that are not useful in one
-way or more. This script is intended to be run multiple times a day,
-but THIS IS NOT THE CASE, yet.
+list, build the database used by the redirector, and check the mirrors
+for errors.
 
 Check the first lines of redir.pl for the rest
 
@@ -60,12 +56,13 @@ update.pl should be run whenever the master list changes[1]
 check.pl should be run multiple times a day[2]
 
 [1] the script rebuilds the database, so any info collected by check.pl
-regarding the availability of mirrors is lost. check.pl should be run
-after update.pl. Perhaps at some point the process will be chained
-automatically.
+regarding the availability of mirrors is lost.
+check.pl --check-architectures should be run after update.pl, this is
+done automatically when running update.sh.
 
-[2] it really depends on the kind of setup one wants. At present time
-it always does a full run, which is time consuming.
+[2] it really depends on the kind of setup one wants. It has a twelve
+hours-delay tolerance hardcoded but it could be made configurable at
+some point.
 
 == Real life testing ==
 
@@ -73,7 +70,7 @@ If using apache, assuming you have the redir script in a /cgi alias
 with +execcgi, you can:
 
    RewriteEngine On
-   RewriteRule ^/(debian-(security|backports|volatile|cdimage)/.*) /cgi/redir.pl?mirror=$2&url=$1 [PT]
+   RewriteRule ^/(debian-(security|backports|cdimage)/.*) /cgi/redir.pl?mirror=$2&url=$1 [PT]
    RewriteRule ^/(.*) /cgi/redir.pl?url=$1 [PT]
 
 You can for example make it listen on 127.0.1.10, setup a vhost, add
