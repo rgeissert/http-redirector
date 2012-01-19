@@ -28,6 +28,8 @@ use warnings;
 #   ./redir.pl mirror=...
 #   REMOTE_ADDR=1.2.3.4 ./redir.pl mirror=...
 use CGI::Simple qw(-debug1);
+$CGI::Simple::POST_MAX = 0;
+$CGI::Simple::DISABLE_UPLOADS = 1;
 my $q = new CGI::Simple;
 
 use Geo::IP;
