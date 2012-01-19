@@ -36,12 +36,14 @@ sub create_agent();
 sub check_mirror($);
 
 my $db_store = 'db';
+my $db_output = $db_store;
 my $check_archs = 0;
 my $threads = 4;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'j|threads=i' => \$threads,
-	    'db-store=s' => \$db_store);
+	    'db-store=s' => \$db_store,
+	    'db-output=s' => \$db_output);
 
 our %traces :shared;
 our $ua;
@@ -113,10 +115,10 @@ for my $type (keys %traces) {
 	eval $clone;
     }
 
-    store ($VAR1, $db_store.'.new')
-	or die ("failed to store to $db_store.new: $!");
-    rename ($db_store.'.new', $db_store)
-	or die("failed to rename $db_store.new: $!");
+    store ($VAR1, $db_output.'.new')
+	or die ("failed to store to $db_output.new: $!");
+    rename ($db_output.'.new', $db_output)
+	or die("failed to rename $db_output.new: $!");
 }
 
 sub get_trace($$) {
