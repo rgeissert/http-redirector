@@ -94,3 +94,8 @@ Any script using the database should therefore test for 'exists' instead
 of 'defined'.
 
 To better understand what the database looks like, run ./dump-db.pl | pager
+
+== Credits ==
+
+"This product includes GeoLite data created by MaxMind, available from
+http://maxmind.com/"
