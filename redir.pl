@@ -156,19 +156,13 @@ if (!$match_type) {
     for my $continent (@continents) {
 	last if ($match_type);
 	foreach my $match (keys %{$rdb->{'continent'}{$continent}}) {
-	    my $mirror = $db->{'all'}{$match};
-
-	    next unless fullfils_request($rdb, $match, $arch, $ipv6);
-
-	    my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	    $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
-					$r->longitude, $r->latitude);
-
+	    my $mtype;
 	    if ($continent eq $r->continent_code) {
-		$match_type = 'continent';
+		$mtype = 'continent';
 	    } else {
-		$match_type = 'nearby-continent';
+		$mtype = 'nearby-continent';
 	    }
+	    $match_type ||= consider_mirror ($match, $db, $arch, $ipv6, $mirror_type, $r, $mtype);
 	}
     }
 }
