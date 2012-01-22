@@ -188,15 +188,7 @@ if (!$match_type) {
 }
 
 # something went awry, we don't know how to handle this user, we failed
-# let's make another attempt:
-if (!$match_type && $mirror_type eq 'archive') {
-    $hosts{'cdn.debian.net/debian/'} = 1;
-    $match_type = 'catch-all';
-}
-
 if (!$match_type) {
-    # not a request for archive, but we don't know
-    # where we should redirect the user to
     print "Status: 503 Service Unavailable\r\n\r\n";
     exit;
 }
