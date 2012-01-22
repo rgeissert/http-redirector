@@ -58,12 +58,6 @@ my %nearby_continents = (
     'EU' => [ qw(NA) ],
 );
 
-my $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
-my $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
-
-# TODO: support IPv6. Basic implementation is to lookup the country in
-# the geoipv6 db and wish the user our best
-
 sub fullfils_request($$$$);
 sub calculate_distance($$$$);
 sub stddevp;
@@ -102,6 +96,18 @@ $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
 my $ipv6 = ($IP =~ m/::/);
+
+my ($g_city, $g_as);
+
+if (!$ipv6) {
+    $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
+    $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
+} else {
+    $g_city = Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE);
+    $g_as = Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE);
+}
+
+
 my $r = $g_city->record_by_addr($IP);
 my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
 my $arch = '';
