@@ -131,7 +131,6 @@ $arch = find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
 print_xtra('Arch', $arch);
 
-my $host = '';
 my %hosts;
 my $match_type = '';
 
@@ -141,7 +140,7 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
 
     next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
-    $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+    my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
     $hosts{$host} = 1;
     $match_type = 'AS';
 }
@@ -154,7 +153,7 @@ if (!$match_type) {
 
     	next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
-	$host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+	my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
 	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $r->longitude, $r->latitude);
 	$match_type = 'country';
@@ -173,7 +172,7 @@ if (!$match_type) {
 
 	    next unless fullfils_request($rdb, $match, $arch, $ipv6);
 
-	    $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+	    my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
 	    $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 					$r->longitude, $r->latitude);
 
@@ -197,7 +196,7 @@ my @close_hosts;
 my $dev = stddevp(values %hosts);
 
 # Closest host (or one of many), to use as the base distance
-$host = $sorted_hosts[0];
+my $host = $sorted_hosts[0];
 
 print_xtra('Std-Dev', $dev);
 print_xtra('Population', scalar(@sorted_hosts));
