@@ -237,6 +237,11 @@ sub process_entry($) {
 	return;
     }
 
+    if (defined ($entry->{'ipv6'}) && $entry->{'ipv6'} eq 'only') {
+	print STDERR "warning: unsupported IPv6-only $entry->{'site'}\n";
+	return;
+    }
+
     if (defined ($entry->{'includes'})) {
 	my @includes = split /\s+/ , $entry->{'includes'};
 	my $missing = 0;
