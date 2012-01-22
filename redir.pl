@@ -65,6 +65,7 @@ sub stddevp;
 sub print_xtra($$);
 sub find_arch($@);
 sub clean_url($);
+sub consider_mirror($$$$$$$);
 
 my @ARCHITECTURES_REGEX;
 
@@ -136,27 +137,14 @@ my $match_type = '';
 
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
-    my $mirror = $db->{'all'}{$match};
-
-    next unless fullfils_request($rdb, $match, $arch, $ipv6);
-
-    my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-    $hosts{$host} = 1;
-    $match_type = 'AS';
+    $match_type ||= consider_mirror ($match, $db, $arch, $ipv6, $mirror_type, $r, 'AS');
 }
 
 print_xtra('Country', $r->country_code);
 # match by country
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$r->country_code}}) {
-	my $mirror = $db->{'all'}{$match};
-
-    	next unless fullfils_request($rdb, $match, $arch, $ipv6);
-
-	my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-	$hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
-				    $r->longitude, $r->latitude);
-	$match_type = 'country';
+	$match_type ||= consider_mirror ($match, $db, $arch, $ipv6, $mirror_type, $r, 'country');
     }
 }
 
@@ -305,4 +293,17 @@ sub clean_url($) {
     $url =~ s,^/,,;
     $url =~ s, ,+,g;
     return $url;
+}
+
+sub consider_mirror($$$$$$$) {
+    my ($id, $db, $arch, $ipv6, $mirror_type, $r, $match_type) = @_;
+
+    my $mirror = $db->{'all'}{$id};
+
+    return '' unless fullfils_request($db->{$mirror_type}, $id, $arch, $ipv6);
+
+    my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+    $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
+				    $r->longitude, $r->latitude);
+    return $match_type;
 }
