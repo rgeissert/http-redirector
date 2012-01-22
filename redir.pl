@@ -65,7 +65,7 @@ sub stddevp;
 sub print_xtra($$);
 sub find_arch($@);
 sub clean_url($);
-sub consider_mirror($$$$$$$);
+sub consider_mirror($$$$$);
 
 my @ARCHITECTURES_REGEX;
 
@@ -137,14 +137,14 @@ my $match_type = '';
 
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
-    $match_type ||= consider_mirror ($match, $db, $arch, $ipv6, $mirror_type, $r, 'AS');
+    $match_type ||= consider_mirror ($match, $arch, $ipv6, $r, 'AS');
 }
 
 print_xtra('Country', $r->country_code);
 # match by country
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$r->country_code}}) {
-	$match_type ||= consider_mirror ($match, $db, $arch, $ipv6, $mirror_type, $r, 'country');
+	$match_type ||= consider_mirror ($match, $arch, $ipv6, $r, 'country');
     }
 }
 
@@ -162,7 +162,7 @@ if (!$match_type) {
 	    } else {
 		$mtype = 'nearby-continent';
 	    }
-	    $match_type ||= consider_mirror ($match, $db, $arch, $ipv6, $mirror_type, $r, $mtype);
+	    $match_type ||= consider_mirror ($match, $arch, $ipv6, $r, $mtype);
 	}
     }
 }
@@ -289,8 +289,8 @@ sub clean_url($) {
     return $url;
 }
 
-sub consider_mirror($$$$$$$) {
-    my ($id, $db, $arch, $ipv6, $mirror_type, $r, $match_type) = @_;
+sub consider_mirror($$$$$$) {
+    my ($id, $arch, $ipv6, $r, $match_type) = @_;
 
     my $mirror = $db->{'all'}{$id};
 
