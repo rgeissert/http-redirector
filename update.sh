@@ -24,7 +24,7 @@ set -e
 
 mkdir -p geoip
 cd geoip
-for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.gz GeoIPv6.dat.gz; do
+for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.gz asnum/GeoIPASNumv6.dat.gz GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz; do
     wget -U '' -N http://geolite.maxmind.com/download/geoip/database/$db
     db="$(basename "$db")"
     if [ -f ${db%.gz} ]; then
