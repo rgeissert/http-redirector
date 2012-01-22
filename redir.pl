@@ -32,8 +32,9 @@ $CGI::Simple::POST_MAX = 0;
 $CGI::Simple::DISABLE_UPLOADS = 1;
 my $q = new CGI::Simple;
 
-# abort POST requests ASAP
-if ($q->request_method() eq 'POST') {
+my $request_method = $q->request_method() || 'HEAD';
+# abort POST and other requests ASAP
+if ($request_method ne 'GET' && $request_method ne 'HEAD') {
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
 }
