@@ -70,8 +70,8 @@ If using apache, assuming you have the redir script in a /cgi alias
 with +execcgi, you can:
 
    RewriteEngine On
-   RewriteRule ^/(debian-(security|backports|cdimage)/.*) /cgi/redir.pl?mirror=$2&url=$1 [PT]
-   RewriteRule ^/(.*) /cgi/redir.pl?url=$1 [PT]
+   RewriteRule ^/?debian-(security|backports|cd)/(.*) /cgi/redir.pl?mirror=$1&url=$2 [PT]
+   RewriteRule ^/?debian/(.*) /cgi/redir.pl?url=$1 [PT]
 
 You can for example make it listen on 127.0.1.10, setup a vhost, add
 use the following on your sources.list:
