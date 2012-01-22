@@ -190,8 +190,12 @@ if (!$match_type && $mirror_type eq 'archive') {
     $match_type = 'catch-all';
 }
 
-# TODO: if ($host eq '') { not a request for archive, but we don't know
-#   where we should redirect the user to }
+if (!$match_type) {
+    # not a request for archive, but we don't know
+    # where we should redirect the user to
+    print "Status: 503 Service Unavailable\r\n\r\n";
+    exit;
+}
 
 my @sorted_hosts = sort { $hosts{$a} <=> $hosts{$b} } keys %hosts;
 my @close_hosts;
