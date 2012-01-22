@@ -63,6 +63,7 @@ sub calculate_distance($$$$);
 sub stddevp;
 sub print_xtra($$);
 sub find_arch($@);
+sub clean_url($);
 
 my @ARCHITECTURES_REGEX;
 
@@ -123,10 +124,7 @@ if (!defined($r)) {
 print_xtra('IP', $IP);
 print_xtra('AS', $as);
 
-my $url = $q->param('url') || '';
-$url =~ s,//,/,g;
-$url =~ s,^/,,;
-$url =~ s, ,+,g;
+my $url = clean_url($q->param('url') || '');
 
 print_xtra('URL', $url);
 
@@ -309,4 +307,12 @@ sub find_arch($@) {
 	return $1 if ($url =~ m/$_/);
     }
     return '';
+}
+
+sub clean_url($) {
+    my $url = shift;
+    $url =~ s,//,/,g;
+    $url =~ s,^/,,;
+    $url =~ s, ,+,g;
+    return $url;
 }
