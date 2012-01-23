@@ -59,13 +59,13 @@ my %nearby_continents = (
     'EU' => [ qw(NA) ],
 );
 
-sub fullfils_request($$$$);
+sub fullfils_request($$);
 sub calculate_distance($$$$);
 sub stddevp;
 sub print_xtra($$);
 sub find_arch($@);
 sub clean_url($);
-sub consider_mirror($$$$$);
+sub consider_mirror($$);
 
 my @ARCHITECTURES_REGEX;
 
@@ -96,7 +96,7 @@ $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 # Make a shortcut
 my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
-my $ipv6 = ($IP =~ m/::/);
+our $ipv6 = ($IP =~ m/::/);
 
 my ($g_city, $g_as);
 
@@ -109,11 +109,11 @@ if (!$ipv6) {
 }
 
 
-my $r = $g_city->record_by_addr($IP);
+our $geo_rec = $g_city->record_by_addr($IP);
 my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
-my $arch = '';
+our $arch = '';
 
-if (!defined($r)) {
+if (!defined($geo_rec)) {
     # sadly, we really depend on it. throw an error for now
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
@@ -137,32 +137,32 @@ my $match_type = '';
 
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
-    $match_type ||= consider_mirror ($match, $arch, $ipv6, $r, 'AS');
+    $match_type ||= consider_mirror ($match, 'AS');
 }
 
-print_xtra('Country', $r->country_code);
+print_xtra('Country', $geo_rec->country_code);
 # match by country
 if (!$match_type) {
-    foreach my $match (keys %{$rdb->{'country'}{$r->country_code}}) {
-	$match_type ||= consider_mirror ($match, $arch, $ipv6, $r, 'country');
+    foreach my $match (keys %{$rdb->{'country'}{$geo_rec->country_code}}) {
+	$match_type ||= consider_mirror ($match, 'country');
     }
 }
 
-print_xtra('Continent', $r->continent_code);
+print_xtra('Continent', $geo_rec->continent_code);
 # match by continent
 if (!$match_type) {
-    my @continents = ($r->continent_code, @{$nearby_continents{$r->continent_code}});
+    my @continents = ($geo_rec->continent_code, @{$nearby_continents{$geo_rec->continent_code}});
 
     for my $continent (@continents) {
 	last if ($match_type);
 	foreach my $match (keys %{$rdb->{'continent'}{$continent}}) {
 	    my $mtype;
-	    if ($continent eq $r->continent_code) {
+	    if ($continent eq $geo_rec->continent_code) {
 		$mtype = 'continent';
 	    } else {
 		$mtype = 'nearby-continent';
 	    }
-	    $match_type ||= consider_mirror ($match, $arch, $ipv6, $r, $mtype);
+	    $match_type ||= consider_mirror ($match, $mtype);
 	}
     }
 }
@@ -221,8 +221,8 @@ print "\r\n";
 
 exit;
 
-sub fullfils_request($$$$) {
-    my ($rdb, $id, $arch, $ipv6) = @_;
+sub fullfils_request($$) {
+    my ($rdb, $id) = @_;
 
     my $mirror = $db->{'all'}{$id};
 
@@ -289,15 +289,15 @@ sub clean_url($) {
     return $url;
 }
 
-sub consider_mirror($$$$$$) {
-    my ($id, $arch, $ipv6, $r, $match_type) = @_;
+sub consider_mirror($$) {
+    my ($id, $match_type) = @_;
 
     my $mirror = $db->{'all'}{$id};
 
-    return '' unless fullfils_request($db->{$mirror_type}, $id, $arch, $ipv6);
+    return '' unless fullfils_request($db->{$mirror_type}, $id);
 
     my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
     $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
-				    $r->longitude, $r->latitude);
+				    $geo_rec->longitude, $geo_rec->latitude);
     return $match_type;
 }
