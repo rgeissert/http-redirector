@@ -101,8 +101,6 @@ if (!defined($geo_rec)) {
     # sadly, we really depend on it. throw an error for now
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
-} else {
-    print "Status: 307 Temporary Redirect\r\n";
 }
 
 my $url = clean_url($q->param('url') || '');
@@ -199,6 +197,8 @@ $host = (shuffle (@close_hosts))[0]
     if ($random_sort);
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
+
+print "Status: 307 Temporary Redirect\r\n";
 print "Location: http://".$host.$url."\r\n";
 
 if ($add_links) {
