@@ -68,9 +68,32 @@ sub clean_url($);
 sub consider_mirror($);
 
 
+our $arch = '';
+my $action = 'redir';
 $mirror_type = $q->param('mirror') || 'archive';
 $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
+$action = 'list' if ($mirror_type =~ s/\.list$//);
+
+if ($action eq 'list') {
+    my @archs = $q->param('arch');
+    my $abort = 0;
+
+    if (scalar(@archs) == 0) {
+	$abort = 1;
+	print "Status: 400 Bad Request";
+    } elsif (scalar(@archs) != 1) {
+	$abort = 1;
+	print "Status: 501 Not Implemented";
+    } else {
+	$arch = $archs[0];
+    }
+
+    if ($abort) {
+	print "\r\n\r\n";
+	exit;
+    }
+}
 
 our $db = retrieve($db_store);
 # Make a shortcut
@@ -104,7 +127,6 @@ if (!defined($geo_rec)) {
 }
 
 my $url = clean_url($q->param('url') || '');
-our $arch = '';
 
 my @ARCHITECTURES_REGEX;
 if ($mirror_type eq 'cdimage') {
@@ -121,7 +143,7 @@ if ($mirror_type eq 'cdimage') {
     );
 }
 
-$arch = find_arch($url, @ARCHITECTURES_REGEX);
+$arch ||= find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
 
 print_xtra('IP', $IP);
@@ -198,8 +220,20 @@ $host = (shuffle (@close_hosts))[0]
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 
-print "Status: 307 Temporary Redirect\r\n";
-print "Location: http://".$host.$url."\r\n";
+if ($action eq 'redir') {
+    print "Status: 307 Temporary Redirect\r\n";
+    print "Location: http://".$host.$url."\r\n";
+} elsif ($action eq 'list') {
+    print "Status: 200 OK\r\n";
+    # FIXME: we shouldn't need to end the headers here
+    print "\r\n";
+    for my $host (@close_hosts) {
+	print "$host\n";
+    }
+    exit;
+} else {
+    die("FIXME: unknown action '$action'");
+}
 
 if ($add_links) {
     # RFC6249-like link rels
