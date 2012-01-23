@@ -121,16 +121,17 @@ if (!defined($geo_rec)) {
     print "Status: 307 Temporary Redirect\r\n";
 }
 
-print_xtra('IP', $IP);
-print_xtra('AS', $as);
-
 my $url = clean_url($q->param('url') || '');
-
-print_xtra('URL', $url);
 
 $arch = find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
+
+print_xtra('IP', $IP);
+print_xtra('AS', $as);
+print_xtra('URL', $url);
 print_xtra('Arch', $arch);
+print_xtra('Country', $geo_rec->country_code);
+print_xtra('Continent', $geo_rec->continent_code);
 
 my %hosts;
 my $match_type = '';
@@ -140,7 +141,6 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
     $match_type ||= consider_mirror ($match, 'AS');
 }
 
-print_xtra('Country', $geo_rec->country_code);
 # match by country
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$geo_rec->country_code}}) {
@@ -148,7 +148,6 @@ if (!$match_type) {
     }
 }
 
-print_xtra('Continent', $geo_rec->continent_code);
 # match by continent
 if (!$match_type) {
     my @continents = ($geo_rec->continent_code, @{$nearby_continents{$geo_rec->continent_code}});
