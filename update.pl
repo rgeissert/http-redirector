@@ -364,10 +364,10 @@ sub process_entry($) {
 	delete $entry->{$type.'-ftp'};
 	delete $entry->{$type.'-rsync'};
 	delete $entry->{$type.'-nfs'};
+	delete $entry->{$type.'-upstream'};
 
 	if ($exclude_mirror_types{$type}) {
 	    delete $entry->{$type.'-http'};
-	    delete $entry->{$type.'-upstream'};
 	    delete $entry->{$type.'-architecture'};
 	    next;
 	}
