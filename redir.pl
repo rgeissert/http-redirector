@@ -67,34 +67,19 @@ sub find_arch($@);
 sub clean_url($);
 sub consider_mirror($$);
 
-my @ARCHITECTURES_REGEX;
 
 $mirror_type = $q->param('mirror') || 'archive';
 $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
-if ($mirror_type eq 'cdimage') {
-    @ARCHITECTURES_REGEX = (
-	qr'^(?:\d|current)[^/]*/([^/]+)/',
-    );
-} else {
-    @ARCHITECTURES_REGEX = (
-	qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
-	qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
-	qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.gz$',
-	qr'^indices/files(?:/components)?/arch-([^.]+).*$',
-	qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
-    );
-}
 
 our $db = retrieve($db_store);
+# Make a shortcut
+my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
 ####
 my $IP = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
 $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 ####
-
-# Make a shortcut
-my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
 our $ipv6 = ($IP =~ m/::/);
 
@@ -111,7 +96,6 @@ if (!$ipv6) {
 
 our $geo_rec = $g_city->record_by_addr($IP);
 my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
-our $arch = '';
 
 if (!defined($geo_rec)) {
     # sadly, we really depend on it. throw an error for now
@@ -122,6 +106,22 @@ if (!defined($geo_rec)) {
 }
 
 my $url = clean_url($q->param('url') || '');
+our $arch = '';
+
+my @ARCHITECTURES_REGEX;
+if ($mirror_type eq 'cdimage') {
+    @ARCHITECTURES_REGEX = (
+	qr'^(?:\d|current)[^/]*/([^/]+)/',
+    );
+} else {
+    @ARCHITECTURES_REGEX = (
+	qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
+	qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
+	qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.gz$',
+	qr'^indices/files(?:/components)?/arch-([^.]+).*$',
+	qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
+    );
+}
 
 $arch = find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
