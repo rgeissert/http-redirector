@@ -65,7 +65,7 @@ sub stddevp;
 sub print_xtra($$);
 sub find_arch($@);
 sub clean_url($);
-sub consider_mirror($$);
+sub consider_mirror($);
 
 
 $mirror_type = $q->param('mirror') || 'archive';
@@ -136,13 +136,13 @@ my $match_type = '';
 
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
-    $match_type ||= consider_mirror ($match, 'AS');
+    $match_type = 'AS' if (consider_mirror ($match));
 }
 
 # match by country
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$geo_rec->country_code}}) {
-	$match_type ||= consider_mirror ($match, 'country');
+	$match_type = 'country' if (consider_mirror ($match));
     }
 }
 
@@ -159,7 +159,7 @@ if (!$match_type) {
 	    } else {
 		$mtype = 'nearby-continent';
 	    }
-	    $match_type ||= consider_mirror ($match, $mtype);
+	    $match_type = $mtype if (consider_mirror ($match));
 	}
     }
 }
@@ -288,15 +288,15 @@ sub clean_url($) {
     return $url;
 }
 
-sub consider_mirror($$) {
-    my ($id, $match_type) = @_;
+sub consider_mirror($) {
+    my ($id) = @_;
 
     my $mirror = $db->{'all'}{$id};
 
-    return '' unless fullfils_request($db->{$mirror_type}, $id);
+    return 0 unless fullfils_request($db->{$mirror_type}, $id);
 
     my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
     $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $geo_rec->longitude, $geo_rec->latitude);
-    return $match_type;
+    return 1;
 }
