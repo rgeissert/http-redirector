@@ -30,7 +30,6 @@ use Thread::Queue;
 use Date::Parse;
 use Storable qw(retrieve store);
 
-sub get_trace($$);
 sub test_arch($$$);
 sub create_agent();
 sub check_mirror($);
@@ -121,22 +120,6 @@ for my $type (keys %traces) {
 	or die("failed to rename $db_output.new: $!");
 }
 
-sub get_trace($$) {
-    my ($base_url, $tracefile) = @_;
-    my $req_url = $base_url.'project/trace/'.$tracefile;
-
-    my $response = $ua->get($req_url);
-    return unless ($response->is_success);
-
-    my $trace = $response->decoded_content;
-    my ($date) = split /\n/,$trace,2;
-
-    return
-	unless ($date =~ m/^\w{3} \w{3} \d{2} (?:\d{2}:){2}\d{2} UTC \d{4}$/);
-    
-    return str2time($date);
-}
-
 sub test_arch($$$) {
     my ($base_url, $type, $arch) = @_;
     my $format;
@@ -191,9 +174,9 @@ sub check_mirror($) {
 
     for my $type (@mirror_types) {
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
-	my $master_trace = get_trace($base_url, $db->{$type}{'master'});
+	my $master_trace = Mirror::Trace->new($ua, $base_url);
 
-	if (!$master_trace) {
+	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    $mirror->{$type.'-disabled'} = undef;
 	    print "Disabling $id/$type: bad master trace\n";
 	    next;
@@ -204,17 +187,17 @@ sub check_mirror($) {
 	    $traces{$type} = shared_clone({})
 		unless (exists($traces{$type}));
 	    $traces{$type}{$master_trace} = shared_clone([])
-		unless (exists($traces{$type}{$master_trace}));
-	    push @{$traces{$type}{$master_trace}}, shared_clone($id);
+		unless (exists($traces{$type}{$master_trace->date}));
+	    push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
 	}
 
 	if (exists($mirror->{'trace'})) {
-	    my $site_trace = get_trace($base_url, $mirror->{'trace'});
+	    my $site_trace = Mirror::Trace->new($ua, $base_url);
 	    my $disable_reason;
 
-	    if (!$site_trace) {
+	    if (!$site_trace->fetch($mirror->{'trace'})) {
 		$disable_reason = 'bad site trace';
-	    } elsif ($site_trace < $master_trace) {
+	    } elsif ($site_trace->date < $master_trace->date) {
 		$disable_reason = 'old site trace';
 	    }
 
@@ -256,3 +239,42 @@ sub check_mirror($) {
 	}
     }
 }
+
+package Mirror::Trace;
+
+sub new {
+    my ($class, $ua, $base_url) = @_;
+    my $self = {};
+    bless($self, $class);
+
+    $self->{'ua'} = $ua if (defined($ua));
+    $self->{'base_url'} = $base_url if (defined($base_url));
+
+    return $self;
+}
+
+sub fetch {
+    my $self = shift;
+    my $file = shift;
+
+    my $req_url = $self->{'base_url'}.'project/trace/'.$file;
+
+    my $response = $self->{'ua'}->get($req_url);
+    return 0 unless ($response->is_success);
+
+    my $trace = $response->decoded_content;
+    my ($date, $software) = split /\n/,$trace,3;
+
+    return 0
+	unless ($date =~ m/^\w{3} \w{3} \d{2} (?:\d{2}:){2}\d{2} UTC \d{4}$/);
+
+    $self->{'date'} = str2time($date);
+    return 1;
+}
+
+sub date {
+    my $self = shift;
+    return $self->{'date'};
+}
+
+1;
