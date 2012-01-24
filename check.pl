@@ -190,23 +190,21 @@ sub check_mirror($) {
 	    push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
 	}
 
-	if (exists($mirror->{'trace'})) {
-	    my $site_trace = Mirror::Trace->new($ua, $base_url);
-	    my $disable_reason;
+	my $site_trace = Mirror::Trace->new($ua, $base_url);
+	my $disable_reason;
 
-	    if (!$site_trace->fetch($mirror->{'trace'})) {
-		$disable_reason = 'bad site trace';
-	    } elsif ($site_trace->date < $master_trace->date) {
-		$disable_reason = 'old site trace';
-	    } elsif (!$site_trace->good_ftpsync) {
-		$disable_reason = 'old ftpsync';
-	    }
+	if (!$site_trace->fetch($mirror->{'site'})) {
+	    $disable_reason = 'bad site trace';
+	} elsif ($site_trace->date < $master_trace->date) {
+	    $disable_reason = 'old site trace';
+	} elsif (!$site_trace->good_ftpsync) {
+	    $disable_reason = 'old ftpsync';
+	}
 
-	    if ($disable_reason) {
-		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: $disable_reason\n";
-		next;
-	    }
+	if ($disable_reason) {
+	    $mirror->{$type.'-disabled'} = undef;
+	    print "Disabling $id/$type: $disable_reason\n";
+	    next;
 	}
 
 	if (exists($mirror->{$type.'-disabled'})) {

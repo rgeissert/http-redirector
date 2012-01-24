@@ -360,10 +360,6 @@ sub process_entry($) {
 	$entry->{'bandwidth'} = $bw;
     }
 
-    if (!defined($entry->{'alias'}) && !defined($entry->{'aliases'})) {
-	$entry->{'trace'} = shared_clone($entry->{'site'});
-    }
-
     foreach my $type (@mirror_types) {
 	delete $entry->{$type.'-ftp'};
 	delete $entry->{$type.'-rsync'};
