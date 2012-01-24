@@ -27,7 +27,6 @@ use Getopt::Long;
 use threads;
 use threads::shared;
 use Thread::Queue;
-use Date::Parse;
 use Storable qw(retrieve store);
 
 sub test_arch($$$);
@@ -243,6 +242,10 @@ sub check_mirror($) {
 }
 
 package Mirror::Trace;
+
+use strict;
+use warnings;
+use Date::Parse;
 
 use vars qw($MIN_FTPSYNC_VERSION);
 
