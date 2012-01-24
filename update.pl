@@ -33,7 +33,7 @@ use threads::shared;
 use Thread::Semaphore;
 use Thread::Queue;
 
-my $current_list = 'Mirrors.masterlist.current';
+my $current_list = 'Mirrors.masterlist';
 my $db_store = 'db';
 my @mirror_types = qw(www volatile archive old nonus
 			backports security cdimage);
@@ -53,10 +53,12 @@ GetOptions('update-list!' => \$update_list,
 if ($update_list) {
     # TODO: use LWP
     system('wget',
-	    '-N',
-	    '-OMirrors.masterlist',
+	    '-OMirrors.masterlist.new',
 	    'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
 	) and die ("wget Mirrors.masterlist failed: $?");
+
+    rename('Mirrors.masterlist.new', $current_list)
+	or die ("mv Mirrors.masterlist{.new,} failed: $?");
 
 =foo
     # Before enabling this code we need to find a place where we can
@@ -72,12 +74,6 @@ if ($update_list) {
     }
 =cut
 }
-
-system('cp', '-a', 'Mirrors.masterlist', 'Mirrors.masterlist.new')
-    and die ("cp -a Mirrors.masterlist{,.new} failed: $?");
-
-rename('Mirrors.masterlist.new', $current_list)
-    or die ("mv Mirrors.masterlist{.new,} failed: $?");
 
 my %all_sites;
 my @data = parse_list($current_list, \%all_sites);
