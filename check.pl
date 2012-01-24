@@ -212,6 +212,24 @@ sub check_mirror($) {
 	    push @{$traces{$type}{$master_trace}}, shared_clone($id);
 	}
 
+	if (exists($mirror->{'trace'})) {
+	    my $site_trace = get_trace($base_url, $mirror->{'trace'});
+
+	    if (!$site_trace) {
+		$mirror->{$type.'-disabled'} = undef;
+		print "Disabling $id/$type: bad trace\n";
+		next;
+	    } elsif ($site_trace < $master_trace) {
+		$mirror->{$type.'-disabled'} = undef;
+		print "Disabling $id/$type: old trace\n";
+		next;
+	    } else {
+		print "Re-enabling $id/$type\n"
+		    if (exists($mirror->{$type.'-disabled'}));
+		 delete $mirror->{$type.'-disabled'};
+	    }
+	}
+
 	if ($check_archs) {
 	    # Find the list of architectures supposedly included by the
 	    # given mirror. There's no index for it, so the search is a bit
