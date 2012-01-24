@@ -210,14 +210,17 @@ sub check_mirror($) {
 
 	if (exists($mirror->{'trace'})) {
 	    my $site_trace = get_trace($base_url, $mirror->{'trace'});
+	    my $disable_reason;
 
 	    if (!$site_trace) {
-		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: bad site trace\n";
-		next;
+		$disable_reason = 'bad site trace';
 	    } elsif ($site_trace < $master_trace) {
+		$disable_reason = 'old site trace';
+	    }
+
+	    if ($disable_reason) {
 		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: old site trace\n";
+		print "Disabling $id/$type: $disable_reason\n";
 		next;
 	    }
 	}
