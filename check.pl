@@ -195,10 +195,10 @@ sub check_mirror($) {
 
 	if (!$master_trace) {
 	    $mirror->{$type.'-disabled'} = undef;
-	    print "Disabling $id/$type: bad trace\n";
+	    print "Disabling $id/$type: bad master trace\n";
 	    next;
 	} else {
-	    print "Re-enabling $id/$type\n"
+	    print "Re-enabling $id/$type (good master)\n"
 		if (exists($mirror->{$type.'-disabled'}));
 	    delete $mirror->{$type.'-disabled'};
 	}
@@ -217,14 +217,14 @@ sub check_mirror($) {
 
 	    if (!$site_trace) {
 		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: bad trace\n";
+		print "Disabling $id/$type: bad site trace\n";
 		next;
 	    } elsif ($site_trace < $master_trace) {
 		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: old trace\n";
+		print "Disabling $id/$type: old site trace\n";
 		next;
 	    } else {
-		print "Re-enabling $id/$type\n"
+		print "Re-enabling $id/$type (good site)\n"
 		    if (exists($mirror->{$type.'-disabled'}));
 		delete $mirror->{$type.'-disabled'};
 	    }
