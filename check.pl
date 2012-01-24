@@ -200,7 +200,7 @@ sub check_mirror($) {
 	} else {
 	    print "Re-enabling $id/$type\n"
 		if (exists($mirror->{$type.'-disabled'}));
-	     delete $mirror->{$type.'-disabled'};
+	    delete $mirror->{$type.'-disabled'};
 	}
 
 	{
@@ -226,7 +226,7 @@ sub check_mirror($) {
 	    } else {
 		print "Re-enabling $id/$type\n"
 		    if (exists($mirror->{$type.'-disabled'}));
-		 delete $mirror->{$type.'-disabled'};
+		delete $mirror->{$type.'-disabled'};
 	    }
 	}
 
