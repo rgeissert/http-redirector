@@ -185,7 +185,7 @@ sub check_mirror($) {
 	    lock(%traces);
 	    $traces{$type} = shared_clone({})
 		unless (exists($traces{$type}));
-	    $traces{$type}{$master_trace} = shared_clone([])
+	    $traces{$type}{$master_trace->date} = shared_clone([])
 		unless (exists($traces{$type}{$master_trace->date}));
 	    push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
 	}
