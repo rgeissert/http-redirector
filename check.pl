@@ -122,8 +122,8 @@ for my $type (keys %traces) {
 }
 
 sub get_trace($$) {
-    my ($base_url, $master) = @_;
-    my $req_url = $base_url.'project/trace/'.$master;
+    my ($base_url, $tracefile) = @_;
+    my $req_url = $base_url.'project/trace/'.$tracefile;
 
     my $response = $ua->get($req_url);
     return unless ($response->is_success);
