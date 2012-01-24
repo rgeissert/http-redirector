@@ -191,9 +191,9 @@ sub check_mirror($) {
 
     for my $type (@mirror_types) {
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
-	my $trace = get_trace($base_url, $db->{$type}{'master'});
+	my $master_trace = get_trace($base_url, $db->{$type}{'master'});
 
-	if (!$trace) {
+	if (!$master_trace) {
 	    $mirror->{$type.'-disabled'} = undef;
 	    print "Disabling $id/$type: bad trace\n";
 	    next;
@@ -207,9 +207,9 @@ sub check_mirror($) {
 	    lock(%traces);
 	    $traces{$type} = shared_clone({})
 		unless (exists($traces{$type}));
-	    $traces{$type}{$trace} = shared_clone([])
-		unless (exists($traces{$type}{$trace}));
-	    push @{$traces{$type}{$trace}}, shared_clone($id);
+	    $traces{$type}{$master_trace} = shared_clone([])
+		unless (exists($traces{$type}{$master_trace}));
+	    push @{$traces{$type}{$master_trace}}, shared_clone($id);
 	}
 
 	if ($check_archs) {
