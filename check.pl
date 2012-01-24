@@ -199,6 +199,8 @@ sub check_mirror($) {
 		$disable_reason = 'bad site trace';
 	    } elsif ($site_trace->date < $master_trace->date) {
 		$disable_reason = 'old site trace';
+	    } elsif (!$site_trace->good_ftpsync) {
+		$disable_reason = 'old ftpsync';
 	    }
 
 	    if ($disable_reason) {
@@ -242,6 +244,10 @@ sub check_mirror($) {
 
 package Mirror::Trace;
 
+use vars qw($MIN_FTPSYNC_VERSION);
+
+$MIN_FTPSYNC_VERSION = 80387;
+
 sub new {
     my ($class, $ua, $base_url) = @_;
     my $self = {};
@@ -268,6 +274,7 @@ sub fetch {
     return 0
 	unless ($date =~ m/^\w{3} \w{3} \d{2} (?:\d{2}:){2}\d{2} UTC \d{4}$/);
 
+    $self->{'software'} = $software;
     $self->{'date'} = str2time($date);
     return 1;
 }
@@ -275,6 +282,16 @@ sub fetch {
 sub date {
     my $self = shift;
     return $self->{'date'};
+}
+
+sub good_ftpsync {
+    my $self = shift;
+
+    return 1
+        unless ($self->{'software'} =~ m/^Used ftpsync version: ([0-9]+)$/);
+    return 0
+        if ($1 < $MIN_FTPSYNC_VERSION);
+    return 1;
 }
 
 1;
