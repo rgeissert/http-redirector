@@ -249,12 +249,12 @@ use Date::Parse;
 
 use vars qw($MIN_FTPSYNC_VERSION);
 
-$MIN_FTPSYNC_VERSION = 80387;
-
 sub new {
     my ($class, $ua, $base_url) = @_;
     my $self = {};
     bless($self, $class);
+
+    $MIN_FTPSYNC_VERSION = 80387;
 
     $self->{'ua'} = $ua if (defined($ua));
     $self->{'base_url'} = $base_url if (defined($base_url));
