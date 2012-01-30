@@ -323,20 +323,15 @@ sub consider_mirror($) {
 
 sub check_arch_for_list(@) {
     my @archs = @_;;
-    my $abort = 0;
 
     if (scalar(@archs) == 0) {
-	$abort = 1;
 	print "Status: 400 Bad Request";
     } elsif (scalar(@archs) != 1) {
-	$abort = 1;
 	print "Status: 501 Not Implemented";
     } else {
 	return $archs[0];
     }
 
-    if ($abort) {
-	print "\r\n\r\n";
-	exit;
-    }
+    print "\r\n\r\n";
+    exit;
 }
