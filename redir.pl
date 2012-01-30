@@ -70,6 +70,8 @@ sub consider_mirror($);
 
 our $arch = '';
 my $action = 'redir';
+
+$xtra_headers = 0 unless ($request_method eq 'HEAD');
 $mirror_type = $q->param('mirror') || 'archive';
 $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
