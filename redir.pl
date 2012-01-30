@@ -66,6 +66,7 @@ sub print_xtra($$);
 sub find_arch($@);
 sub clean_url($);
 sub consider_mirror($);
+sub check_arch_for_list(@);
 
 
 our $arch = '';
@@ -75,26 +76,9 @@ $xtra_headers = 0 unless ($request_method eq 'HEAD');
 $mirror_type = $q->param('mirror') || 'archive';
 $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
-$action = 'list' if ($mirror_type =~ s/\.list$//);
-
-if ($action eq 'list') {
-    my @archs = $q->param('arch');
-    my $abort = 0;
-
-    if (scalar(@archs) == 0) {
-	$abort = 1;
-	print "Status: 400 Bad Request";
-    } elsif (scalar(@archs) != 1) {
-	$abort = 1;
-	print "Status: 501 Not Implemented";
-    } else {
-	$arch = $archs[0];
-    }
-
-    if ($abort) {
-	print "\r\n\r\n";
-	exit;
-    }
+if ($mirror_type =~ s/\.list$//) {
+    $action = 'list';
+    $arch = check_arch_for_list($q->param('arch'));
 }
 
 our $db = retrieve($db_store);
@@ -335,4 +319,24 @@ sub consider_mirror($) {
     $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $geo_rec->longitude, $geo_rec->latitude);
     return 1;
+}
+
+sub check_arch_for_list(@) {
+    my @archs = @_;;
+    my $abort = 0;
+
+    if (scalar(@archs) == 0) {
+	$abort = 1;
+	print "Status: 400 Bad Request";
+    } elsif (scalar(@archs) != 1) {
+	$abort = 1;
+	print "Status: 501 Not Implemented";
+    } else {
+	return $archs[0];
+    }
+
+    if ($abort) {
+	print "\r\n\r\n";
+	exit;
+    }
 }
