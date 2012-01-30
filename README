@@ -11,7 +11,7 @@ be complete):
 Details regarding architectures and the different mirror types are
 taken into consideration.
 * because of the previous point, it does not perform a full mirror
-scan, like mirror brain. There's a tool to detect inconsistencies
+scan, mirrorbrain does. There's a tool to detect inconsistencies
 between what the mirrors master list claims a mirror contains and what
 it actually contains.
 * it aims to be httpd-independent. Mirrorbrain requires apache.
