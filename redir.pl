@@ -235,7 +235,7 @@ if ($action eq 'redir') {
     die("FIXME: unknown action '$action'");
 }
 
-if ($add_links) {
+if ($add_links && scalar(@close_hosts) > 1) {
     # RFC6249-like link rels
     # A client strictly adhering to the RFC would ignore these since we
     # don't provide a digest, and we wont.
