@@ -100,13 +100,13 @@ if (!$ipv6) {
     $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
 
     $geo_rec = $g_city->record_by_addr($IP);
-    ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
+    ($as) = split /\s+/, ($g_as->org_by_addr($IP) || ' ');
 } else {
     $g_city = Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE);
     $g_as = Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE);
 
     $geo_rec = $g_city->record_by_addr_v6($IP);
-    ($as) = split /\s+/, ($g_as->org_by_addr_v6($IP) || '');
+    ($as) = split /\s+/, ($g_as->org_by_addr_v6($IP) || ' ');
 }
 
 if (!defined($geo_rec)) {
