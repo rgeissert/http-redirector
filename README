@@ -30,12 +30,17 @@ variations that exist. Using it should also make it easier to add an
 option to serve the file ourselves. Some mirror admins are interested
 in doing that to offload their mirrors.
 
-* Use the zebra dump parser to, try to, make better decisions.
+* Use the zebra dump parser to, try to, make better decisions. Perhaps
+generate GeoIPASnum-compatible databases containing the route instead
+of the orga name.
 
-* Improve the mirror checker. It should check the trace file of the
-mirror itself, etc.
+* Improve the mirror checker. Monitor mirrors (probably by ping), check
+IPv6 support (one time check, like --check-architectures)
 
-* Better IPv6 support.
+* Better IPv6 support. Better handling of teredo clients.
+
+* Consider splitting mirrors on subsets based on the master trace
+stamp.
 
 == Getting started ==
 
