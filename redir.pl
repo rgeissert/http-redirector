@@ -90,21 +90,24 @@ my $IP = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
 $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 ####
 
-our $ipv6 = ($IP =~ m/::/);
+our $ipv6 = ($IP =~ m/:/);
 
 my ($g_city, $g_as);
+my ($geo_rec, $as);
 
 if (!$ipv6) {
     $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
     $g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
+
+    $geo_rec = $g_city->record_by_addr($IP);
+    ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
 } else {
     $g_city = Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE);
     $g_as = Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE);
+
+    $geo_rec = $g_city->record_by_addr_v6($IP);
+    ($as) = split /\s+/, ($g_as->org_by_addr_v6($IP) || '');
 }
-
-
-our $geo_rec = $g_city->record_by_addr($IP);
-my ($as) = split /\s+/, ($g_as->org_by_addr($IP) || '');
 
 if (!defined($geo_rec)) {
     # sadly, we really depend on it. throw an error for now
