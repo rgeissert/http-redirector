@@ -163,13 +163,15 @@ if (!$match_type) {
 
     for my $continent (@continents) {
 	last if ($match_type);
+
+	my $mtype;
+	if ($continent eq $geo_rec->continent_code) {
+	    $mtype = 'continent';
+	} else {
+	    $mtype = 'nearby-continent';
+	}
+
 	foreach my $match (keys %{$rdb->{'continent'}{$continent}}) {
-	    my $mtype;
-	    if ($continent eq $geo_rec->continent_code) {
-		$mtype = 'continent';
-	    } else {
-		$mtype = 'nearby-continent';
-	    }
 	    $match_type = $mtype if (consider_mirror ($match));
 	}
     }
