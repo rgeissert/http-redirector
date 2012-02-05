@@ -68,7 +68,7 @@ sub clean_url($);
 sub consider_mirror($);
 sub check_arch_for_list(@);
 
-
+my @output;
 our $arch = '';
 my $action = 'redir';
 
@@ -219,12 +219,9 @@ if ($action eq 'redir') {
     print "Location: http://".$host.$url."\r\n";
 } elsif ($action eq 'list') {
     print "Status: 200 OK\r\n";
-    # FIXME: we shouldn't need to end the headers here
-    print "\r\n";
     for my $host (@close_hosts) {
-	print "$host\n";
+	push @output, "$host\n";
     }
-    exit;
 } else {
     die("FIXME: unknown action '$action'");
 }
@@ -245,6 +242,10 @@ if ($add_links && scalar(@close_hosts) > 1) {
 }
 
 print "\r\n";
+
+for my $line (@output) {
+    print $line;
+}
 
 exit;
 
