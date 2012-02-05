@@ -37,18 +37,24 @@ my $db_store = 'db';
 my $db_output = $db_store;
 my $check_archs = 0;
 my $threads = 4;
+my @ids;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'j|threads=i' => \$threads,
 	    'db-store=s' => \$db_store,
-	    'db-output=s' => \$db_output);
+	    'db-output=s' => \$db_output,
+	    'id|mirror-id=s' => \@ids);
 
 our %traces :shared;
 our $ua;
 my $q = Thread::Queue->new();
 our $db :shared = shared_clone(retrieve($db_store));
 
-$q->enqueue(keys %{$db->{'all'}});
+unless (scalar(@ids)) {
+    @ids = keys %{$db->{'all'}};
+}
+
+$q->enqueue(@ids);
 
 while ($threads--) {
     threads->create(
