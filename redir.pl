@@ -72,7 +72,10 @@ sub check_arch_for_list(@);
 our $arch = '';
 my $action = 'redir';
 
-$xtra_headers = 0 unless ($request_method eq 'HEAD');
+unless ($request_method eq 'HEAD') {
+    $xtra_headers = 0;
+    $add_links = 0;
+}
 $mirror_type = $q->param('mirror') || 'archive';
 $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
