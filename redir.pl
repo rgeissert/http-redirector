@@ -221,7 +221,7 @@ if ($action eq 'redir') {
 } elsif ($action eq 'list') {
     print "Status: 200 OK\r\n";
     for my $host (@close_hosts) {
-	push @output, "$host\n";
+	push @output, "http://$host\n";
     }
 } else {
     die("FIXME: unknown action '$action'");
