@@ -81,6 +81,7 @@ $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
 if ($mirror_type =~ s/\.list$//) {
     $action = 'list';
+    $add_links = 0;
     $arch = check_arch_for_list($q->param('arch'));
 }
 
