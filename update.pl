@@ -380,7 +380,7 @@ sub process_entry($) {
 	}
 
 	my %archs = map { lc $_ => 1 }
-	    split(/\s+/, $entry->{$type.'-architecture'} || '');
+	    split(/\s+/, $entry->{$type.'-architecture'});
 
 	# Now store the results
 	$semaphore{'main'}->down();
