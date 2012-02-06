@@ -45,6 +45,7 @@ stamp.
 == Getting started ==
 
 Required packages:
+    libcgi-simple-perl
     libgeo-ip-perl
     wget
 
