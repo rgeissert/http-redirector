@@ -138,6 +138,7 @@ if ($mirror_type eq 'cdimage') {
 
 $arch ||= find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
+$arch = '' if ($arch eq 'all');
 
 print_xtra('IP', $IP);
 print_xtra('AS', $as);
