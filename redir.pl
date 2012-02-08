@@ -51,7 +51,7 @@ my $db_store = 'db';
 our $mirror_type = 'archive';
 
 my %nearby_continents = (
-    'AF' => [ qw(EU AS) ],
+    'AF' => [ qw(EU NA AS) ],
     'SA' => [ qw(NA EU) ],
     'OC' => [ qw(NA AS) ],
     'AS' => [ qw(EU) ],
