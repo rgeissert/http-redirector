@@ -29,6 +29,9 @@ use threads::shared;
 use Thread::Queue;
 use Storable qw(retrieve store);
 
+use lib '.';
+use Mirror::DB;
+
 sub test_arch($$$);
 sub create_agent();
 sub check_mirror($);
@@ -106,24 +109,8 @@ for my $type (keys %traces) {
     }
 }
 
-{
-    # Storable doesn't clone the tied hash as needed
-    # so we have do it the ugly way:
-    my $VAR1;
-    {
-	use Data::Dumper;
-	$Data::Dumper::Purity = 1;
-	$Data::Dumper::Indent = 0;
-
-	my $clone = Dumper($db);
-	eval $clone;
-    }
-
-    store ($VAR1, $db_output.'.new')
-	or die ("failed to store to $db_output.new: $!");
-    rename ($db_output.'.new', $db_output)
-	or die("failed to rename $db_output.new: $!");
-}
+Mirror::DB::set($db_output);
+Mirror::DB::store($db);
 
 sub test_arch($$$) {
     my ($base_url, $type, $arch) = @_;
