@@ -51,12 +51,12 @@ my $db_store = 'db';
 our $mirror_type = 'archive';
 
 my %nearby_continents = (
-    'AF' => [ qw(EU NA AS) ],
-    'SA' => [ qw(NA EU) ],
-    'OC' => [ qw(NA AS) ],
-    'AS' => [ qw(EU) ],
-    'NA' => [ qw(EU) ],
-    'EU' => [ qw(NA) ],
+    'AF' => [ qw(EU NA AS SA OC) ],
+    'SA' => [ qw(NA EU OC AS AF) ],
+    'OC' => [ qw(NA AS EU SA AF) ],
+    'AS' => [ qw(EU NA OC SA AF) ],
+    'NA' => [ qw(EU AS OC SA AF) ],
+    'EU' => [ qw(NA AS SA OC AF) ],
 );
 
 sub fullfils_request($$);
