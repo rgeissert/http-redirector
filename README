@@ -20,6 +20,14 @@ moment the Storable database seems to be enough. The idea is to keep
 everything simple.
 * easy deployment
 
+== Live instance ==
+
+There's a live instance of this code (but not necessarily the latest
+and greates revision) at http://http.debian.net/
+
+There's some more documentation there. It should be imported into the
+repository, however.
+
 == TODO ==
 
 There are some TODOs and FIXMEs in the source code, additionally, what
@@ -53,7 +61,8 @@ Run ./update.sh, it will download the geoip databases, the mirrors
 list, build the database used by the redirector, and check the mirrors
 for errors.
 
-Check the first lines of redir.pl for the rest
+Check the first lines of redir.pl for the invocation (or look at the
+example below.)
 
 == Keeping everything in shape ==
 
@@ -96,8 +105,8 @@ The current IPv6 support is based on the following assumptions:
 
 == Understanding the db ==
 
-The database consists of indexes that are supposed to provide fast and
-cheap lookups.
+The database consists of (mostly inverted) indexes that are supposed to
+provide fast and cheap lookups.
 
 In order to save space on the database, a few unusual things are done.
 For example, hash entries with undef as value are valid. undef is smaller
