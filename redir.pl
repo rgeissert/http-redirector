@@ -216,6 +216,8 @@ $host = (shuffle (@close_hosts))[0]
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 
+print "Content-type: text/plain\r\n";
+
 if ($action eq 'redir') {
     print "Status: 307 Temporary Redirect\r\n";
     print "Location: http://".$host.$url."\r\n";
