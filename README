@@ -79,7 +79,7 @@ with +execcgi, you can:
    RewriteRule ^/?debian-(security|backports|cd)/(.*) /cgi/redir.pl?mirror=$1&url=$2 [PT]
    RewriteRule ^/?debian/(.*) /cgi/redir.pl?url=$1 [PT]
 
-You can for example make it listen on 127.0.1.10, setup a vhost, add
+You can for example make it listen on 127.0.1.10, setup a vhost, and
 use the following on your sources.list:
 
     deb http://127.0.1.10/debian/ sid main
