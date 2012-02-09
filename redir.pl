@@ -269,9 +269,11 @@ sub fullfils_request($$) {
     return 0 if ($ipv6 && !exists($rdb->{'ipv6'}{$id}));
 
     for my $arch (@archs) {
-	return 0 if ($arch ne '' && !exists($rdb->{'arch'}{$arch}{$id}) && !exists($rdb->{'arch'}{'any'}{$id}));
+	next if ($arch eq '');
 
-	return 0 if ($arch ne '' && exists($mirror->{$mirror_type.'-'.$arch.'-disabled'}));
+	return 0 if (!exists($rdb->{'arch'}{$arch}{$id}) && !exists($rdb->{'arch'}{'any'}{$id}));
+
+	return 0 if (exists($mirror->{$mirror_type.'-'.$arch.'-disabled'}));
     }
 
     return 1;
