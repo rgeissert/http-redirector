@@ -90,7 +90,7 @@ our $db = retrieve($db_store);
 my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
 ####
-my $IP = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
+my $IP = $q->remote_addr;
 $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 ####
 
