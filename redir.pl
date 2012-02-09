@@ -69,7 +69,7 @@ sub consider_mirror($);
 sub check_arch_for_list(@);
 
 my @output;
-our $arch = '';
+our @archs;
 my $action = 'redir';
 
 unless ($request_method eq 'HEAD') {
@@ -82,7 +82,7 @@ $mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 if ($mirror_type =~ s/\.list$//) {
     $action = 'list';
     $add_links = 0;
-    $arch = check_arch_for_list($q->param('arch'));
+    push @archs, check_arch_for_list($q->param('arch'));
 }
 
 our $db = retrieve($db_store);
@@ -136,16 +136,20 @@ if ($mirror_type eq 'cdimage') {
     );
 }
 
-$arch ||= find_arch($url, @ARCHITECTURES_REGEX);
-$arch = 'i386' if ($arch eq 'multi-arch');
-$arch = '' if ($arch eq 'all');
+@archs or @archs = find_arch($url, @ARCHITECTURES_REGEX);
+# @archs may only have more than one element iff $action eq 'list'
+# 'all' and 'multi-arch' are not part of the archs that may be passed
+# when running under $action eq 'list', so it should be safe to assume
+# the size of the array
+$archs[0] = 'i386' if ($archs[0] eq 'multi-arch');
+$archs[0] = '' if ($archs[0] eq 'all');
 
 Mirror::Math::set_metric($metric);
 
 print_xtra('IP', $IP);
 print_xtra('AS', $as);
 print_xtra('URL', $url);
-print_xtra('Arch', $arch);
+print_xtra('Arch', join(', ', @archs));
 print_xtra('Country', $geo_rec->country_code);
 print_xtra('Continent', $geo_rec->continent_code);
 
@@ -258,6 +262,7 @@ exit;
 sub fullfils_request($$) {
     my ($rdb, $id) = @_;
 
+    my $arch = $archs[0];
     my $mirror = $db->{'all'}{$id};
 
     return 0 if (exists($mirror->{$mirror_type.'-disabled'}));
