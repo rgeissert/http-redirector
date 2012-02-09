@@ -22,6 +22,7 @@
 
 use strict;
 use warnings;
+use lib '.';
 
 # Usage: redir.pl?mirror=(archive|backports|...)&url=/debian/dists/sid/...
 # Test (make sure -debug1 is set below):
@@ -42,6 +43,7 @@ if ($request_method ne 'GET' && $request_method ne 'HEAD') {
 use Geo::IP;
 use Storable qw(retrieve);
 use List::Util qw(shuffle);
+use Mirror::Math;
 
 our $metric = ''; # alt: taxicab (default) | euclidean
 our $xtra_headers = 1;
@@ -60,8 +62,6 @@ my %nearby_continents = (
 );
 
 sub fullfils_request($$);
-sub calculate_distance($$$$);
-sub stddevp;
 sub print_xtra($$);
 sub find_arch($@);
 sub clean_url($);
@@ -140,6 +140,8 @@ $arch ||= find_arch($url, @ARCHITECTURES_REGEX);
 $arch = 'i386' if ($arch eq 'multi-arch');
 $arch = '' if ($arch eq 'all');
 
+Mirror::Math::set_metric($metric);
+
 print_xtra('IP', $IP);
 print_xtra('AS', $as);
 print_xtra('URL', $url);
@@ -190,7 +192,7 @@ if (!$match_type) {
 
 my @sorted_hosts = sort { $hosts{$a} <=> $hosts{$b} } keys %hosts;
 my @close_hosts;
-my $dev = stddevp(values %hosts);
+my $dev = Mirror::Math::stddevp(values %hosts);
 
 # Closest host (or one of many), to use as the base distance
 my $host = $sorted_hosts[0];
@@ -269,35 +271,6 @@ sub fullfils_request($$) {
     return 1;
 }
 
-sub calculate_distance($$$$) {
-    my ($x1, $y1, $x2, $y2) = @_;
-
-    if ($metric eq 'euclidean') {
-	return sqrt(($x1-$x2)**2 + ($y1-$y2)**2);
-    } else {
-	return (abs($x1-$x2) + abs($y1-$y2));
-    }
-}
-
-sub stddevp {
-    my ($avg, $var, $stddev) = (0, 0, 0);
-    local $_;
-
-    for (@_) {
-	$avg += $_;
-    }
-    $avg /= scalar(@_);
-
-    for (@_) {
-	$var += $_**2;
-    }
-    $var /= scalar(@_);
-    $var -= $avg**2;
-
-    $stddev = sqrt($var);
-    return $stddev;
-}
-
 sub print_xtra($$) {
     print "X-$_[0]: $_[1]\r\n"
 	if ($xtra_headers);
@@ -329,7 +302,7 @@ sub consider_mirror($) {
     return 0 unless fullfils_request($db->{$mirror_type}, $id);
 
     my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-    $hosts{$host} = calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
+    $hosts{$host} = Mirror::Math::calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $geo_rec->longitude, $geo_rec->latitude);
     return 1;
 }
