@@ -262,16 +262,17 @@ exit;
 sub fullfils_request($$) {
     my ($rdb, $id) = @_;
 
-    my $arch = $archs[0];
     my $mirror = $db->{'all'}{$id};
 
     return 0 if (exists($mirror->{$mirror_type.'-disabled'}));
 
     return 0 if ($ipv6 && !exists($rdb->{'ipv6'}{$id}));
 
-    return 0 if ($arch ne '' && !exists($rdb->{'arch'}{$arch}{$id}) && !exists($rdb->{'arch'}{'any'}{$id}));
+    for my $arch (@archs) {
+	return 0 if ($arch ne '' && !exists($rdb->{'arch'}{$arch}{$id}) && !exists($rdb->{'arch'}{'any'}{$id}));
 
-    return 0 if ($arch ne '' && exists($mirror->{$mirror_type.'-'.$arch.'-disabled'}));
+	return 0 if ($arch ne '' && exists($mirror->{$mirror_type.'-'.$arch.'-disabled'}));
+    }
 
     return 1;
 }
@@ -317,10 +318,8 @@ sub check_arch_for_list(@) {
 
     if (scalar(@archs) == 0) {
 	print "Status: 400 Bad Request";
-    } elsif (scalar(@archs) != 1) {
-	print "Status: 501 Not Implemented";
     } else {
-	return $archs[0];
+	return @archs;
     }
 
     print "\r\n\r\n";
