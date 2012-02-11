@@ -38,6 +38,7 @@ sub check_mirror($);
 
 my $db_store = 'db';
 my $db_output = $db_store;
+my $store_traces = 0;
 my $check_archs = 0;
 my $threads = 4;
 my @ids;
@@ -46,7 +47,8 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'j|threads=i' => \$threads,
 	    'db-store=s' => \$db_store,
 	    'db-output=s' => \$db_output,
-	    'id|mirror-id=s' => \@ids);
+	    'id|mirror-id=s' => \@ids,
+	    'store-traces!' => \$store_traces);
 
 our %traces :shared;
 our $ua;
@@ -111,6 +113,11 @@ for my $type (keys %traces) {
 
 Mirror::DB::set($db_output);
 Mirror::DB::store($db);
+
+if ($store_traces) {
+    Mirror::DB::set('traces.db');
+    Mirror::DB::store(\%traces);
+}
 
 sub test_arch($$$) {
     my ($base_url, $type, $arch) = @_;
