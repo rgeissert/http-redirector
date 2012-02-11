@@ -190,6 +190,8 @@ sub check_mirror($) {
 	    $disable_reason = 'bad site trace';
 	} elsif ($site_trace->date < $master_trace->date) {
 	    $disable_reason = 'old site trace';
+	} elsif (!$site_trace->uses_ftpsync) {
+	    print "Would disable $id/$type: doesn't use ftpsync\n";
 	} elsif (!$site_trace->good_ftpsync) {
 	    $disable_reason = 'old ftpsync';
 	}
@@ -276,6 +278,14 @@ sub fetch {
 sub date {
     my $self = shift;
     return $self->{'date'};
+}
+
+sub uses_ftpsync {
+    my $self = shift;
+
+    return 1
+        if ($self->{'software'} =~ m/^Used ftpsync version: /);
+    return 0;
 }
 
 sub good_ftpsync {
