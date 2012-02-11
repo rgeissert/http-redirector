@@ -27,7 +27,7 @@ use Getopt::Long;
 use threads;
 use threads::shared;
 use Thread::Queue;
-use Storable qw(retrieve store);
+use Storable qw(retrieve);
 
 use lib '.';
 use Mirror::DB;
