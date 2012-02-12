@@ -32,6 +32,7 @@ use Storable qw(retrieve);
 use lib '.';
 use Mirror::DB;
 
+sub head_url($$);
 sub test_arch($$$);
 sub test_source($$);
 sub create_agent();
@@ -120,6 +121,16 @@ if ($store_traces) {
     Mirror::DB::store(\%traces);
 }
 
+sub head_url($$) {
+    my ($url, $allow_html) = @_;
+
+    my $response = $ua->head($url);
+    my $content_type = $response->header('Content-Type') || '';
+
+    return 0 if (!$response->is_success);
+    return ($content_type ne 'text/html' || $allow_html);
+}
+
 sub test_arch($$$) {
     my ($base_url, $type, $arch) = @_;
     my $format;
@@ -143,11 +154,7 @@ sub test_arch($$$) {
     my $url = $base_url;
     $url .= sprintf($format, $arch);
 
-    my $response = $ua->head($url);
-    my $content_type = $response->header('Content-Type') || '';
-
-    return 0 if (!$response->is_success);
-    return ($content_type ne 'text/html' || $type eq 'cdimage');
+    return head_url($url, $type eq 'cdimage');
 }
 
 sub test_source($$) {
@@ -169,11 +176,7 @@ sub test_source($$) {
 
     my $url = $base_url . $format;
 
-    my $response = $ua->head($url);
-    my $content_type = $response->header('Content-Type') || '';
-
-    return 0 if (!$response->is_success);
-    return ($content_type ne 'text/html' || $type eq 'cdimage');
+    return head_url($url, $type eq 'cdimage');
 }
 
 sub create_agent() {
