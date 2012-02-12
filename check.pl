@@ -33,6 +33,7 @@ use lib '.';
 use Mirror::DB;
 
 sub test_arch($$$);
+sub test_source($$);
 sub create_agent();
 sub check_mirror($);
 
@@ -149,6 +150,32 @@ sub test_arch($$$) {
     return ($content_type ne 'text/html' || $type eq 'cdimage');
 }
 
+sub test_source($$) {
+    my ($base_url, $type) = @_;
+    my $format;
+
+    if ($type eq 'archive') {
+	$format = 'dists/sid/main/source/Release';
+    } elsif ($type eq 'cdimage') {
+	$format = 'current/source/';
+    } elsif ($type eq 'backports') {
+	$format = 'dists/stable-backports/main/source/Release';
+    } elsif ($type eq 'security') {
+	$format = 'dists/stable/updates/main/source/Release';
+    } else {
+	# unknown/unsupported type, say we succeeded
+	return 1;
+    }
+
+    my $url = $base_url . $format;
+
+    my $response = $ua->head($url);
+    my $content_type = $response->header('Content-Type') || '';
+
+    return 0 if (!$response->is_success);
+    return ($content_type ne 'text/html' || $type eq 'cdimage');
+}
+
 sub create_agent() {
     my $ua = LWP::UserAgent->new();
 
@@ -236,6 +263,11 @@ sub check_mirror($) {
 	    if ($all_failed) {
 		$mirror->{$type.'-disabled'} = undef;
 		print "Disabling $id/$type: all archs failed\n";
+	    }
+
+	    if (!test_source($base_url, $type)) {
+		$mirror->{$type.'-disabled'} = undef;
+		print "Disabling $id/$type: no sources\n";
 	    }
 	}
     }
