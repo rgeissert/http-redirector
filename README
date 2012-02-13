@@ -88,6 +88,10 @@ with +execcgi, you can:
    RewriteRule ^/?debian-(security|backports|cd)/(.*) /cgi/redir.pl?mirror=$1&url=$2 [PT]
    RewriteRule ^/?debian/(.*) /cgi/redir.pl?mirror=archive&url=$1 [PT]
 
+   # mirror:// method support:
+   RewriteRule ^/?debian-(security|backports|cd)\.list(?:$|\?(.+)) /cgi-bin/redir.pl?mirror=$1.list$2 [QSA,PT]
+   RewriteRule ^/?debian\.list(?:$|\?(.+)) /redir.pl?mirror=archive.list$1 [QSA,PT]
+
 You can for example make it listen on 127.0.1.10, setup a vhost, and
 use the following on your sources.list:
 
