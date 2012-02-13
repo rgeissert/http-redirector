@@ -2,7 +2,9 @@
 
 use strict;
 use warnings;
-use Storable qw(store);
+
+use lib '.';
+use Mirror::DB;
 
 my $db_output = 'db';
 my $file = $ARGV[0];
@@ -12,8 +14,5 @@ my $VAR1;
 
 die ("failed to import '$file'") unless ($db = do $file);
 
-store ($db, $db_output.'.new')
-    or die ("failed to store to $db_output.new: $!");
-rename ($db_output.'.new', $db_output)
-    or die("failed to rename $db_output.new: $!");
-
+Mirror::DB::set($db_output);
+Mirror::DB::store($db);
