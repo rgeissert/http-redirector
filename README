@@ -10,11 +10,12 @@ be complete):
 * it is very specific to the way Debian mirrors are constructed.
 Details regarding architectures and the different mirror types are
 taken into consideration.
-* because of the previous point, it does not perform a full mirror
-scan, mirrorbrain does. There's a tool to detect inconsistencies
-between what the mirrors master list claims a mirror contains and what
-it actually contains.
+* because of the previous point and considering many mirrors only
+support http, it does not perform a full mirror scan. Mirrorbrain does.
+There's a tool to detect inconsistencies between what the mirrors master
+list claims a mirror contains and what it actually contains.
 * it aims to be httpd-independent. Mirrorbrain requires apache.
+* IPv6 support
 * no DBMS. Although using a DBMS could provide some advantages, at the
 moment the Storable database seems to be enough. The idea is to keep
 everything simple.
