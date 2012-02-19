@@ -356,6 +356,8 @@ sub process_entry($) {
 	$entry->{'bandwidth'} = $bw;
     }
 
+    my $mirror_recorded = 0;
+
     foreach my $type (@mirror_types) {
 	delete $entry->{$type.'-ftp'};
 	delete $entry->{$type.'-rsync'};
@@ -386,10 +388,13 @@ sub process_entry($) {
 	my %archs = map { lc $_ => 1 }
 	    split(/\s+/, $entry->{$type.'-architecture'});
 
-	# Now store the results
-	$semaphore{'main'}->down();
-	$db{'all'}{$id} = $entry;
-	$semaphore{'main'}->up();
+	unless ($mirror_recorded) {
+	    # Now store the results
+	    $semaphore{'main'}->down();
+	    $db{'all'}{$id} = $entry;
+	    $semaphore{'main'}->up();
+	    $mirror_recorded = 1;
+	}
 
 	$semaphore{$type}->down();
 	# Create skeleton, if missing:
