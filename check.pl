@@ -202,6 +202,8 @@ sub check_mirror($) {
     }
 
     for my $type (@mirror_types) {
+	next if (exists($mirror->{$type.'-archcheck-disabled'}) && !$check_archs);
+
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
 
@@ -245,6 +247,8 @@ sub check_mirror($) {
 	}
 
 	if ($check_archs) {
+	    delete $mirror->{$type.'-archcheck-disabled'};
+
 	    # Find the list of architectures supposedly included by the
 	    # given mirror. There's no index for it, so the search is a bit
 	    # more expensive
@@ -265,12 +269,16 @@ sub check_mirror($) {
 
 	    if ($all_failed) {
 		$mirror->{$type.'-disabled'} = undef;
+		$mirror->{$type.'-archcheck-disabled'} = undef;
 		print "Disabling $id/$type: all archs failed\n";
+		next;
 	    }
 
 	    if (!test_source($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
+		$mirror->{$type.'-archcheck-disabled'} = undef;
 		print "Disabling $id/$type: no sources\n";
+		next;
 	    }
 	}
     }
