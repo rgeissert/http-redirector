@@ -369,7 +369,10 @@ sub process_entry($) {
 	    next;
 	}
 
-	next unless (defined($entry->{$type.'-http'}));
+	unless (defined($entry->{$type.'-http'})) {
+	    delete $entry->{$type.'-architecture'};
+	    next;
+	}
 
 	if (!defined($entry->{$type.'-architecture'}) && $type eq 'archive') {
 	    print STDERR "warning: no $type-architecture list for $entry->{'site'}\n";
