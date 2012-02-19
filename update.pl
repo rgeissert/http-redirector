@@ -361,6 +361,7 @@ sub process_entry($) {
 	delete $entry->{$type.'-rsync'};
 	delete $entry->{$type.'-nfs'};
 	delete $entry->{$type.'-upstream'};
+	delete $entry->{$type.'-method'};
 
 	if ($exclude_mirror_types{$type}) {
 	    delete $entry->{$type.'-http'};
@@ -428,6 +429,7 @@ sub process_entry($) {
     delete $entry->{'aliases'};
     delete $entry->{'comment'};
     delete $entry->{'comments'};
+    delete $entry->{'type'};
 }
 
 sub fancy_get_host($) {
