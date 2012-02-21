@@ -270,6 +270,7 @@ sub check_mirror($) {
 	    $mirror->{$type.'-disabled'} = undef;
 	    print "Disabling $id/$type: $disable_reason\n";
 	    next unless ($check_archs || $check_areas);
+	    $disable = 1;
 	}
 
 	if (exists($mirror->{$type.'-disabled'}) && !$disable) {
@@ -278,16 +279,19 @@ sub check_mirror($) {
 	}
 
 	if ($check_areas) {
+	    delete $mirror->{$type.'-disabled'} unless ($disable);
 	    delete $mirror->{$type.'-areascheck-disabled'};
 	    if (!test_areas($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-areascheck-disabled'} = undef;
 		print "Disabling $id/$type: missing areas\n";
 		next unless ($check_archs);
+		$disable = 1;
 	    }
 	}
 
 	if ($check_archs) {
+	    delete $mirror->{$type.'-disabled'} unless ($disable);
 	    delete $mirror->{$type.'-archcheck-disabled'};
 
 	    # Find the list of architectures supposedly included by the
