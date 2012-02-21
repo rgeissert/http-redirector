@@ -235,11 +235,13 @@ sub check_mirror($) {
 
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
+	my $disable = 0;
 
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    $mirror->{$type.'-disabled'} = undef;
 	    print "Disabling $id/$type: bad master trace\n";
 	    next unless ($check_archs || $check_areas);
+	    $disable = 1;
 	}
 
 	{
@@ -270,7 +272,7 @@ sub check_mirror($) {
 	    next unless ($check_archs || $check_areas);
 	}
 
-	if (exists($mirror->{$type.'-disabled'})) {
+	if (exists($mirror->{$type.'-disabled'}) && !$disable) {
 	    print "Re-enabling $id/$type\n";
 	    delete $mirror->{$type.'-disabled'};
 	}
