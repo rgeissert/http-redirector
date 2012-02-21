@@ -251,29 +251,31 @@ sub check_mirror($) {
 	    push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
 	}
 
-	my $site_trace = Mirror::Trace->new($ua, $base_url);
-	my $disable_reason;
+	if (!$disable) {
+	    my $site_trace = Mirror::Trace->new($ua, $base_url);
+	    my $disable_reason;
 
-	if (!$site_trace->fetch($mirror->{'site'})) {
-	    $disable_reason = 'bad site trace';
-	} elsif ($site_trace->date < $master_trace->date) {
-	    $disable_reason = 'old site trace';
-	} elsif (!$site_trace->uses_ftpsync) {
-	    print "Would disable $id/$type: doesn't use ftpsync\n";
-	} elsif (!$site_trace->good_ftpsync) {
-	    $disable_reason = 'old ftpsync';
-	}
+	    if (!$site_trace->fetch($mirror->{'site'})) {
+		$disable_reason = 'bad site trace';
+	    } elsif ($site_trace->date < $master_trace->date) {
+		$disable_reason = 'old site trace';
+	    } elsif (!$site_trace->uses_ftpsync) {
+		print "Would disable $id/$type: doesn't use ftpsync\n";
+	    } elsif (!$site_trace->good_ftpsync) {
+		$disable_reason = 'old ftpsync';
+	    }
 
-	if ($disable_reason) {
-	    $mirror->{$type.'-disabled'} = undef;
-	    print "Disabling $id/$type: $disable_reason\n";
-	    next unless ($check_archs || $check_areas);
-	    $disable = 1;
-	}
+	    if ($disable_reason) {
+		$mirror->{$type.'-disabled'} = undef;
+		print "Disabling $id/$type: $disable_reason\n";
+		next unless ($check_archs || $check_areas);
+		$disable = 1;
+	    }
 
-	if (exists($mirror->{$type.'-disabled'}) && !$disable) {
-	    print "Re-enabling $id/$type\n";
-	    delete $mirror->{$type.'-disabled'};
+	    if (exists($mirror->{$type.'-disabled'}) && !$disable) {
+		print "Re-enabling $id/$type\n";
+		delete $mirror->{$type.'-disabled'};
+	    }
 	}
 
 	if ($check_areas) {
