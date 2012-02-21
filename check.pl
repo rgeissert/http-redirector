@@ -35,6 +35,7 @@ use Mirror::DB;
 sub head_url($$);
 sub test_arch($$$);
 sub test_source($$);
+sub test_areas($$);
 sub create_agent();
 sub check_mirror($);
 
@@ -42,10 +43,12 @@ my $db_store = 'db';
 my $db_output = $db_store;
 my $store_traces = 0;
 my $check_archs = 0;
+my $check_areas = 0;
 my $threads = 4;
 my @ids;
 
 GetOptions('check-architectures!' => \$check_archs,
+	    'check-areas!' => \$check_areas,
 	    'j|threads=i' => \$threads,
 	    'db-store=s' => \$db_store,
 	    'db-output=s' => \$db_output,
@@ -179,6 +182,31 @@ sub test_source($$) {
     return head_url($url, $type eq 'cdimage');
 }
 
+sub test_areas($$) {
+    my ($base_url, $type) = @_;
+    my $format;
+    my @areas = qw(main contrib non-free);
+
+    if ($type eq 'archive') {
+	$format = 'dists/sid/%s/';
+    } elsif ($type eq 'backports') {
+	$format = 'dists/stable-backports/%s/';
+    } elsif ($type eq 'security') {
+	$format = 'dists/stable/updates/%s/';
+    } else {
+	# unknown/unsupported type, say we succeeded
+	return 1;
+    }
+
+    for my $area (@areas) {
+	my $url = $base_url;
+	$url .= sprintf($format, $area);
+
+	return 0  unless(head_url($url, 1));
+    }
+    return 1;
+}
+
 sub create_agent() {
     my $ua = LWP::UserAgent->new();
 
@@ -203,6 +231,7 @@ sub check_mirror($) {
 
     for my $type (@mirror_types) {
 	next if (exists($mirror->{$type.'-archcheck-disabled'}) && !$check_archs);
+	next if (exists($mirror->{$type.'-areascheck-disabled'}) && !$check_areas);
 
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
@@ -244,6 +273,16 @@ sub check_mirror($) {
 	if (exists($mirror->{$type.'-disabled'})) {
 	    print "Re-enabling $id/$type\n";
 	    delete $mirror->{$type.'-disabled'};
+	}
+
+	if ($check_areas) {
+	    delete $mirror->{$type.'-areascheck-disabled'};
+	    if (!test_areas($base_url, $type)) {
+		$mirror->{$type.'-disabled'} = undef;
+		$mirror->{$type.'-areascheck-disabled'} = undef;
+		print "Disabling $id/$type: missing areas\n";
+		next;
+	    }
 	}
 
 	if ($check_archs) {
