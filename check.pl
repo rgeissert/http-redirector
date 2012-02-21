@@ -242,9 +242,7 @@ sub check_mirror($) {
 	    print "Disabling $id/$type: bad master trace\n";
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
-	}
-
-	{
+	} else {
 	    lock(%traces);
 	    $traces{$type} = shared_clone({})
 		unless (exists($traces{$type}));
