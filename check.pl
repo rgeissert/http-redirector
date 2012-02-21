@@ -239,7 +239,7 @@ sub check_mirror($) {
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    $mirror->{$type.'-disabled'} = undef;
 	    print "Disabling $id/$type: bad master trace\n";
-	    next;
+	    next unless ($check_archs || $check_areas);
 	}
 
 	{
@@ -267,7 +267,7 @@ sub check_mirror($) {
 	if ($disable_reason) {
 	    $mirror->{$type.'-disabled'} = undef;
 	    print "Disabling $id/$type: $disable_reason\n";
-	    next;
+	    next unless ($check_archs || $check_areas);
 	}
 
 	if (exists($mirror->{$type.'-disabled'})) {
@@ -281,7 +281,7 @@ sub check_mirror($) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-areascheck-disabled'} = undef;
 		print "Disabling $id/$type: missing areas\n";
-		next;
+		next unless ($check_archs);
 	    }
 	}
 
