@@ -242,27 +242,32 @@ sub check_mirror($) {
 	    print "Disabling $id/$type: bad master trace\n";
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
-	} else {
-	    lock(%traces);
-	    $traces{$type} = shared_clone({})
-		unless (exists($traces{$type}));
-	    $traces{$type}{$master_trace->date} = shared_clone([])
-		unless (exists($traces{$type}{$master_trace->date}));
-	    push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
 	}
 
 	if (!$disable) {
 	    my $site_trace = Mirror::Trace->new($ua, $base_url);
 	    my $disable_reason;
+	    my $ignore_master = 0;
 
 	    if (!$site_trace->fetch($mirror->{'site'})) {
+		$ignore_master = 1;
 		$disable_reason = 'bad site trace';
 	    } elsif ($site_trace->date < $master_trace->date) {
+		$ignore_master = 1;
 		$disable_reason = 'old site trace';
 	    } elsif (!$site_trace->uses_ftpsync) {
 		print "Would disable $id/$type: doesn't use ftpsync\n";
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
+	    }
+
+	    if (!$ignore_master) {
+		lock(%traces);
+		$traces{$type} = shared_clone({})
+		    unless (exists($traces{$type}));
+		$traces{$type}{$master_trace->date} = shared_clone([])
+		    unless (exists($traces{$type}{$master_trace->date}));
+		push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
 	    }
 
 	    if ($disable_reason) {
