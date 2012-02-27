@@ -88,7 +88,7 @@ foreach my $mirror_type (@mirror_types) {
 
     $db{$mirror_type} = shared_clone({
 	'country' => {}, 'ipv6' => {}, 'arch' => {},
-	'all' => {}, 'AS' => {}, 'continent' => {},
+	'AS' => {}, 'continent' => {},
 	'master' => ''
     });
     $semaphore{$mirror_type} = Thread::Semaphore->new();
@@ -405,7 +405,6 @@ sub process_entry($) {
 	$db{$type}{'continent'}{$continent} = shared_clone({})
 	    unless (exists ($db{$type}{'continent'}{$continent}));
 
-	$db{$type}{'all'}{$id} = undef;
 	$db{$type}{'ipv6'}{$id} = undef
 	    if (defined ($entry->{'ipv6'}) && $entry->{'ipv6'} eq 'yes');
 	$db{$type}{'country'}{$country}{$id} = undef;
