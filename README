@@ -39,9 +39,7 @@ variations that exist. Using it should also make it easier to add an
 option to serve the file ourselves. Some mirror admins are interested
 in doing that to offload their mirrors.
 
-* Use the zebra dump parser to, try to, make better decisions. Perhaps
-generate GeoIPASnum-compatible databases containing the route instead
-of the orga name.
+* Use the zebra dump parser to, try to, make better decisions.
 
 * Improve the mirror checker. Monitor mirrors (probably by ping), check
 IPv6 support (one time check, like --check-architectures)
@@ -102,9 +100,13 @@ use the following on your sources.list:
     deb http://127.0.1.10/debian-security/ testing/updates main
     deb http://security.debian.org/ testing/updates main
 
+Note: accessing the redirector from a local IP address is not ideal and
+may only work with hacks.
+
 == Assumptions ==
 
-The current IPv6 support is based on the following assumptions:
+The current IPv6 support is based on the following assumptions on the
+mirror's version 6 connectivity:
 * The IPv4 and IPv6 addresses belong to the same server
 * The IPv4 and IPv6 addresses are on the same AS
 
