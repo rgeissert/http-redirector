@@ -29,6 +29,13 @@ sub fetch {
     return 0 unless ($response->is_success);
 
     my $trace = $response->decoded_content;
+    return _parse_trace($trace);
+}
+
+sub _parse_trace {
+    my $self = shift;
+    my $trace = shift;
+
     my ($date, $software) = split /\n/,$trace,3;
 
     return 0
