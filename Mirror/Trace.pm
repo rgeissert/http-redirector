@@ -29,7 +29,7 @@ sub fetch {
     return 0 unless ($response->is_success);
 
     my $trace = $response->decoded_content;
-    return _parse_trace($trace);
+    return $self->_parse_trace($trace);
 }
 
 sub _parse_trace {
