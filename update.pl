@@ -41,6 +41,7 @@ my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile);
 
 # Options:
 my ($update_list, $threads, $leave_new) = (1, 4, 0);
+our $verbose = 0;
 
 sub parse_list($$);
 sub process_entry($);
@@ -48,7 +49,8 @@ sub fancy_get_host($);
 
 GetOptions('update-list!' => \$update_list,
 	    'j|threads=i' => \$threads,
-	    'leave-new' => \$leave_new);
+	    'leave-new' => \$leave_new,
+	    'verbose' => \$verbose);
 
 if ($update_list) {
     # TODO: use LWP
@@ -261,7 +263,8 @@ sub process_entry($) {
 =cut
 	}
 	if (!$missing) {
-	    print "info: $entry->{'site'} has Includes, all with their own entry, skipping\n";
+	    print "info: $entry->{'site'} has Includes, all with their own entry, skipping\n"
+		if ($verbose);
 	    return;
 	}
     }
