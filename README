@@ -1,4 +1,5 @@
-== Intro ==
+Intro
+=====
 
 This is a work in progress. Please do send patches and provide feedback.
 Thanks!
@@ -21,7 +22,8 @@ moment the Storable database seems to be enough. The idea is to keep
 everything simple.
 * easy deployment
 
-== Live instance ==
+Live instance
+=============
 
 There's a live instance of this code (but not necessarily the latest
 and greatest revision) at http://http.debian.net/
@@ -29,7 +31,8 @@ and greatest revision) at http://http.debian.net/
 There's some more documentation there. It should be imported into the
 repository, however.
 
-== TODO ==
+TODO
+====
 
 There are some TODOs and FIXMEs in the source code, additionally, what
 needs to be done is:
@@ -49,7 +52,8 @@ IPv6 support (one time check, like --check-architectures)
 * Consider splitting mirrors on subsets based on the master trace
 stamp.
 
-== Getting started ==
+Getting started
+===============
 
 Required packages:
     libcgi-simple-perl
@@ -63,7 +67,8 @@ for errors.
 Check the first lines of redir.pl for the invocation (or look at the
 example below.)
 
-== Keeping everything in shape ==
+Keeping everything in shape
+===========================
 
 update.sh should be run at least once a month.
 update.pl should be run whenever the master list changes[1]
@@ -78,7 +83,8 @@ done automatically when running update.sh.
 hours-delay tolerance hardcoded but it could be made configurable at
 some point.
 
-== Real life testing ==
+Real life testing
+=================
 
 If using apache, assuming you have the redir script in a /cgi alias
 with +execcgi, you can:
@@ -103,14 +109,16 @@ use the following on your sources.list:
 Note: accessing the redirector from a local IP address is not ideal and
 may only work with hacks.
 
-== Assumptions ==
+Assumptions
+===========
 
 The current IPv6 support is based on the following assumptions on the
 mirror's version 6 connectivity:
 * The IPv4 and IPv6 addresses belong to the same server
 * The IPv4 and IPv6 addresses are on the same AS
 
-== Understanding the db ==
+Understanding the db
+====================
 
 The database consists of (mostly inverted) indexes that are supposed to
 provide fast and cheap lookups.
@@ -123,7 +131,8 @@ of 'defined'.
 
 To better understand what the database looks like, run ./dump-db.pl | pager
 
-== Credits ==
+Credits
+=======
 
 "This product includes GeoLite data created by MaxMind, available from
 http://maxmind.com/"
