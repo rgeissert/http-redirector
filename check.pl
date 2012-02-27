@@ -384,13 +384,15 @@ sub uses_ftpsync {
     my $self = shift;
 
     return 1
-        if ($self->{'software'} =~ m/^Used ftpsync version: /);
+        if ($self->{'software'} =~ m/^Used ftpsync(?: version|-pushrsync from): /);
     return 0;
 }
 
 sub good_ftpsync {
     my $self = shift;
 
+    return 1
+        if ($self->{'software'} =~ m/^Used ftpsync-pushrsync/);
     return 1
         unless ($self->{'software'} =~ m/^Used ftpsync version: ([0-9]+)$/);
     return 0
