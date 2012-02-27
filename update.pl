@@ -125,8 +125,8 @@ for my $thr (threads->list()) {
     $thr->join();
 }
 
-if (scalar(keys %{$db{'archive'}{'all'}}) < 10) {
-    print STDERR "error: not even 10 mirrors found on the archive list, not saving\n";
+if (scalar(keys %{$db{'archive'}{'arch'}{'i386'}}) < 10) {
+    print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
 
     # Storable doesn't clone the tied hash as needed
