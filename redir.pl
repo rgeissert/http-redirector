@@ -52,6 +52,7 @@ my $random_sort = 1;
 my $db_store = 'db';
 our $mirror_type = 'archive';
 my %this_host = map { $_ => 1 } qw(); # this host's hostname
+my $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
 
 my %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -231,7 +232,27 @@ if ($action eq 'redir') {
     if (scalar(keys %this_host)) {
 	$host =~ m,^([^/]+),;
 	if (exists($this_host{$1})) {
+	    my $internal_subreq = 0;
 	    $real_url = 'serve/'.$real_url;
+
+	    if ($subrequest_method eq 'sendfile') {
+		print "X-Sendfile: $real_url\r\n";
+		$internal_subreq = 1;
+	    } elsif ($subrequest_method eq 'sendfile1.4') {
+		print "X-LIGHTTPD-send-file: $real_url\r\n";
+		$internal_subreq = 1;
+	    } elsif ($subrequest_method eq 'accelredirect') {
+		print "X-Accel-Redirect: $real_url\r\n";
+		$internal_subreq = 1;
+	    } else {
+		# do nothing special, will redirect
+	    }
+
+	    if ($internal_subreq) {
+		print "Content-Location: $real_url\r\n";
+		print "\r\n";
+		exit;
+	    }
 	}
     }
 
