@@ -51,6 +51,7 @@ my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
 our $mirror_type = 'archive';
+my %this_host = map { $_ => 1 } qw(); # this host's hostname
 
 my %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -225,8 +226,17 @@ print_xtra('Match-Type', $match_type);
 print "Content-type: text/plain\r\n";
 
 if ($action eq 'redir') {
+    my $real_url = $url;
+
+    if (scalar(keys %this_host)) {
+	$host =~ m,^([^/]+),;
+	if (exists($this_host{$1})) {
+	    $real_url = 'serve/'.$real_url;
+	}
+    }
+
     print "Status: 307 Temporary Redirect\r\n";
-    print "Location: http://".$host.$url."\r\n";
+    print "Location: http://".$host.$real_url."\r\n";
 } elsif ($action eq 'list') {
     print "Status: 200 OK\r\n";
     for my $host (@close_hosts) {
