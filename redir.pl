@@ -329,6 +329,8 @@ sub clean_url($) {
     my $url = shift;
     $url =~ s,//,/,g;
     $url =~ s,^/,,;
+    $url =~ s,(^|/)\.\.?/,$1,g;
+    $url =~ s,(^|/)\./,$1,g;
     $url =~ s, ,+,g;
     return $url;
 }
