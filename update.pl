@@ -235,6 +235,19 @@ sub process_entry($) {
 	return;
     }
 
+    my $got_http = 0;
+    foreach my $type (@mirror_types) {
+	next unless (exists($entry->{$type.'-http'}));
+	next if ($exclude_mirror_types{$type});
+
+	$got_http = 1;
+    }
+    unless ($got_http) {
+	print "info: $entry->{'site'} is not an HTTP mirror, skipping\n"
+	    if ($verbose);
+	return;
+    }
+
     if (defined ($entry->{'ipv6'}) && $entry->{'ipv6'} eq 'only') {
 	print STDERR "warning: unsupported IPv6-only $entry->{'site'}\n";
 	return;
