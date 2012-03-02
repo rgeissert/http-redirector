@@ -27,6 +27,8 @@ use File::stat qw(stat);
 use Storable qw(store dclone);
 use Socket;
 
+use Mirror::DB;
+
 # DNS lookups are slow
 use threads;
 use threads::shared;
@@ -131,24 +133,8 @@ if (scalar(keys %{$db{'archive'}{'arch'}{'i386'}}) < 10) {
     print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
 
-    # Storable doesn't clone the tied hash as needed
-    # so we have do it the ugly way:
-    my $VAR1;
-    {
-	use Data::Dumper;
-	$Data::Dumper::Purity = 1;
-	$Data::Dumper::Indent = 0;
-    
-	my $clone = Dumper(\%db);
-	eval $clone;
-    }
-
-    store ($VAR1, $db_store.'.new')
-	or die ("failed to store to $db_store.new: $!");
-    unless ($leave_new) {
-	rename ($db_store.'.new', $db_store)
-	    or die("failed to rename $db_store.new: $!");
-    }
+    Mirror::DB::set($db_store);
+    Mirror::DB::store(\%db);
 }
 
 exit;
