@@ -486,6 +486,9 @@ sub check_mirror($) {
 	}
 
 	if (!$disable) {
+	    my $response;
+	    $ua->set_my_handler('response_header', sub {$response = $_[0];}, owner => 'features_check');
+
 	    my $site_trace = Mirror::Trace->new($ua, $base_url);
 	    my $disable_reason;
 	    my $ignore_master = 0;
@@ -520,6 +523,7 @@ sub check_mirror($) {
 		$mirror->{$type.'-oldftpsync'} = undef;
 		$rtltr->record_failure;
 	    }
+	    $ua->set_my_handler('response_header', undef, owner => 'features_check');
 
 
 	    unless ($disable_reason) {
@@ -602,6 +606,28 @@ sub check_mirror($) {
 		log_message($id, $type, "re-considering, good traces");
 		delete $mirror->{$type.'-disabled'}
 		    if ($process_stamps);
+	    }
+
+	    my %httpd_features = ('keep-alive' => 0, 'ranges' => 0);
+	    if ($response->header('Connection')) {
+		$httpd_features{'keep-alive'} = ($response->header('Connection') eq 'keep-alive');
+	    } else {
+		$httpd_features{'keep-alive'} = ($response->protocol eq 'HTTP/1.1');
+	    }
+	    if ($response->header('Accept-Ranges')) {
+		$httpd_features{'ranges'} = ($response->header('Accept-Ranges') eq 'bytes');
+	    }
+
+	    while (my ($k, $v) = each %httpd_features) {
+		next if (exists($mirror->{$type.'-'.$k}) eq $v);
+
+		if (exists($mirror->{$type.'-'.$k})) {
+		    log_message($id, $type, "No more http/$k");
+		    delete $mirror->{$type.'-'.$k};
+		} else {
+		    log_message($id, $type, "http/$k support seen");
+		    $mirror->{$type.'-'.$k} = undef;
+		}
 	    }
 	}
 
