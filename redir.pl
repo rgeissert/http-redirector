@@ -67,6 +67,7 @@ sub find_arch($@);
 sub clean_url($);
 sub consider_mirror($);
 sub check_arch_for_list(@);
+sub url_for_mirror($);
 
 my @output;
 our @archs;
@@ -226,11 +227,11 @@ print "Content-type: text/plain\r\n";
 
 if ($action eq 'redir') {
     print "Status: 307 Temporary Redirect\r\n";
-    print "Location: http://".$host.$url."\r\n";
+    print "Location: ".url_for_mirror($host).$url."\r\n";
 } elsif ($action eq 'list') {
     print "Status: 200 OK\r\n";
     for my $host (@close_hosts) {
-	push @output, "http://$host\n";
+	push @output, url_for_mirror($host)."\n";
     }
 } else {
     die("FIXME: unknown action '$action'");
@@ -247,7 +248,7 @@ if ($add_links && scalar(@close_hosts) > 1) {
 	$priority = 1 if ($priority == 0);
 	$priority = sprintf("%.0f", $priority);
 
-	print "Link: http://".$host.$url."; rel=duplicate; pri=$priority\r\n";
+	print "Link: ".url_for_mirror($host).$url."; rel=duplicate; pri=$priority\r\n";
     }
 }
 
@@ -309,8 +310,7 @@ sub consider_mirror($) {
 
     return 0 unless fullfils_request($db->{$mirror_type}, $id);
 
-    my $host = $mirror->{'site'}.$mirror->{$mirror_type.'-http'};
-    $hosts{$host} = Mirror::Math::calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
+    $hosts{$id} = Mirror::Math::calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
 				    $geo_rec->longitude, $geo_rec->latitude);
     return 1;
 }
@@ -326,4 +326,10 @@ sub check_arch_for_list(@) {
 
     print "\r\n\r\n";
     exit;
+}
+
+sub url_for_mirror($) {
+    my $id = shift;
+    my $mirror = $db->{'all'}{$id};
+    return "http://".$mirror->{'site'}.$mirror->{$mirror_type.'-http'};
 }
