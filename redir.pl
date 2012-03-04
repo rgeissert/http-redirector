@@ -131,7 +131,7 @@ if ($mirror_type eq 'cdimage') {
     @ARCHITECTURES_REGEX = (
 	qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
 	qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
-	qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.gz$',
+	qr'^dists/(?:[^/]+/){1,2}Contents-([^.]+)\.(?:gz$|diff/)',
 	qr'^indices/files(?:/components)?/arch-([^.]+).*$',
 	qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
     );
