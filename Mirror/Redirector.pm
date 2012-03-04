@@ -343,6 +343,17 @@ sub run {
 	}
     }
 
+    if (defined($req->header('Range')) && scalar(@close_hosts) > 1) {
+	my @favorable_hosts;
+	for my $id (@close_hosts) {
+	    push @favorable_hosts, $id
+		if (exists($db->{'all'}{$id}{$mirror_type.'-ranges'}));
+	}
+	if (scalar(@favorable_hosts)) {
+	    @close_hosts = @favorable_hosts;
+	}
+    }
+
     if ($random_sort) {
 	my $n = int(rand scalar(@close_hosts));
 	$host = $close_hosts[$n];
