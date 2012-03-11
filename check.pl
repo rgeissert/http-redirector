@@ -118,6 +118,7 @@ for my $type (keys %traces) {
 		}
 	    } else {
 		$master_stamps{$continent} = $stamp;
+		print "Master stamp for $continent/$type: $stamp\n";
 	    }
 	}
     }
