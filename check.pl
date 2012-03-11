@@ -88,30 +88,36 @@ for my $thr (threads->list()) {
 
 for my $type (keys %traces) {
     my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
-    my $master_stamp = 0;
+
+    my %master_stamps;
 
     for my $stamp (@stamps) {
-	my $disable = 0;
-
-	if ($master_stamp == 0) {
-	    if (scalar(@{$traces{$type}{$stamp}}) > 2) {
-		$master_stamp = $stamp;
-		print "Master stamp for $type: $stamp\n";
-	    } else {
-		print "Found stamp '$stamp' for $type, but ignored it (only ".
-		    join(', ', @{$traces{$type}{$stamp}})." have it)\n";
-	    }
-	}
-
-	# TODO: determine better ways to decide whether a mirror should
-	# be disabled
-	$disable = 1
-	    if (($master_stamp - $stamp) > 3600*12);
-
-	if ($disable) {
+	if (scalar(@{$traces{$type}{$stamp}}) <= 2) {
 	    while (my $id = pop @{$traces{$type}{$stamp}}) {
 		$db->{'all'}{$id}{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: old master trace\n";
+		print "Disabling $id/$type: old or not popular master stamp '$stamp'\n";
+	    }
+	    next;
+	}
+
+	for my $continent (keys %{$db->{$type}{'continent'}}) {
+	    my @per_continent;
+	    for my $id (@{$traces{$type}{$stamp}}) {
+		next unless (exists($db->{$type}{'continent'}{$continent}{$id}));
+		push @per_continent, $id;
+	    }
+
+	    next unless (scalar(@per_continent));
+
+	    if (exists($master_stamps{$continent})) {
+		# if a master stamp has been recorded already it means
+		# there are more up to date mirrors
+		while (my $id = pop @per_continent) {
+		    $db->{'all'}{$id}{$type.'-disabled'} = undef;
+		    print "Disabling $id/$type: old master trace in $continent\n";
+		}
+	    } else {
+		$master_stamps{$continent} = $stamp;
 	    }
 	}
     }
