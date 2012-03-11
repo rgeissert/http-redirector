@@ -122,6 +122,23 @@ for my $type (keys %traces) {
 	    }
 	}
     }
+
+    my @continents_by_stamp = sort {$master_stamps{$a} <=> $master_stamps{$b}}
+				keys %master_stamps;
+
+    if (scalar(@continents_by_stamp)) {
+	my $recent_stamp = $master_stamps{$continents_by_stamp[-1]};
+
+	while (my $continent = pop @continents_by_stamp) {
+	    my $diff = ($recent_stamp - $master_stamps{$continent})/3600;
+
+	    if ($diff == 0) {
+		print "Subset $continent/$type is up to date\n";
+	    } else {
+		print "Subset $continent/$type is $diff hour(s) behind\n";
+	    }
+	}
+    }
 }
 
 Mirror::DB::set($db_output);
