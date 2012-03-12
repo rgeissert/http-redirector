@@ -36,7 +36,15 @@ sub stddevp {
 	$var += $_**2;
     }
     $var /= scalar(@_);
-    $var -= $avg**2;
+
+    # Reduce precision
+    $var = sprintf('%f', $var);
+
+    my $sq_avg = $avg**2;
+    # Reduce precision again
+    $sq_avg = sprintf('%f', $sq_avg);
+
+    $var -= $sq_avg;
 
     $stddev = sqrt($var);
     return $stddev;
