@@ -132,7 +132,8 @@ for my $thr (threads->list()) {
 if (scalar(keys %{$db{'archive'}{'arch'}{'i386'}}) < 10) {
     print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
-
+    $db_store .= '.new'
+	if ($leave_new);
     Mirror::DB::set($db_store);
     Mirror::DB::store(\%db);
 }
