@@ -109,6 +109,61 @@ use the following on your sources.list:
 Note: accessing the redirector from a local IP address is not ideal and
 may only work with hacks.
 
+Running the redirector on top of a real mirror
+==============================================
+
+It is possible to run the redirector on a sever that has the files
+itself. The use case would be: serve some users, send others to a
+better mirror.
+
+In order to use it in this mode, a few things need to be setup.
+
+On redir.pl:
+* Set the subrequest_method variable as appropriate:
+ - redirect: works on any httpd, but requires another roundtrip
+ - sendfile: for apache with mod_xsendfile, lighttpd 1.5, cherokee
+ - sendfile1.4: for lighttpd 1.4
+ - accelredirect: for nginx
+* Set the list of hosts for which the files will be served, in the
+this_host variable.
+ For example, if your host is my.mirror.tld, that's what you need to
+add.
+
+NOTE: even though it is possible to list other mirror's host names,
+care should be taken when doing so. The mirror checker is not aware of
+this mapping and may lead to erroneous behaviour.
+
+NOTE2: make sure your httpd works as expected. The redirector sends a
+Content-Location header when the file should be delivered by the server
+itself. Make sure it is not removed. Also look for issues with Range,
+Last-Modified, and other features.
+
+Then, setup your httpd so that requests for serve/ are served directly,
+bypassing the redirector.
+Finally, make all the usual traffic go through the redirector. Make
+sure you don't break directory listing when doing so. mod_xsendfile,
+for example, breaks it because it bypasses mod_autoindex.
+
+A sample configuration for apache follows:
+
+    XSendFile On
+
+    # Should be possible to do it without an alias, but it makes it a
+    # bit clearer
+    Alias /debian/serve/ "/var/www/debian/"
+
+    RewriteEngine On
+    # Exclude /debian/serve/ from mod_rewrite, mod_alias will handle it
+    RewriteRule ^/?debian/serve/.*$ $0 [PT,L]
+    # Send all file requests through the redirector
+    RewriteRule ^/?debian/(.*[^/]$) /cgi-bin/redir.pl?mirror=archive&url=$1 [NS,PT]
+    # Directory listing requests will pass-through and be handled by
+    # apache itself
+
+IMPORTANT: do not enable this setup, or run the redirector at all, on a
+mirror that is part of Debian's mirrors network without consulting the
+mirroradmin group and WAITING for their APPROVAL.
+
 Assumptions
 ===========
 
