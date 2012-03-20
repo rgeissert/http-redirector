@@ -80,7 +80,11 @@ while (<>) {
 
 	    $as_routes{$peer} = {}
 		unless (exists($as_routes{$peer}));
-	    $as_routes{$peer}->{$dest} = $distance;
+
+	    my $min_distance = $distance;
+	    $min_distance = $as_routes{$peer}->{$dest}
+		if (exists($as_routes{$peer}->{$dest}) && $as_routes{$peer}->{$dest} < $min_distance);
+	    $as_routes{$peer}->{$dest} = $min_distance;
 	}
     }
 
