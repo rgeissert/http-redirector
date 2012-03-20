@@ -143,7 +143,7 @@ if ($mirror_type eq 'cdimage') {
 # when running under $action eq 'list', so it should be safe to assume
 # the size of the array
 $archs[0] = 'i386' if ($archs[0] eq 'multi-arch');
-$archs[0] = '' if ($archs[0] eq 'all');
+$archs[0] = '' if ($archs[0] eq 'all' || $archs[0] eq 'source');
 
 Mirror::Math::set_metric($metric);
 
