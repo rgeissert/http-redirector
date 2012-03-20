@@ -50,6 +50,7 @@ our $xtra_headers = 1;
 my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
+my $peers_db_store = 'db.peers';
 our $mirror_type = 'archive';
 
 my %nearby_continents = (
@@ -160,6 +161,18 @@ my $match_type = '';
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
     $match_type = 'AS' if (consider_mirror ($match));
+}
+
+# match by AS peer
+if (!$match_type && -f $peers_db_store && $as) {
+    my $peers_db = retrieve($peers_db_store);
+    my $numeric_as = substr($as, 2);
+
+    foreach my $peer (keys %{$peers_db->{$numeric_as}}) {
+	foreach my $match (@{$rdb->{'AS'}{"AS$peer"}}) {
+	    $match_type = 'AS-peer' if (consider_mirror ($match));
+	}
+    }
 }
 
 # match by country
