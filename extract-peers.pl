@@ -30,10 +30,12 @@ use Getopt::Long;
 
 my $mirrors_db_file = 'db';
 my $print_progress = 0;
+my $max_distance = 1;
 my $db_out = 'db.peers';
 
 GetOptions('mirrors-db=s' => \$mirrors_db_file,
 	    'progress!' => \$print_progress,
+	    'distance=i' => \$max_distance,
 	    'store-db=s' => \$db_out);
 
 my $mirrors_db = retrieve($mirrors_db_file);
@@ -59,19 +61,27 @@ while (<>) {
     next unless (scalar(@parts) >= 3);
 
     my @dests = pop @parts;
-    my $peer = pop @parts;
+    # get rid of the network mask
+    shift @parts;
 
     if ($dests[0] =~ s/^\{// && $dests[0] =~ s/\}$//) {
 	@dests = split (/,/, $dests[0]);
     }
 
-    my $distance = 1;
     for my $dest (@dests) {
 	next unless (exists($mirror_ASes{$dest}));
+	my $distance = 0;
 
-	$as_routes{$peer} = {}
-	    unless (exists($as_routes{$peer}));
-	$as_routes{$peer}->{$dest} = $distance;
+	my @path = @parts;
+	while (my $peer = pop @path) {
+	    last unless ($distance < $max_distance);
+	    next if ($dest eq $peer);
+	    $distance++;
+
+	    $as_routes{$peer} = {}
+		unless (exists($as_routes{$peer}));
+	    $as_routes{$peer}->{$dest} = $distance;
+	}
     }
 
     if ($count != -1 && ($count++)%1000 == 0) {
