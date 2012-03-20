@@ -171,13 +171,16 @@ if (!$match_type) {
 
 # match by continent
 if (!$match_type) {
-    my @continents = ($geo_rec->continent_code, @{$nearby_continents{$geo_rec->continent_code}});
+    my $client_continent = $geo_rec->continent_code;
+    $client_continent = 'EU' if ($client_continent eq '--');
+
+    my @continents = ($client_continent, @{$nearby_continents{$client_continent}});
 
     for my $continent (@continents) {
 	last if ($match_type);
 
 	my $mtype;
-	if ($continent eq $geo_rec->continent_code) {
+	if ($continent eq $client_continent) {
 	    $mtype = 'continent';
 	} else {
 	    $mtype = 'nearby-continent';
