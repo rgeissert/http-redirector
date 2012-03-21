@@ -224,8 +224,6 @@ $host = (shuffle (@close_hosts))[0]
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 
-print "Content-type: text/plain\r\n";
-
 if ($action eq 'redir') {
     my $real_url = $url;
 
@@ -256,9 +254,11 @@ if ($action eq 'redir') {
 	}
     }
 
+    print "Content-type: text/plain\r\n";
     print "Status: 307 Temporary Redirect\r\n";
     print "Location: http://".$host.$real_url."\r\n";
 } elsif ($action eq 'list') {
+    print "Content-type: text/plain\r\n";
     print "Status: 200 OK\r\n";
     for my $host (@close_hosts) {
 	push @output, "http://$host\n";
