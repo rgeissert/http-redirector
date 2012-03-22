@@ -5,4 +5,8 @@ use warnings;
 use Storable qw(retrieve);
 use Data::Dumper;
 
-print Dumper(retrieve('db'));
+my $db = 'db';
+
+$db = $ARGV[0] if (defined($ARGV[0]));
+
+print Dumper(retrieve($db));
