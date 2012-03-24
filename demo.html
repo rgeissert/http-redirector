@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Demonstration - Debian mirrors HTTP redirector</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="no-email-collection" content="http://www.unspam.com/noemailcollection" />
+</head>
+<body onload="sendAjaxHEAD();">
+<h1>Demonstration</h1>
+<script type="text/javascript">
+//<![CDATA[
+function createRequest() {
+    var request;
+    try {
+	request = new XMLHttpRequest();
+    } catch (exception) {
+	request = false;
+    }
+
+    if (!request)
+	alert("Could not create ajax object. Are you running IE?");
+    return request;
+}
+function sendAjaxHEAD() {
+    var req = createRequest();
+    var url = "/debian/";
+    if (!req)
+	return false;
+    req.open("HEAD", url, true);
+    req.setRequestHeader('X-Web-Demo', 'yep');
+    req.onreadystatechange = ajaxResponse;
+    document.getElementById('loading').innerHTML = 'Loading...';
+    req.send();
+    return false;
+}
+function ajaxResponse() {
+    if (this.readyState == 4) {
+	document.getElementById('loading').innerHTML = '';
+	if (this.status != 200) {
+	    alert("Oops, the server failed with '"+this.statusText+"'");
+	    return;
+	}
+	var ip = this.getResponseHeader("X-IP"),
+	    as = this.getResponseHeader("X-AS"),
+	    continent = this.getResponseHeader("X-Continent"),
+	    country = this.getResponseHeader("X-Country"),
+	    links = this.getResponseHeader("Link"),
+	    type = this.getResponseHeader("X-Match-Type"),
+	    popu = this.getResponseHeader("X-Population");
+	document.getElementById('ip').innerText = 'IP: '+ip;
+	document.getElementById('as').innerText = 'AS: '+as;
+	document.getElementById('country').innerText = 'Country: '+country;
+	document.getElementById('continent').innerText = 'Continent: '+continent;
+
+	links = links.replace(/; rel=duplicate; pri=[0-9]+/g,'');
+	links = links.replace(/,/g, '</li><li>');
+
+	document.getElementById('mirrors').innerHTML = '<ul><li>'+links+'</li></ul>';
+	document.getElementById('type').innerText = 'Matched by: '+type;
+	document.getElementById('population').innerText = 'Out of a population of: '+popu+' mirrors';
+	document.getElementById('allheaders').value = this.getAllResponseHeaders();
+    }
+}
+//]]>
+</script>
+<noscript>Sorry, the demo is javascript based. You can see, more or
+less, what this demo shows by running:
+<pre>HEAD http://thishost.tld/debian/</pre>
+</noscript>
+<div>
+    <p>
+	Your details, as seen by the redirector:
+    </p>
+    <noscript>
+	unavailable
+    </noscript>
+    <div id="loading"></div>
+    <div id="ip"></div>
+    <div id="as"></div>
+    <div id="continent"></div>
+    <div id="country"></div>
+    <p>
+	Had you requested a file to /debian/, you would have been sent
+	to one of the following mirrors:
+    </p>
+    <noscript>
+	unavailable
+    </noscript>
+    <div id="mirrors"></div>
+    <div id="population"></div>
+    <div id="type"></div>
+</div>
+<a href="#" onclick="return sendAjaxHEAD();">retry</a>
+<div id="explanation">
+<h2>Explanation</h2>
+<p>
+The destination mirrors depends on many factors, from those mentioned
+above, to the reachability, freshness, etc.<br/>
+The <i>population</i> may be bigger than the number of mirrors listed
+above, meaning there were other candidates but they were not considered
+because of their distance to you.
+</p>
+</div>
+<div id="issues">
+<h2>Corrections and issue reporting</h2>
+<p>
+If any of the fields of the <i>your details</i> section is incorrect,
+please refer to <a
+href="http://www.maxmind.com/app/locate_my_ip">maxmind.com</a>. If your
+details are correct there, then it might be a limitation of the free
+version of their database. Otherwise, feel free to send them a <a
+href="http://www.maxmind.com/app/correction">correction</a>.<br/>
+If you believe there's another mirror that could serve you better,
+other than those listed above, please check the following before
+contacting me (it's not mandatory, but you would save me some time):
+</p>
+<ol>
+<li>Make sure it is part of the official <a
+href="http://www.debian.org/mirrors/list">Debian mirrors
+network</a></li>
+<li>It is up to date (the main archive is updated several times a day)</li>
+<li>There's a file with the same name as the mirror's host name in the
+project/trace/ directory (e.g.
+http://mirror.tld/debian/project/trace/mirror.tld)</li>
+</ol>
+<p>
+All three points can be fixed by the mirror administrator, and only by
+her.<br/>
+At some point there will be a page where you can check why a mirror is
+disabled in the redirector.<br/>
+If after all that, there's a mirror that would serve you better and it
+isn't listed, please do send me an email along with the <a href="#"
+onclick="document.getElementById('allheaders').style.display='block';return false;">
+request headers</a> to the email address at the bottom of this page.
+<textarea id="allheaders" style="display:none;" rows="8" cols="73">
+</textarea>
+</p>
+</div>
+<div id="footer">
+    <a href="/">Back to main page</span>
+    <center>
+	<p>Please send feedback to <a href="mailto:geissert@debian.org">Raphael
+	    Geissert</a></p>
+	<img class="logo" src="http://www.debian.org/logos/openlogo-nd-25.png"
+	alt="Small Debian logo" />
+    </center>
+</div>
+</body>
+</html>

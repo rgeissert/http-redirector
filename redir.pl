@@ -86,6 +86,8 @@ if ($mirror_type =~ s/\.list$//) {
     push @archs, check_arch_for_list($q->param('arch'));
 }
 
+$action = 'demo' if (exists($ENV{'HTTP_X_WEB_DEMO'}));
+
 our $db = retrieve($db_store);
 # Make a shortcut
 my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
@@ -231,6 +233,10 @@ print "Content-type: text/plain\r\n";
 if ($action eq 'redir') {
     print "Status: 307 Temporary Redirect\r\n";
     print "Location: ".url_for_mirror($host).$url."\r\n";
+} elsif ($action eq 'demo') {
+    print "Status: 200 OK\r\n";
+    print "Cache-control: no-cache\r\n";
+    print "Pragma: no-cache\r\n";
 } elsif ($action eq 'list') {
     print "Status: 200 OK\r\n";
     for my $host (@close_hosts) {
@@ -240,7 +246,7 @@ if ($action eq 'redir') {
     die("FIXME: unknown action '$action'");
 }
 
-if ($add_links && scalar(@close_hosts) > 1) {
+if ($add_links && (scalar(@close_hosts) > 1 || $action eq 'demo')) {
     # RFC6249-like link rels
     # A client strictly adhering to the RFC would ignore these since we
     # don't provide a digest, and we wont.
