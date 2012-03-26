@@ -90,6 +90,7 @@ for my $type (keys %traces) {
     my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
 
     my %master_stamps;
+    my %master_stamps_by_type;
 
     for my $stamp (@stamps) {
 	if (scalar(@{$traces{$type}{$stamp}}) <= 2) {
@@ -108,6 +109,14 @@ for my $type (keys %traces) {
 	    }
 
 	    next unless (scalar(@per_continent));
+
+	    # Do not let subsets become too old
+	    if (exists($master_stamps_by_type{$type}) &&
+		($master_stamps_by_type{$type} - $stamp) > 12*3600) {
+		$master_stamps{$continent} = $master_stamps_by_type{$type};
+	    } else {
+		$master_stamps_by_type{$type} = $stamp;
+	    }
 
 	    if (exists($master_stamps{$continent})) {
 		# if a master stamp has been recorded already it means
