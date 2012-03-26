@@ -26,7 +26,7 @@ function sendAjaxHEAD() {
     var url = document.getElementById('mirror_selector').value;
     if (!req)
 	return false;
-    document.getElementById('mirror_path').innerText = url;
+    document.getElementById('mirror_path').textContent = url;
     req.open("HEAD", url, true);
     req.setRequestHeader('X-Web-Demo', 'yep');
     req.onreadystatechange = ajaxResponse;
@@ -48,17 +48,17 @@ function ajaxResponse() {
 	    links = this.getResponseHeader("Link"),
 	    type = this.getResponseHeader("X-Match-Type"),
 	    popu = this.getResponseHeader("X-Population");
-	document.getElementById('ip').innerText = 'IP: '+ip;
-	document.getElementById('as').innerText = 'AS: '+as;
-	document.getElementById('country').innerText = 'Country: '+country;
-	document.getElementById('continent').innerText = 'Continent: '+continent;
+	document.getElementById('ip').textContent = 'IP: '+ip;
+	document.getElementById('as').textContent = 'AS: '+as;
+	document.getElementById('country').textContent = 'Country: '+country;
+	document.getElementById('continent').textContent = 'Continent: '+continent;
 
 	links = links.replace(/; rel=duplicate; pri=[0-9]+/g,'');
 	links = links.replace(/,/g, '</li><li>');
 
 	document.getElementById('mirrors').innerHTML = '<ul><li>'+links+'</li></ul>';
-	document.getElementById('type').innerText = 'Matched by: '+type;
-	document.getElementById('population').innerText = 'Out of a population of: '+popu+' mirrors';
+	document.getElementById('type').textContent = 'Matched by: '+type;
+	document.getElementById('population').textContent = 'Out of a population of: '+popu+' mirrors';
 	document.getElementById('allheaders').value = this.getAllResponseHeaders();
     }
 }
