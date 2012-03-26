@@ -112,7 +112,8 @@ for my $type (keys %traces) {
 
 	    # Do not let subsets become too old
 	    if (exists($master_stamps_by_type{$type}) &&
-		($master_stamps_by_type{$type} - $stamp) > 12*3600) {
+		(($master_stamps_by_type{$type} - $stamp) > 12*3600 ||
+		 $type eq 'security')) {
 		$master_stamps{$continent} = $master_stamps_by_type{$type};
 	    } else {
 		$master_stamps_by_type{$type} = $stamp;
