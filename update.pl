@@ -204,7 +204,17 @@ sub process_entry($) {
 
     $entry->{'type'} = lc $entry->{'type'} || 'unknown';
 
-    return if ($entry->{'type'} =~ m/^(?:unknown|geodns)$/);
+    return if ($entry->{'type'} =~ m/^(?:unknown|geodns)$/ && $entry->{'site'} ne 'security.debian.org');
+
+    if ($entry->{'site'} eq 'security.debian.org') {
+	# used to indicate that even if only this site has a newer
+	# master trace, all other mirrors should be disabled
+	$entry->{'security-reference'} = 'yes';
+
+	# not really relevant, yet this is needed by the rest of the code
+	$entry->{'country'} = 'US United States';
+    }
+
     if ($entry->{'type'} eq 'origin') {
 	foreach my $type (@mirror_types) {
 	    next unless (exists($entry->{$type.'-rsync'}));
