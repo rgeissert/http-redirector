@@ -97,7 +97,9 @@ for my $type (keys %traces) {
     my $global_master_stamp;
 
     for my $stamp (@stamps) {
-	if (scalar(@{$traces{$type}{$stamp}}) <= 2) {
+	my $is_type_ref = has_type_reference($type, @{$traces{$type}{$stamp}});
+
+	if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
 	    while (my $id = pop @{$traces{$type}{$stamp}}) {
 		$db->{'all'}{$id}{$type.'-disabled'} = undef;
 		print "Disabling $id/$type: old or not popular master stamp '$stamp'\n";
@@ -124,7 +126,7 @@ for my $type (keys %traces) {
 	    # Do not let subsets become too old
 	    if (defined($global_master_stamp) &&
 		(($global_master_stamp - $stamp) > 12*3600 ||
-		 $type eq 'security')) {
+		 $type eq 'security' || $is_type_ref)) {
 		$master_stamps{$continent} = $global_master_stamp;
 	    } elsif (!defined($global_master_stamp)) {
 		$global_master_stamp = $stamp;
@@ -168,6 +170,15 @@ Mirror::DB::store($db);
 if ($store_traces) {
     Mirror::DB::set('traces.db');
     Mirror::DB::store(\%traces);
+}
+
+sub has_type_reference {
+    my $type = shift;
+
+    for my $id (@_) {
+	return 1 if (exists($db->{'all'}{$id}{$type.'-reference'}));
+    }
+    return 0;
 }
 
 sub head_url($$) {
