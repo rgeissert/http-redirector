@@ -89,6 +89,8 @@ for my $thr (threads->list()) {
 for my $type (keys %traces) {
     my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
 
+    next if (scalar(@stamps) <= 2);
+
     my %master_stamps;
     my %master_stamps_by_type;
 
