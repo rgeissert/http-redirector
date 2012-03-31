@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Date::Parse;
 
-use vars qw($MIN_FTPSYNC_VERSION);
+use vars qw($MIN_FTPSYNC_VERSION $MIN_DMSSYNC_VERSION);
 
 sub new {
     my ($class, $ua, $base_url) = @_;
@@ -12,6 +12,7 @@ sub new {
     bless($self, $class);
 
     $MIN_FTPSYNC_VERSION = 80387;
+    $MIN_DMSSYNC_VERSION = '0.1';
 
     $self->{'ua'} = $ua if (defined($ua));
     $self->{'base_url'} = $base_url if (defined($base_url));
@@ -56,6 +57,8 @@ sub uses_ftpsync {
 
     return 1
         if ($self->{'software'} =~ m/^Used ftpsync(?: version|-pushrsync from): /);
+    return 1
+        if ($self->{'software'} =~ m/^DMS sync dms-/);
     return 0;
 }
 
@@ -64,11 +67,15 @@ sub good_ftpsync {
 
     return 1
         if ($self->{'software'} =~ m/^Used ftpsync-pushrsync/);
-    return 1
-        unless ($self->{'software'} =~ m/^Used ftpsync version: ([0-9]+)$/);
-    return 0
-        if ($1 < $MIN_FTPSYNC_VERSION);
-    return 1;
+
+    if ($self->{'software'} =~ m/^Used ftpsync version: ([0-9]+)$/) {
+	return ($1 >= $MIN_FTPSYNC_VERSION);
+    }
+    if ($self->{'software'} =~ m/^DMS sync dms-([0-9.\w-]+)$/) {
+	return ($1 ge $MIN_DMSSYNC_VERSION);
+    }
+
+    return 0;
 }
 
 1;
