@@ -40,4 +40,4 @@ done
 cd - >/dev/null
 
 ./update.pl -j 15 --leave-new
-./check.pl --db-store db.new --db-output db --check-architectures --check-areas
+./check.pl -j 20 --db-store db.new --db-output db --check-architectures --check-areas
