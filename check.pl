@@ -56,6 +56,8 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'id|mirror-id=s' => \@ids,
 	    'store-traces!' => \$store_traces);
 
+$| = 1;
+
 our %traces :shared;
 our $ua;
 my $q = Thread::Queue->new();
