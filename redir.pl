@@ -276,7 +276,7 @@ sub fullfils_request($$) {
 
     return 0 if (exists($mirror->{$mirror_type.'-disabled'}));
 
-    return 0 if ($ipv6 && !exists($rdb->{'ipv6'}{$id}));
+    return 0 if ($ipv6 && !exists($mirror->{'ipv6'}));
 
     for my $arch (@archs) {
 	next if ($arch eq '');

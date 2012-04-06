@@ -91,7 +91,7 @@ foreach my $mirror_type (@mirror_types) {
     next if ($exclude_mirror_types{$mirror_type});
 
     $db{$mirror_type} = shared_clone({
-	'country' => {}, 'ipv6' => {}, 'arch' => {},
+	'country' => {}, 'arch' => {},
 	'AS' => {}, 'continent' => {},
 	'master' => ''
     });
@@ -235,9 +235,18 @@ sub process_entry($) {
 	return;
     }
 
-    if (defined ($entry->{'ipv6'}) && $entry->{'ipv6'} eq 'only') {
-	print STDERR "warning: unsupported IPv6-only $entry->{'site'}\n";
-	return;
+    if (defined ($entry->{'ipv6'})) {
+	if ($entry->{'ipv6'} eq 'only') {
+	    print STDERR "warning: unsupported IPv6-only $entry->{'site'}\n";
+	    return;
+	} elsif ($entry->{'ipv6'} eq 'yes') {
+	    $entry->{'ipv6'} = undef;
+	} elsif ($entry->{'ipv6'} eq 'no') {
+	    delete $entry->{'ipv6'};
+	} else {
+	    print STDERR "warning: unknown ipv6 value: '$entry->{'ipv6'}'\n";
+	    return;
+	}
     }
 
     if (defined ($entry->{'includes'})) {
@@ -413,8 +422,6 @@ sub process_entry($) {
 	$db{$type}{'continent'}{$continent} = shared_clone({})
 	    unless (exists ($db{$type}{'continent'}{$continent}));
 
-	$db{$type}{'ipv6'}{$id} = undef
-	    if (defined ($entry->{'ipv6'}) && $entry->{'ipv6'} eq 'yes');
 	$db{$type}{'country'}{$country}{$id} = undef;
 	$db{$type}{'continent'}{$continent}{$id} = undef;
 	push @{$db{$type}{'AS'}{$as}}, $id;
@@ -438,7 +445,6 @@ sub process_entry($) {
     delete $entry->{'sponsor'};
     delete $entry->{'country'};
     delete $entry->{'maintainer'};
-    delete $entry->{'ipv6'};
     delete $entry->{'location'};
     delete $entry->{'alias'};
     delete $entry->{'aliases'};
