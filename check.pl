@@ -252,6 +252,8 @@ sub check_mirror($) {
 	    my $disable_reason;
 	    my $ignore_master = 0;
 
+	    delete $mirror->{$type.'-notftpsync'};
+
 	    if (!$site_trace->fetch($mirror->{'site'})) {
 		$ignore_master = 1;
 		$disable_reason = 'bad site trace';
@@ -260,6 +262,7 @@ sub check_mirror($) {
 		$disable_reason = 'old site trace';
 	    } elsif (!$site_trace->uses_ftpsync) {
 		print "Would disable $id/$type: doesn't use ftpsync\n";
+		$mirror->{$type.'-notftpsync'} = undef;
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
 	    }

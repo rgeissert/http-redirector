@@ -147,6 +147,8 @@ if ($mirror_type eq 'cdimage') {
 $archs[0] = 'i386' if ($archs[0] eq 'multi-arch');
 $archs[0] = '' if ($archs[0] eq 'all' || $archs[0] eq 'source');
 
+our $require_ftpsync = ($url =~ m,/InRelease$,);
+
 Mirror::Math::set_metric($metric);
 
 print_xtra('IP', $IP);
@@ -277,6 +279,8 @@ sub fullfils_request($$) {
     return 0 if (exists($mirror->{$mirror_type.'-disabled'}));
 
     return 0 if ($ipv6 && !exists($mirror->{'ipv6'}));
+
+    return 0 if ($require_ftpsync && exists($mirror->{$mirror_type.'-notftpsync'}));
 
     for my $arch (@archs) {
 	next if ($arch eq '');
