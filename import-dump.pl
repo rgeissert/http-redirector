@@ -2,12 +2,18 @@
 
 use strict;
 use warnings;
+use Getopt::Long;
 
 use lib '.';
 use Mirror::DB;
 
 my $db_output = 'db';
-my $file = $ARGV[0];
+my $file = undef;
+
+GetOptions('db-output=s' => \$db_output,
+	    'dump-file=s' => \$file);
+
+$file = $db_output.'dump' if (!defined($file));
 
 my $db;
 my $VAR1;
