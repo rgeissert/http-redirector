@@ -92,7 +92,7 @@ for my $type (keys %traces) {
     next if (scalar(@stamps) <= 2);
 
     my %master_stamps;
-    my %master_stamps_by_type;
+    my $global_master_stamp;
 
     for my $stamp (@stamps) {
 	if (scalar(@{$traces{$type}{$stamp}}) <= 2) {
@@ -113,12 +113,12 @@ for my $type (keys %traces) {
 	    next unless (scalar(@per_continent));
 
 	    # Do not let subsets become too old
-	    if (exists($master_stamps_by_type{$type}) &&
-		(($master_stamps_by_type{$type} - $stamp) > 12*3600 ||
+	    if (defined($global_master_stamp) &&
+		(($global_master_stamp - $stamp) > 12*3600 ||
 		 $type eq 'security')) {
-		$master_stamps{$continent} = $master_stamps_by_type{$type};
+		$master_stamps{$continent} = $global_master_stamp;
 	    } else {
-		$master_stamps_by_type{$type} = $stamp;
+		$global_master_stamp = $stamp;
 	    }
 
 	    if (exists($master_stamps{$continent})) {
