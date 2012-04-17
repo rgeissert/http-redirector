@@ -117,7 +117,7 @@ for my $type (keys %traces) {
 		(($global_master_stamp - $stamp) > 12*3600 ||
 		 $type eq 'security')) {
 		$master_stamps{$continent} = $global_master_stamp;
-	    } else {
+	    } elsif (!defined($global_master_stamp)) {
 		$global_master_stamp = $stamp;
 	    }
 
