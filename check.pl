@@ -107,12 +107,19 @@ for my $type (keys %traces) {
 
 	for my $continent (keys %{$db->{$type}{'continent'}}) {
 	    my @per_continent;
+	    my $ftpsync_mirrs = 0;
 	    for my $id (@{$traces{$type}{$stamp}}) {
 		next unless (exists($db->{$type}{'continent'}{$continent}{$id}));
+
+		my $mirror = $db->{'all'}{$id};
+
+		$ftpsync_mirrs++ if (!exists($mirror->{$type.'-notftpsync'}) &&
+				    !exists($mirror->{$type.'-disabled'}));
+
 		push @per_continent, $id;
 	    }
 
-	    next unless (scalar(@per_continent));
+	    next unless (scalar(@per_continent) && $ftpsync_mirrs);
 
 	    # Do not let subsets become too old
 	    if (defined($global_master_stamp) &&
