@@ -79,9 +79,7 @@ regarding the availability of mirrors is lost.
 check.pl --check-architectures should be run after update.pl, this is
 done automatically when running update.sh.
 
-[2] it really depends on the kind of setup one wants. It has a twelve
-hours-delay tolerance hardcoded but it could be made configurable at
-some point.
+[2] it really depends on the kind of setup one wants.
 
 Real life testing
 =================
