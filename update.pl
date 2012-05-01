@@ -294,12 +294,11 @@ sub process_entry($) {
     my @ips;
     while ($attempts--) {
 	@ips = fancy_get_host($entry->{'site'});
-
-	if (!@ips || scalar(@ips) == 0) {
-	    next unless ($attempts);
-	    print STDERR "warning: host lookup for $entry->{'site'} failed\n";
-	    return;
-	}
+	last if (@ips && scalar(@ips) > 0);
+    }
+    if (!@ips || scalar(@ips) == 0) {
+	print STDERR "warning: host lookup for $entry->{'site'} failed\n";
+	return;
     }
 
     # Consider: lookup all possible IPs and try to match them to a unique host
