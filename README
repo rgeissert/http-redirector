@@ -88,12 +88,12 @@ If using apache, assuming you have the redir script in a /cgi alias
 with +execcgi, you can:
 
    RewriteEngine On
-   RewriteRule ^/?debian-(security|backports|cd)/(.*) /cgi/redir.pl?mirror=$1&url=$2 [PT]
+   RewriteRule ^/?debian-(security|backports)/(.*) /cgi/redir.pl?mirror=$1&url=$2 [PT]
    RewriteRule ^/?debian-archive/(.*) /cgi/redir.pl?mirror=old&url=$1 [PT]
    RewriteRule ^/?debian/(.*) /cgi/redir.pl?mirror=archive&url=$1 [PT]
 
    # mirror:// method support:
-   RewriteRule ^/?debian-(security|backports|cd)\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=$1.list$2 [QSA,PT]
+   RewriteRule ^/?debian-(security|backports)\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=$1.list$2 [QSA,PT]
    RewriteRule ^/?debian-archive\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=old.list$1 [QSA,PT]
    RewriteRule ^/?debian\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=archive.list$1 [QSA,PT]
 

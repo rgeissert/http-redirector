@@ -78,7 +78,6 @@ unless ($request_method eq 'HEAD') {
     $add_links = 0;
 }
 $mirror_type = $q->param('mirror') || 'archive';
-$mirror_type = 'cdimage' if ($mirror_type eq 'cd');
 
 if ($mirror_type =~ s/\.list$//) {
     $action = 'list';
@@ -124,28 +123,20 @@ if (!defined($geo_rec)) {
 
 my $url = clean_url($q->param('url') || '');
 
-my @ARCHITECTURES_REGEX;
-if ($mirror_type eq 'cdimage') {
-    @ARCHITECTURES_REGEX = (
-	qr'^(?:\d|current)[^/]*/([^/]+)/',
-    );
-} else {
-    @ARCHITECTURES_REGEX = (
-	qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
-	qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
-	qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
-	qr'^indices/files(?:/components)?/arch-([^.]+).*$',
-	qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
-    );
-}
+my @ARCHITECTURES_REGEX = (
+    qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
+    qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
+    qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
+    qr'^indices/files(?:/components)?/arch-([^.]+).*$',
+    qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
+);
 
 @archs or @archs = find_arch($url, @ARCHITECTURES_REGEX);
 # @archs may only have more than one element iff $action eq 'list'
-# 'all' and 'multi-arch' are not part of the archs that may be passed
-# when running under $action eq 'list', so it should be safe to assume
-# the size of the array
-$archs[0] = 'i386' if ($archs[0] eq 'multi-arch');
-$archs[0] = '' if ($archs[0] eq 'all' || $archs[0] eq 'source');
+# 'all' is not part of the archs that may be passed when running under
+# $action eq 'list', so it should be safe to assume the size of the
+# array
+$archs[0] = '' if ($archs[0] eq 'all');
 
 our $require_ftpsync = ($url =~ m,/InRelease$,);
 

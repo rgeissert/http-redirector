@@ -39,7 +39,7 @@ my $current_list = 'Mirrors.masterlist';
 my $db_store = 'db';
 my @mirror_types = qw(www volatile archive old nonus
 			backports security cdimage);
-my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile);
+my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile cdimage);
 
 # Options:
 my ($update_list, $threads, $leave_new) = (1, 4, 0);

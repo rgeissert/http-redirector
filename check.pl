@@ -197,8 +197,6 @@ sub test_arch($$$) {
 
     if ($type eq 'archive') {
 	$format = 'indices/files/arch-%s.files';
-    } elsif ($type eq 'cdimage') {
-	$format = 'current/%s/';
     } elsif ($type eq 'backports') {
 	$format = 'dists/stable-backports/main/binary-%s/Release';
     } elsif ($type eq 'security') {
@@ -214,7 +212,7 @@ sub test_arch($$$) {
     my $url = $base_url;
     $url .= sprintf($format, $arch);
 
-    return head_url($url, $type eq 'cdimage');
+    return head_url($url, 0);
 }
 
 sub test_source($$) {
@@ -223,8 +221,6 @@ sub test_source($$) {
 
     if ($type eq 'archive') {
 	$format = 'dists/sid/main/source/Release';
-    } elsif ($type eq 'cdimage') {
-	$format = 'current/source/';
     } elsif ($type eq 'backports') {
 	$format = 'dists/stable-backports/main/source/Release';
     } elsif ($type eq 'security') {
@@ -236,7 +232,7 @@ sub test_source($$) {
 
     my $url = $base_url . $format;
 
-    return head_url($url, $type eq 'cdimage');
+    return head_url($url, 0);
 }
 
 sub test_areas($$) {
