@@ -123,12 +123,17 @@ if (!defined($geo_rec)) {
 
 my $url = clean_url($q->param('url') || '');
 
+# Even-numbered list: '[default]' => qr/regex/
+# Whenever regex matches but there's no value in the capture #1 then
+# the default value is used.
 my @ARCHITECTURES_REGEX = (
-    qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
-    qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
-    qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
-    qr'^indices/files(?:/components)?/arch-([^.]+).*$',
-    qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
+    '' => qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
+    '' => qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
+    '' => qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
+    '' => qr'^indices/files(?:/components)?/arch-([^.]+).*$',
+    '' => qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
+    '' => qr'^dists/(?:[^/]+/){2,3}(source)/',
+    'source' => qr'^pool/(?:[^/]+/){3,4}.+\.(?:dsc|(?:diff|tar)\.(?:xz|gz|bz2))$',
 );
 
 @archs or @archs = find_arch($url, @ARCHITECTURES_REGEX);
@@ -136,7 +141,13 @@ my @ARCHITECTURES_REGEX = (
 # 'all' is not part of the archs that may be passed when running under
 # $action eq 'list', so it should be safe to assume the size of the
 # array
-$archs[0] = '' if ($archs[0] eq 'all' || $archs[0] eq 'source');
+$archs[0] = '' if ($archs[0] eq 'all');
+
+# If no mirror provides the 'source' "architecture" assume it is
+# included by all mirrors. Apply the restriction otherwise.
+if ($archs[0] eq 'source' && !exists($rdb->{'arch'}{'source'})) {
+    $archs[0] = '';
+}
 
 our $require_ftpsync = ($url =~ m,/InRelease$,);
 
@@ -291,11 +302,14 @@ sub print_xtra($$) {
 
 sub find_arch($@) {
     my $url = shift;
-    local $_;
 
-    foreach (@_) {
-	return $1 if ($url =~ m/$_/);
-    }
+    do {
+	my ($default, $rx) = (shift, shift);
+	if ($url =~ m/$rx/) {
+	    my $arch = $1 || $default;
+	    return $arch;
+	}
+    } while (@_);
     return '';
 }
 

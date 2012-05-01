@@ -195,6 +195,8 @@ sub test_arch($$$) {
     my ($base_url, $type, $arch) = @_;
     my $format;
 
+    return test_source($base_url, $type) if ($arch eq 'source');
+
     if ($type eq 'archive') {
 	$format = 'indices/files/arch-%s.files';
     } elsif ($type eq 'backports') {
@@ -380,7 +382,7 @@ sub check_mirror($) {
 		next;
 	    }
 
-	    if (!test_source($base_url, $type)) {
+	    if (!exists($db->{$type}{'arch'}{'source'}) && !test_source($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
 		print "Disabling $id/$type: no sources\n";
