@@ -261,7 +261,7 @@ if ($add_links && (scalar(@close_hosts) > 1 || $action eq 'demo')) {
 	$priority = 1 if ($priority == 0);
 	$priority = sprintf("%.0f", $priority);
 
-	print "Link: ".url_for_mirror($host).$url."; rel=duplicate; pri=$priority\r\n";
+	print "Link: <".url_for_mirror($host).$url.">; rel=duplicate; pri=$priority\r\n";
     }
 }
 

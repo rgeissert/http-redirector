@@ -54,6 +54,7 @@ function ajaxResponse() {
 	document.getElementById('continent').textContent = 'Continent: '+continent;
 
 	links = links.replace(/; rel=duplicate; pri=[0-9]+/g,'');
+	links = links.replace(/(\u003C|\u003E)/g, '');
 	links = links.replace(/,/g, '</li><li>');
 
 	document.getElementById('mirrors').innerHTML = '<ul><li>'+links+'</li></ul>';
