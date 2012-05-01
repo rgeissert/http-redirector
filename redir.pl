@@ -136,7 +136,7 @@ my @ARCHITECTURES_REGEX = (
 # 'all' is not part of the archs that may be passed when running under
 # $action eq 'list', so it should be safe to assume the size of the
 # array
-$archs[0] = '' if ($archs[0] eq 'all');
+$archs[0] = '' if ($archs[0] eq 'all' || $archs[0] eq 'source');
 
 our $require_ftpsync = ($url =~ m,/InRelease$,);
 
