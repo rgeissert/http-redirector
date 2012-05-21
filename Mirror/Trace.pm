@@ -71,7 +71,7 @@ sub good_ftpsync {
         if ($self->{'software'} =~ m/^Used ftpsync-pushrsync/);
 
     if ($self->{'software'} =~ m/^Used ftpsync version: ([0-9]+)$/) {
-	return ($1 >= $MIN_FTPSYNC_VERSION);
+	return ($1 >= $MIN_FTPSYNC_VERSION && $1 ne 80486);
     }
     if ($self->{'software'} =~ m/^DMS sync dms-([0-9.\w-]+)$/) {
 	return ($1 ge $MIN_DMSSYNC_VERSION);
