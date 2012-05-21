@@ -235,7 +235,7 @@ print_xtra('Match-Type', $match_type);
 print "Content-type: text/plain\r\n";
 
 if ($action eq 'redir') {
-    print "Status: 307 Temporary Redirect\r\n";
+    print "Status: 302 Moved Temporarily\r\n";
     print "Location: ".url_for_mirror($host).$url."\r\n";
 } elsif ($action eq 'demo') {
     print "Status: 200 OK\r\n";
