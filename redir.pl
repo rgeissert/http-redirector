@@ -42,7 +42,6 @@ if ($request_method ne 'GET' && $request_method ne 'HEAD') {
 
 use Geo::IP;
 use Storable qw(retrieve);
-use List::Util qw(shuffle);
 use Mirror::Math;
 
 our $metric = ''; # alt: taxicab (default) | euclidean
@@ -227,8 +226,10 @@ for my $h (@sorted_hosts) {
     }
 }
 
-$host = (shuffle (@close_hosts))[0]
-    if ($random_sort);
+if ($random_sort) {
+    my $n = int(rand scalar(@close_hosts));
+    $host = $close_hosts[$n];
+}
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 
