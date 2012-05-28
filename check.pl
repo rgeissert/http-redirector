@@ -43,18 +43,25 @@ sub check_mirror($);
 my $db_store = 'db';
 my $db_output = $db_store;
 my $store_traces = 0;
-my $check_archs = 0;
-my $check_areas = 0;
+my $check_archs = '';
+my $check_areas = '';
+my $check_everything = 0;
 my $threads = 4;
 my @ids;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'check-areas!' => \$check_areas,
+	    'check-everything' => \$check_everything,
 	    'j|threads=i' => \$threads,
 	    'db-store=s' => \$db_store,
 	    'db-output=s' => \$db_output,
 	    'id|mirror-id=s' => \@ids,
 	    'store-traces!' => \$store_traces);
+
+if ($check_everything) {
+    $check_archs = 1 unless ($check_archs ne '');
+    $check_areas = 1 unless ($check_areas ne '');
+}
 
 $| = 1;
 
