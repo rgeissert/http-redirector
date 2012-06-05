@@ -51,8 +51,8 @@ my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
 our $mirror_type = 'archive';
-my %this_host = map { $_ => 1 } qw(); # this host's hostname
-my $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
+our %this_host = map { $_ => 1 } qw(); # this host's hostname
+our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
 
 my %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -69,6 +69,7 @@ sub find_arch($@);
 sub clean_url($);
 sub consider_mirror($);
 sub check_arch_for_list(@);
+sub do_redirect($$);
 
 my @output;
 our @archs;
@@ -225,38 +226,7 @@ print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 
 if ($action eq 'redir') {
-    my $real_url = $url;
-
-    if (scalar(keys %this_host)) {
-	$host =~ m,^([^/]+),;
-	if (exists($this_host{$1})) {
-	    my $internal_subreq = 0;
-	    $real_url = 'serve/'.$real_url;
-
-	    if ($subrequest_method eq 'sendfile') {
-		print "X-Sendfile: $real_url\r\n";
-		$internal_subreq = 1;
-	    } elsif ($subrequest_method eq 'sendfile1.4') {
-		print "X-LIGHTTPD-send-file: $real_url\r\n";
-		$internal_subreq = 1;
-	    } elsif ($subrequest_method eq 'accelredirect') {
-		print "X-Accel-Redirect: $real_url\r\n";
-		$internal_subreq = 1;
-	    } else {
-		# do nothing special, will redirect
-	    }
-
-	    if ($internal_subreq) {
-		print "Content-Location: $real_url\r\n";
-		print "\r\n";
-		exit;
-	    }
-	}
-    }
-
-    print "Content-type: text/plain\r\n";
-    print "Status: 307 Temporary Redirect\r\n";
-    print "Location: http://".$host.$real_url."\r\n";
+    do_redirect($host, $url);
 } elsif ($action eq 'list') {
     print "Content-type: text/plain\r\n";
     print "Status: 200 OK\r\n";
@@ -359,4 +329,39 @@ sub check_arch_for_list(@) {
 
     print "\r\n\r\n";
     exit;
+}
+
+sub do_redirect($$) {
+    my ($host, $real_url) = @_;
+
+    if (scalar(keys %this_host)) {
+	$host =~ m,^([^/]+),;
+	if (exists($this_host{$1})) {
+	    my $internal_subreq = 0;
+	    $real_url = 'serve/'.$real_url;
+
+	    if ($subrequest_method eq 'sendfile') {
+		print "X-Sendfile: $real_url\r\n";
+		$internal_subreq = 1;
+	    } elsif ($subrequest_method eq 'sendfile1.4') {
+		print "X-LIGHTTPD-send-file: $real_url\r\n";
+		$internal_subreq = 1;
+	    } elsif ($subrequest_method eq 'accelredirect') {
+		print "X-Accel-Redirect: $real_url\r\n";
+		$internal_subreq = 1;
+	    } else {
+		# do nothing special, will redirect
+	    }
+
+	    if ($internal_subreq) {
+		print "Content-Location: $real_url\r\n";
+		print "\r\n";
+		exit;
+	    }
+	}
+    }
+
+    print "Content-type: text/plain\r\n";
+    print "Status: 307 Temporary Redirect\r\n";
+    print "Location: http://".$host.$real_url."\r\n";
 }
