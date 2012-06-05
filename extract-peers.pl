@@ -24,6 +24,7 @@ use strict;
 use warnings;
 
 use Storable qw(retrieve);
+use Mirror::AS;
 use Mirror::DB;
 
 use Getopt::Long;
@@ -46,7 +47,6 @@ for my $type (keys %{$mirrors_db}) {
     next if ($type eq 'all');
 
     for my $AS (keys %{$mirrors_db->{$type}{'AS'}}) {
-	$AS =~ s/^AS//;
 	$mirror_ASes{$AS} = 1;
     }
 }
@@ -69,12 +69,14 @@ while (<>) {
     }
 
     for my $dest (@dests) {
+	$dest = Mirror::AS::convert($dest);
 	next unless (exists($mirror_ASes{$dest}));
 	my $distance = 0;
 
 	my @path = @parts;
 	while (my $peer = pop @path) {
 	    last unless ($distance < $max_distance);
+	    $peer = Mirror::AS::convert($peer);
 	    next if ($dest eq $peer);
 	    $distance++;
 

@@ -44,6 +44,7 @@ use Geo::IP;
 use Storable qw(retrieve);
 use List::Util qw(shuffle);
 use Mirror::Math;
+use Mirror::AS;
 
 our $metric = ''; # alt: taxicab (default) | euclidean
 our $xtra_headers = 1;
@@ -120,6 +121,7 @@ if (!defined($geo_rec)) {
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
 }
+$as = Mirror::AS::convert($as);
 
 my $url = clean_url($q->param('url') || '');
 
@@ -166,10 +168,9 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
 # match by AS peer
 if (!$match_type && -f $peers_db_store && $as) {
     my $peers_db = retrieve($peers_db_store);
-    my $numeric_as = substr($as, 2);
 
-    foreach my $peer (keys %{$peers_db->{$numeric_as}}) {
-	foreach my $match (@{$rdb->{'AS'}{"AS$peer"}}) {
+    foreach my $peer (keys %{$peers_db->{$as}}) {
+	foreach my $match (@{$rdb->{'AS'}{$peer}}) {
 	    $match_type = 'AS-peer' if (consider_mirror ($match));
 	}
     }

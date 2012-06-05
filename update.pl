@@ -27,6 +27,7 @@ use File::stat qw(stat);
 use Storable qw(store dclone);
 use Socket;
 
+use Mirror::AS;
 use Mirror::DB;
 
 # DNS lookups are slow
@@ -314,6 +315,7 @@ sub process_entry($) {
     my ($listed_country) = split /\s+/, $entry->{'country'};
     my $continent = $r->continent_code || 'XX';
     my ($lat, $lon) = ($r->latitude, $r->longitude);
+    $as = Mirror::AS::convert($as);
 
     # A1: Anonymous proxies
     # A2: Satellite providers
