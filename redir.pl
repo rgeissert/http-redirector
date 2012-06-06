@@ -122,7 +122,7 @@ my $url = clean_url($q->param('url') || '');
 
 if (!defined($geo_rec)) {
     # request can be handled locally. So, do it
-    if (scalar(keys %this_host)) {
+    if ($action eq 'redir' && scalar(keys %this_host)) {
 	do_redirect('', $url);
 	exit;
     }
