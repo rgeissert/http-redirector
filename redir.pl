@@ -116,13 +116,19 @@ if (!$ipv6) {
     ($as) = split /\s+/, ($g_as->org_by_addr_v6($IP) || ' ');
 }
 
+my $url = clean_url($q->param('url') || '');
+
 if (!defined($geo_rec)) {
+    # request can be handled locally. So, do it
+    if (scalar(keys %this_host)) {
+	do_redirect('', $url);
+	exit;
+    }
     # sadly, we really depend on it. throw an error for now
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
 }
 
-my $url = clean_url($q->param('url') || '');
 
 my @ARCHITECTURES_REGEX;
 if ($mirror_type eq 'cdimage') {
@@ -335,8 +341,7 @@ sub do_redirect($$) {
     my ($host, $real_url) = @_;
 
     if (scalar(keys %this_host)) {
-	$host =~ m,^([^/]+),;
-	if (exists($this_host{$1})) {
+	if ($host eq '' || ($host =~ m,^([^/]+), && exists($this_host{$1}))) {
 	    my $internal_subreq = 0;
 	    $real_url = 'serve/'.$real_url;
 
@@ -363,5 +368,5 @@ sub do_redirect($$) {
 
     print "Content-type: text/plain\r\n";
     print "Status: 307 Temporary Redirect\r\n";
-    print "Location: http://".$host.$real_url."\r\n";
+    print "Location: ".($host? "http://.$host" : '').$real_url."\r\n";
 }
