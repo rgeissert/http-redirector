@@ -53,6 +53,7 @@ my $db_store = 'db';
 our $mirror_type = 'archive';
 our %this_host = map { $_ => 1 } qw(); # this host's hostname
 our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
+our $subrequest_prefix = 'serve/';
 
 my %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -343,7 +344,7 @@ sub do_redirect($$) {
     if (scalar(keys %this_host)) {
 	if ($host eq '' || ($host =~ m,^([^/]+), && exists($this_host{$1}))) {
 	    my $internal_subreq = 0;
-	    $real_url = 'serve/'.$real_url;
+	    $real_url = $subrequest_prefix.$real_url;
 
 	    if ($subrequest_method eq 'sendfile') {
 		print "X-Sendfile: $real_url\r\n";
