@@ -50,6 +50,9 @@ my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
 our $mirror_type = 'archive';
+our %this_host = map { $_ => 1 } qw(); # this host's hostname
+our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
+our $subrequest_prefix = 'serve/';
 
 my %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -67,6 +70,7 @@ sub clean_url($);
 sub consider_mirror($);
 sub check_arch_for_list(@);
 sub url_for_mirror($);
+sub do_redirect($$);
 
 my @output;
 our @archs;
@@ -114,13 +118,19 @@ if (!$ipv6) {
     ($as) = split /\s+/, ($g_as->org_by_addr_v6($IP) || ' ');
 }
 
+my $url = clean_url($q->param('url') || '');
+
 if (!defined($geo_rec)) {
+    # request can be handled locally. So, do it
+    if (scalar(keys %this_host)) {
+	do_redirect('', $url);
+	exit;
+    }
     # sadly, we really depend on it. throw an error for now
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
 }
 
-my $url = clean_url($q->param('url') || '');
 
 # Even-numbered list: '[default]' => qr/regex/
 # Whenever regex matches but there's no value in the capture #1 then
@@ -233,16 +243,14 @@ if ($random_sort) {
 print_xtra('Distance', $hosts{$host});
 print_xtra('Match-Type', $match_type);
 
-print "Content-type: text/plain\r\n";
-
 if ($action eq 'redir') {
-    print "Status: 302 Moved Temporarily\r\n";
-    print "Location: ".url_for_mirror($host).$url."\r\n";
+    do_redirect($host, $url);
 } elsif ($action eq 'demo') {
     print "Status: 200 OK\r\n";
     print "Cache-control: no-cache\r\n";
     print "Pragma: no-cache\r\n";
 } elsif ($action eq 'list') {
+    print "Content-type: text/plain\r\n";
     print "Status: 200 OK\r\n";
     for my $host (@close_hosts) {
 	push @output, url_for_mirror($host)."\n";
@@ -318,6 +326,8 @@ sub clean_url($) {
     my $url = shift;
     $url =~ s,//,/,g;
     $url =~ s,^/,,;
+    $url =~ s,^\.\.?/,,g;
+    $url =~ s,(?<=/)\.\.?(?:/|$),,g;
     $url =~ s, ,+,g;
     return $url;
 }
@@ -349,6 +359,41 @@ sub check_arch_for_list(@) {
 
 sub url_for_mirror($) {
     my $id = shift;
+    return '' unless ($id);
     my $mirror = $db->{'all'}{$id};
     return "http://".$mirror->{'site'}.$mirror->{$mirror_type.'-http'};
+}
+
+sub do_redirect($$) {
+    my ($host, $real_url) = @_;
+
+    if (scalar(keys %this_host)) {
+	if ($host eq '' || exists($this_host{$db->{'all'}{$host}{'site'}}) {
+	    my $internal_subreq = 0;
+	    $real_url = $subrequest_prefix.$real_url;
+
+	    if ($subrequest_method eq 'sendfile') {
+		print "X-Sendfile: $real_url\r\n";
+		$internal_subreq = 1;
+	    } elsif ($subrequest_method eq 'sendfile1.4') {
+		print "X-LIGHTTPD-send-file: $real_url\r\n";
+		$internal_subreq = 1;
+	    } elsif ($subrequest_method eq 'accelredirect') {
+		print "X-Accel-Redirect: $real_url\r\n";
+		$internal_subreq = 1;
+	    } else {
+		# do nothing special, will redirect
+	    }
+
+	    if ($internal_subreq) {
+		print "Content-Location: $real_url\r\n";
+		print "\r\n";
+		exit;
+	    }
+	}
+    }
+
+    print "Content-type: text/plain\r\n";
+    print "Status: 302 Moved Temporarily\r\n";
+    print "Location: ".url_for_mirror($host).$real_url."\r\n";
 }
