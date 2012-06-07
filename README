@@ -38,9 +38,7 @@ There are some TODOs and FIXMEs in the source code, additionally, what
 needs to be done is:
 
 * Switch to Plack. Plack allows the redirector to run as a cgi or the many
-variations that exist. Using it should also make it easier to add an
-option to serve the file ourselves. Some mirror admins are interested
-in doing that to offload their mirrors.
+variations that exist.
 
 * Use the zebra dump parser to, try to, make better decisions.
 
@@ -48,9 +46,6 @@ in doing that to offload their mirrors.
 IPv6 support (one time check, like --check-architectures)
 
 * Better IPv6 support. Better handling of teredo clients.
-
-* Consider splitting mirrors on subsets based on the master trace
-stamp.
 
 Getting started
 ===============
