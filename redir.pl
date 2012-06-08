@@ -47,6 +47,7 @@ use Mirror::Math;
 use Mirror::AS;
 
 our $metric = ''; # alt: taxicab (default) | euclidean
+my $stddev_set = 'iquartile'; # iquartile (default) | population
 our $xtra_headers = 1;
 my $add_links = 1;
 my $random_sort = 1;
@@ -211,7 +212,14 @@ if (!$match_type) {
 
 my @sorted_hosts = sort { $hosts{$a} <=> $hosts{$b} } keys %hosts;
 my @close_hosts;
-my $dev = Mirror::Math::stddevp(values %hosts);
+my $dev;
+
+if ($stddev_set eq 'population') {
+    $dev = Mirror::Math::stddevp(values %hosts);
+} else {
+    my @iq_dists = map { $hosts{$_} } Mirror::Math::iquartile(@sorted_hosts);
+    $dev = Mirror::Math::stddev(@iq_dists);
+}
 
 # Closest host (or one of many), to use as the base distance
 my $host = $sorted_hosts[0];
