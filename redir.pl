@@ -368,7 +368,7 @@ sub do_redirect($$) {
     my ($host, $real_url) = @_;
 
     if (scalar(keys %this_host)) {
-	if ($host eq '' || exists($this_host{$db->{'all'}{$host}{'site'}}) {
+	if ($host eq '' || exists($this_host{$db->{'all'}{$host}{'site'}})) {
 	    my $internal_subreq = 0;
 	    $real_url = $subrequest_prefix.$real_url;
 
