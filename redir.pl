@@ -103,6 +103,7 @@ our $ipv6 = ($IP =~ m/:/);
 
 my ($g_city, $g_as);
 my ($geo_rec, $as);
+our ($lat, $lon);
 
 if (!$ipv6) {
     $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
@@ -131,6 +132,8 @@ if (!defined($geo_rec)) {
     exit;
 }
 
+$lat = $geo_rec->latitude;
+$lon = $geo_rec->longitude;
 
 # Even-numbered list: '[default]' => qr/regex/
 # Whenever regex matches but there's no value in the capture #1 then
@@ -340,7 +343,7 @@ sub consider_mirror($) {
     return 0 unless fullfils_request($db->{$mirror_type}, $id);
 
     $hosts{$id} = Mirror::Math::calculate_distance($mirror->{'lon'}, $mirror->{'lat'},
-				    $geo_rec->longitude, $geo_rec->latitude);
+				    $lon, $lat);
     return 1;
 }
 
