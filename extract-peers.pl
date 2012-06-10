@@ -23,38 +23,24 @@
 use strict;
 use warnings;
 
-use Storable qw(retrieve);
-use Mirror::AS;
-use Mirror::DB;
-
 use Getopt::Long;
 
-my $mirrors_db_file = 'db';
 my $print_progress = 0;
 my $max_distance = 1;
-my $db_out = 'db.peers';
 
-GetOptions('mirrors-db=s' => \$mirrors_db_file,
-	    'progress!' => \$print_progress,
-	    'distance=i' => \$max_distance,
-	    'store-db=s' => \$db_out);
-
-my $mirrors_db = retrieve($mirrors_db_file);
-
-my %mirror_ASes;
-
-for my $type (keys %{$mirrors_db}) {
-    next if ($type eq 'all');
-
-    for my $AS (keys %{$mirrors_db->{$type}{'AS'}}) {
-	$mirror_ASes{$AS} = 1;
-    }
-}
+GetOptions('progress!' => \$print_progress,
+	    'distance=i' => \$max_distance);
 
 my %as_routes;
 my $count = -1;
 
 $count = 0 if ($print_progress);
+
+print "# AS peering table\n";
+print "# Using a maximum distance of $max_distance\n";
+
+# Poor man's way to avoid some dup lines:
+my $last = '';
 
 while (<>) {
     my @parts = split;
@@ -69,24 +55,19 @@ while (<>) {
     }
 
     for my $dest (@dests) {
-	$dest = Mirror::AS::convert($dest);
-	next unless (exists($mirror_ASes{$dest}));
 	my $distance = 0;
 
 	my @path = @parts;
 	while (my $peer = pop @path) {
 	    last unless ($distance < $max_distance);
-	    $peer = Mirror::AS::convert($peer);
 	    next if ($dest eq $peer);
 	    $distance++;
 
-	    $as_routes{$peer} = {}
-		unless (exists($as_routes{$peer}));
+	    my $output = "$dest $peer $distance";
 
-	    my $min_distance = $distance;
-	    $min_distance = $as_routes{$peer}->{$dest}
-		if (exists($as_routes{$peer}->{$dest}) && $as_routes{$peer}->{$dest} < $min_distance);
-	    $as_routes{$peer}->{$dest} = $min_distance;
+	    next if ($last eq $output);
+	    print "$output\n";
+	    $last = $output;
 	}
     }
 
@@ -94,6 +75,3 @@ while (<>) {
 	print STDERR "Processed: $count...\r";
     }
 }
-
-Mirror::DB::set($db_out);
-Mirror::DB::store(\%as_routes);
