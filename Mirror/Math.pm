@@ -54,6 +54,8 @@ sub stddev {
     my ($avg, $var, $stddev) = (0, 0, 0);
     local $_;
 
+    return 0 if (scalar(@_) == 1);
+
     for (@_) {
 	$avg += $_;
     }
