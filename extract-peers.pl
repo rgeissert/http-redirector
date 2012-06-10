@@ -36,11 +36,10 @@ my $count = -1;
 
 $count = 0 if ($print_progress);
 
+sub seen;
+
 print "# AS peering table\n";
 print "# Using a maximum distance of $max_distance\n";
-
-# Poor man's way to avoid some dup lines:
-my $last = '';
 
 while (<>) {
     my @parts = split;
@@ -65,13 +64,28 @@ while (<>) {
 
 	    my $output = "$dest $peer $distance";
 
-	    next if ($last eq $output);
-	    print "$output\n";
-	    $last = $output;
+	    print "$output\n" if (not seen($output));
 	}
     }
 
     if ($count != -1 && ($count++)%1000 == 0) {
 	print STDERR "Processed: $count...\r";
     }
+}
+
+my %seen_cache_index;
+my @seen_cache;
+sub seen {
+    my $entry = shift;
+
+    return 1 if (exists($seen_cache_index{$entry}));
+
+    # cache up to 3 items
+    if (scalar(@seen_cache) == 3) {
+	delete $seen_cache_index{shift @seen_cache};
+    }
+
+    push @seen_cache, $entry;
+    $seen_cache_index{$entry} = undef;
+    return 0;
 }
