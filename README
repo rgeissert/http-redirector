@@ -109,6 +109,34 @@ use the following on your sources.list:
 Note: accessing the redirector from a local IP address is not ideal and
 may only work with hacks.
 
+AS peers database
+=================
+
+It is possible to instruct the redirector to serve clients from an
+originating AS to one or a set of destination AS' where mirrors are
+located. The database can be built with the build-peers-db.pl script.
+
+Its input is in the following format:
+
+<client AS> <mirror AS|mirror domain name> [distance]
+
+The preferred form of the second value is by AS. The script will
+internally rewrite it to its corresponding AS.
+
+Comments may be specified by prefixing them with a # character.
+
+The distance is currently not used by the redirector, but at some point
+it might. It defaults to 0. Any positive integer may be specified.
+It is expected to be read as 0 being the most preferred AS, 1 being
+the second, 2 being the third, and so on.
+
+Mirrors chosen by this database are still subject to geo location
+restriction.
+
+Caveats: since the database is AS-based, large Autonomous Systems that
+traverse countries or continents will still be considered, even if not
+desired.
+
 Assumptions
 ===========
 
