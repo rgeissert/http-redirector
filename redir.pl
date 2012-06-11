@@ -167,7 +167,7 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
 }
 
 # match by AS peer
-if (!$match_type && $as && -f $peers_db_store) {
+if (!$match_type && $as && $peers_db_store && -f $peers_db_store) {
     my $peers_db = retrieve($peers_db_store);
 
     foreach my $match (keys %{$peers_db->{$as}}) {
