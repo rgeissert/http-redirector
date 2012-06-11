@@ -125,6 +125,8 @@ specified, it will internally be rewriten to the existing mirrors in
 the corresponding AS.
 
 Comments may be specified by prefixing them with a # character.
+Multiple client ASNs can be specified by enclosing them in braces and
+separating them with commas. E.g. "{13138,2210} some.mirror.tld"
 
 The distance is currently not used by the redirector, but at some point
 it might. It defaults to 0. Any positive integer may be specified.
