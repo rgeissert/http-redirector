@@ -32,12 +32,14 @@ use Getopt::Long;
 my $mirrors_db_file = 'db';
 my $print_progress = 0;
 my $max_distance = -1;
+my $store_distance = 0;
 my $db_out = 'db.peers';
 
 GetOptions('mirrors-db=s' => \$mirrors_db_file,
 	    'progress!' => \$print_progress,
 	    'distance=i' => \$max_distance,
-	    'store-db=s' => \$db_out);
+	    'store-distance!' => \$store_distance,
+	    's|store-db=s' => \$db_out);
 
 our $mirrors_db = retrieve($mirrors_db_file);
 
@@ -92,9 +94,13 @@ while (<>) {
 	    unless (exists($peers_db{$client}));
 
 	for my $dest (@dests) {
-	    my $min_dist = $dist;
-	    $min_dist = $peers_db{$client}->{$dest}
-		if (exists($peers_db{$client}->{$dest}) && $peers_db{$client}->{$dest} < $min_dist);
+	    my $min_dist = undef;
+
+	    if ($store_distance) {
+		$min_dist = $dist;
+		$min_dist = $peers_db{$client}->{$dest}
+		    if (exists($peers_db{$client}->{$dest}) && $peers_db{$client}->{$dest} < $min_dist);
+	    }
 	    $peers_db{$client}->{$dest} = $min_dist;
 	}
     }
