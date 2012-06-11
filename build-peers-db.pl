@@ -32,11 +32,13 @@ use Getopt::Long;
 my $mirrors_db_file = 'db';
 my $print_progress = 0;
 my $max_distance = -1;
+my $max_peers = 100;
 my $store_distance = 0;
 my $db_out = 'db.peers';
 
 GetOptions('mirrors-db=s' => \$mirrors_db_file,
 	    'progress!' => \$print_progress,
+	    'peers-limit=i' => \$max_peers,
 	    'distance=i' => \$max_distance,
 	    'store-distance!' => \$store_distance,
 	    's|store-db=s' => \$db_out);
@@ -47,6 +49,7 @@ my %peers_db;
 my $count = -1;
 my %site2id;
 my %AS2ids;
+my %id_counter;
 
 sub build_site2id_index;
 sub build_AS2ids_index;
@@ -105,10 +108,27 @@ while (<>) {
 		$min_dist = $peers_db{$client}->{$dest}
 		    if (exists($peers_db{$client}->{$dest}) && $peers_db{$client}->{$dest} < $min_dist);
 	    }
+	    $id_counter{$dest} = (exists($id_counter{$dest})?$id_counter{$dest}+1:1)
+		unless (exists($peers_db{$client}->{$dest}));
 	    $peers_db{$client}->{$dest} = $min_dist;
 	}
     }
 }
+
+my @sorted_ids = sort { $id_counter{$b} <=> $id_counter{$a} } keys %id_counter;
+for my $id (@sorted_ids) {
+    if ($id_counter{$id} > $max_peers) {
+	print "Ignoring mirror $id, it has $id_counter{$id} peers\n";
+	for my $AS (keys %peers_db) {
+	    delete $peers_db{$AS}{$id};
+	    delete $peers_db{$AS}
+		if (scalar(keys %{$peers_db{$AS}}) == 0);
+	}
+    } else {
+	last;
+    }
+}
+
 
 Mirror::DB::set($db_out);
 Mirror::DB::store(\%peers_db);
