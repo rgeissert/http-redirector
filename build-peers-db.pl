@@ -65,6 +65,10 @@ while (<>) {
     my @dests = shift @parts;
     my $dist = int(shift @parts || 0);
 
+    if ($count != -1 && ($count++)%1000 == 0) {
+	print STDERR "Processed: $count...\r";
+    }
+
     last unless ($max_distance == -1 || $dist < $max_distance);
 
     if ($clientsASN[0] =~ s/^\{// && $clientsASN[0] =~ s/\}$//) {
@@ -103,10 +107,6 @@ while (<>) {
 	    }
 	    $peers_db{$client}->{$dest} = $min_dist;
 	}
-    }
-
-    if ($count != -1 && ($count++)%1000 == 0) {
-	print STDERR "Processed: $count...\r";
     }
 }
 
