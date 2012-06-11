@@ -170,10 +170,8 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
 if (!$match_type && $as && -f $peers_db_store) {
     my $peers_db = retrieve($peers_db_store);
 
-    foreach my $peer (keys %{$peers_db->{$as}}) {
-	foreach my $match (@{$rdb->{'AS'}{$peer}}) {
-	    $match_type = 'AS-peer' if (consider_mirror ($match));
-	}
+    foreach my $match (keys %{$peers_db->{$as}}) {
+	$match_type = 'AS-peer' if (consider_mirror ($match));
     }
 }
 

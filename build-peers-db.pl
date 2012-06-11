@@ -41,21 +41,14 @@ GetOptions('mirrors-db=s' => \$mirrors_db_file,
 
 our $mirrors_db = retrieve($mirrors_db_file);
 
-my %mirror_ASes;
-
-for my $type (keys %{$mirrors_db}) {
-    next if ($type eq 'all');
-
-    for my $AS (keys %{$mirrors_db->{$type}{'AS'}}) {
-	$mirror_ASes{$AS} = 1;
-    }
-}
-
-my %as_routes;
+my %peers_db;
 my $count = -1;
-my %sites_index;
+my %site2id;
+my %AS2ids;
 
-sub build_sites_index;
+sub build_site2id_index;
+sub build_AS2ids_index;
+
 
 $count = 0 if ($print_progress);
 
@@ -67,7 +60,7 @@ while (<>) {
     die "malformed input" unless (scalar(@parts) >= 2);
 
     my @clientsASN = shift @parts;
-    my $dest = shift @parts;
+    my @dests = shift @parts;
     my $dist = int(shift @parts || 0);
 
     last unless ($max_distance == -1 || $dist < $max_distance);
@@ -78,29 +71,32 @@ while (<>) {
 
     # allow the destination to be specified as the domain name of the
     # mirror
-    if ($dest !~ m/^(?:AS)?\d+$/) {
-	%sites_index or %sites_index = build_sites_index;
-	if (!exists($sites_index{$dest})) {
-	    die "Unknown site $dest";
+    if ($dests[0] !~ m/^(?:AS)?\d+$/) {
+	%site2id or %site2id = build_site2id_index;
+	if (!exists($site2id{$dests[0]})) {
+	    die "Unknown site ".$dests[0];
 	}
-	$dest = $sites_index{$dest};
-    }
-    $dest = Mirror::AS::convert($dest);
+	$dests[0] = $site2id{$dests[0]};
+    } else {
+	%AS2ids or %AS2ids = build_AS2ids_index;
+	$dests[0] = Mirror::AS::convert($dests[0]);
 
-    next unless (exists($mirror_ASes{$dest}));
+	next unless (exists($AS2ids{$dests[0]}));
+	@dests = @{$AS2ids{$dests[0]}};
+    }
 
     for my $client (@clientsASN) {
 	$client = Mirror::AS::convert($client);
 
-	next if ($client eq $dest);
+	$peers_db{$client} = {}
+	    unless (exists($peers_db{$client}));
 
-	$as_routes{$client} = {}
-	    unless (exists($as_routes{$client}));
-
-	my $min_dist = $dist;
-	$min_dist = $as_routes{$client}->{$dest}
-	    if (exists($as_routes{$client}->{$dest}) && $as_routes{$client}->{$dest} < $min_dist);
-	$as_routes{$client}->{$dest} = $min_dist;
+	for my $dest (@dests) {
+	    my $min_dist = $dist;
+	    $min_dist = $peers_db{$client}->{$dest}
+		if (exists($peers_db{$client}->{$dest}) && $peers_db{$client}->{$dest} < $min_dist);
+	    $peers_db{$client}->{$dest} = $min_dist;
+	}
     }
 
     if ($count != -1 && ($count++)%1000 == 0) {
@@ -109,24 +105,33 @@ while (<>) {
 }
 
 Mirror::DB::set($db_out);
-Mirror::DB::store(\%as_routes);
+Mirror::DB::store(\%peers_db);
 
-# Build a map[site]=>ASN
-# Perhaps a new attribute could be added to every site so that theere's
-# no need to traverse multiple indexes.
-sub build_sites_index {
-    my %id2site;
-    my %site2ASN;
+sub build_site2id_index {
+    my %site2id;
     for my $id (keys %{$mirrors_db->{'all'}}) {
-	$id2site{$id} = $mirrors_db->{'all'}{$id}{'site'};
+	$site2id{$mirrors_db->{'all'}{$id}{'site'}} = $id;
     }
+    return %site2id;
+}
+
+# Build a map[AS]=>site_id
+sub build_AS2ids_index {
+    my %AS2site;
     for my $type (keys %{$mirrors_db}) {
 	next if ($type eq 'all');
-	for my $ASN (keys %{$mirrors_db->{$type}{'AS'}}) {
-	    for my $id (@{$mirrors_db->{$type}{'AS'}{$ASN}}) {
-		$site2ASN{$id2site{$id}} = $ASN;
+	for my $AS (keys %{$mirrors_db->{$type}{'AS'}}) {
+	    for my $id (@{$mirrors_db->{$type}{'AS'}{$AS}}) {
+		$AS2site{$AS} = {}
+		    unless exists($AS2site{$AS});
+		$AS2site{$AS}{$id} = undef;
 	    }
+
 	}
     }
-    return %site2ASN;
+    for my $AS (keys %AS2site) {
+	my @ids = keys %{$AS2site{$AS}};
+	$AS2site{$AS} = \@ids;
+    }
+    return %AS2site;
 }

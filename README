@@ -118,10 +118,11 @@ located. The database can be built with the build-peers-db.pl script.
 
 Its input is in the following format:
 
-<client AS> <mirror AS|mirror domain name> [distance]
+<client AS> <mirror domain name|mirror AS> [distance]
 
-The preferred form of the second value is by AS. The script will
-internally rewrite it to its corresponding AS.
+The preferred form of the second value is by domain name. When an AS is
+specified, it will internally be rewriten to the existing mirrors in
+the corresponding AS.
 
 Comments may be specified by prefixing them with a # character.
 
