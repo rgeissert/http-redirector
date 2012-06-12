@@ -171,6 +171,7 @@ if (!$match_type && $as && $peers_db_store && -f $peers_db_store) {
     my $peers_db = retrieve($peers_db_store);
 
     foreach my $match (keys %{$peers_db->{$as}}) {
+	next unless (exists($db->{'all'}{$match}{$mirror_type.'-http'}));
 	$match_type = 'AS-peer' if (consider_mirror ($match));
     }
 }
