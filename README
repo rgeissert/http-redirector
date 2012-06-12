@@ -159,6 +159,37 @@ IMPORTANT: do not enable this setup, or run the redirector at all, on a
 mirror that is part of Debian's mirrors network without consulting the
 mirroradmin group and WAITING for their APPROVAL.
 
+AS peers database
+=================
+
+It is possible to instruct the redirector to serve clients from an
+originating AS to one or a set of destination AS' where mirrors are
+located. The database can be built with the build-peers-db.pl script.
+
+Its input is in the following format:
+
+<client AS> <mirror domain name|mirror AS> [distance]
+
+The preferred form of the second value is by domain name. When an AS is
+specified, it will internally be rewriten to the existing mirrors in
+the corresponding AS.
+
+Comments may be specified by prefixing them with a # character.
+Multiple client ASNs can be specified by enclosing them in braces and
+separating them with commas. E.g. "{13138,2210} some.mirror.tld"
+
+The distance is currently not used by the redirector, but at some point
+it might. It defaults to 0. Any positive integer may be specified.
+It is expected to be read as 0 being the most preferred AS, 1 being
+the second, 2 being the third, and so on.
+
+Mirrors chosen by this database are still subject to geo location
+restriction.
+
+Caveats: since the database is AS-based, large Autonomous Systems that
+traverse countries or continents will still be considered, even if not
+desired.
+
 Assumptions
 ===========
 

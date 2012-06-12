@@ -43,12 +43,15 @@ if ($request_method ne 'GET' && $request_method ne 'HEAD') {
 use Geo::IP;
 use Storable qw(retrieve);
 use Mirror::Math;
+use Mirror::AS;
 
 our $metric = ''; # alt: taxicab (default) | euclidean
+my $stddev_set = 'iquartile'; # iquartile (default) | population
 our $xtra_headers = 1;
 my $add_links = 1;
 my $random_sort = 1;
 my $db_store = 'db';
+my $peers_db_store = 'db.peers';
 our $mirror_type = 'archive';
 our %this_host = map { $_ => 1 } qw(); # this host's hostname
 our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
@@ -131,6 +134,7 @@ if (!defined($geo_rec)) {
     print "Status: 501 Not Implemented\r\n\r\n";
     exit;
 }
+$as = Mirror::AS::convert($as);
 
 $lat = $geo_rec->latitude;
 $lon = $geo_rec->longitude;
@@ -180,6 +184,16 @@ foreach my $match (@{$rdb->{'AS'}{$as}}) {
     $match_type = 'AS' if (consider_mirror ($match));
 }
 
+# match by AS peer
+if (!$match_type && $as && $peers_db_store && -f $peers_db_store) {
+    my $peers_db = retrieve($peers_db_store);
+
+    foreach my $match (keys %{$peers_db->{$as}}) {
+	next unless (exists($db->{'all'}{$match}{$mirror_type.'-http'}));
+	$match_type = 'AS-peer' if (consider_mirror ($match));
+    }
+}
+
 # match by country
 if (!$match_type) {
     foreach my $match (keys %{$rdb->{'country'}{$geo_rec->country_code}}) {
@@ -218,7 +232,14 @@ if (!$match_type) {
 
 my @sorted_hosts = sort { $hosts{$a} <=> $hosts{$b} } keys %hosts;
 my @close_hosts;
-my $dev = Mirror::Math::stddevp(values %hosts);
+my $dev;
+
+if ($stddev_set eq 'population') {
+    $dev = Mirror::Math::stddevp(values %hosts);
+} else {
+    my @iq_dists = map { $hosts{$_} } Mirror::Math::iquartile(@sorted_hosts);
+    $dev = Mirror::Math::stddev(@iq_dists);
+}
 
 # Closest host (or one of many), to use as the base distance
 my $host = $sorted_hosts[0];

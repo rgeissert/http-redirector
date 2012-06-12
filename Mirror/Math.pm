@@ -50,4 +50,53 @@ sub stddevp {
     return $stddev;
 }
 
+sub stddev {
+    my ($avg, $var, $stddev) = (0, 0, 0);
+    local $_;
+
+    return 0 if (scalar(@_) == 1);
+
+    for (@_) {
+	$avg += $_;
+    }
+    $avg /= scalar(@_);
+
+    for (@_) {
+	$var += ($_-$avg)**2;
+    }
+    $var /= scalar(@_)-1;
+
+    # Reduce precision
+    $var = sprintf('%f', $var);
+
+    $stddev = sqrt($var);
+    return $stddev;
+}
+
+sub ceil($) {
+    my $n = shift;
+    my $i  = int($n);
+
+    return $n if ($i == $n);
+    return $i+1;
+}
+
+sub iquartile(@) {
+    my @elems = @_;
+    my $count = scalar(@elems);
+    my ($lower, $upper) = ($count/4, 3*$count/4);
+
+    $lower = ceil($lower);
+    $upper = ceil($upper);
+
+    for (my $i = $count-$upper; $i > 0; $i--) {
+	pop @elems;
+    }
+    for (my $i = $lower-1; $i > 0; $i--) {
+	shift @elems;
+    }
+
+    return @elems;
+}
+
 1;
