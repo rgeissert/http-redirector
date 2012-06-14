@@ -40,8 +40,6 @@ needs to be done is:
 * Switch to Plack. Plack allows the redirector to run as a cgi or the many
 variations that exist.
 
-* Use the zebra dump parser to, try to, make better decisions.
-
 * Improve the mirror checker. Monitor mirrors (probably by ping), check
 IPv6 support (one time check, like --check-architectures)
 
