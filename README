@@ -178,11 +178,12 @@ separating them with commas. E.g. "{13138,2210} some.mirror.tld"
 
 The distance is currently not used by the redirector, but at some point
 it might. It defaults to 0. Any positive integer may be specified.
-It is expected to be read as 0 being the most preferred AS, 1 being
+It is expected to be read as 0 being the most preferred mirror, 1 being
 the second, 2 being the third, and so on.
 
 Mirrors chosen by this database are still subject to geo location
-restriction.
+restriction. I.e. from the set of candidates, a subset of those that
+are geographically closer will be created and used.
 
 Caveats: since the database is AS-based, large Autonomous Systems that
 traverse countries or continents will still be considered, even if not
