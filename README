@@ -69,7 +69,7 @@ check.pl should be run multiple times a day[2]
 
 [1] the script rebuilds the database, so any info collected by check.pl
 regarding the availability of mirrors is lost.
-check.pl --check-architectures should be run after update.pl, this is
+check.pl --check-everything should be run after update.pl, this is
 done automatically when running update.sh.
 
 [2] it really depends on the kind of setup one wants.
