@@ -37,13 +37,12 @@ TODO
 There are some TODOs and FIXMEs in the source code, additionally, what
 needs to be done is:
 
-* Switch to Plack. Plack allows the redirector to run as a cgi or the many
-variations that exist.
-
-* Improve the mirror checker. Monitor mirrors (probably by ping), check
-IPv6 support (one time check, like --check-architectures)
+* Improve the mirror checker. Monitor mirrors (probably by ping)
 
 * Better IPv6 support. Better handling of teredo clients.
+
+For the rest, check the issues list at github:
+https://github.com/rgeissert/http-redirector/issues
 
 Getting started
 ===============
