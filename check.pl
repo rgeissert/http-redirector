@@ -39,6 +39,7 @@ sub test_source($$);
 sub test_areas($$);
 sub create_agent();
 sub check_mirror($);
+sub log_message($$$);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -109,7 +110,7 @@ for my $type (keys %traces) {
 	if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
 	    while (my $id = pop @{$traces{$type}{$stamp}}) {
 		$db->{'all'}{$id}{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: old or not popular master stamp '$stamp'\n";
+		log_message($id, $type, "old or not popular master stamp '$stamp'");
 	    }
 	    next;
 	}
@@ -144,7 +145,7 @@ for my $type (keys %traces) {
 		# there are more up to date mirrors
 		while (my $id = pop @per_continent) {
 		    $db->{'all'}{$id}{$type.'-disabled'} = undef;
-		    print "Disabling $id/$type: old master trace in $continent\n";
+		    log_message($id, $type, "old master trace re $continent");
 		}
 	    } else {
 		$master_stamps{$continent} = $stamp;
@@ -301,7 +302,7 @@ sub check_mirror($) {
 
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    $mirror->{$type.'-disabled'} = undef;
-	    print "Disabling $id/$type: bad master trace\n";
+	    log_message($id, $type, "bad master trace");
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
 	}
@@ -320,7 +321,7 @@ sub check_mirror($) {
 		$ignore_master = 1;
 		$disable_reason = 'old site trace';
 	    } elsif (!$site_trace->uses_ftpsync) {
-		print "$id/$type: doesn't use ftpsync\n";
+		log_message($id, $type, "doesn't use ftpsync");
 		$mirror->{$type.'-notftpsync'} = undef;
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
@@ -337,13 +338,13 @@ sub check_mirror($) {
 
 	    if ($disable_reason) {
 		$mirror->{$type.'-disabled'} = undef;
-		print "Disabling $id/$type: $disable_reason\n";
+		log_message($id, $type, $disable_reason);
 		next unless ($check_archs || $check_areas);
 		$disable = 1;
 	    }
 
 	    if (exists($mirror->{$type.'-disabled'}) && !$disable) {
-		print "Re-enabling $id/$type\n";
+		log_message($id, $type, "re-considering, good traces");
 		delete $mirror->{$type.'-disabled'};
 	    }
 	}
@@ -354,7 +355,7 @@ sub check_mirror($) {
 	    if (!test_areas($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-areascheck-disabled'} = undef;
-		print "Disabling $id/$type: missing areas\n";
+		log_message($id, $type, "missing areas");
 		next unless ($check_archs);
 		$disable = 1;
 	    }
@@ -373,9 +374,9 @@ sub check_mirror($) {
 		next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
 		if (!test_arch($base_url, $type, $arch)) {
 		    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
-		    print "Disabling $id/$type/$arch\n";
+		    log_message($id, $type, "missing $arch");
 		} else {
-		    print "Re-enabling $id/$type/$arch\n"
+		    log_message($id, $type, "re-enabling $arch")
 			if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
 		    delete $mirror->{$type.'-'.$arch.'-disabled'};
 		    $all_failed = 0;
@@ -385,16 +386,22 @@ sub check_mirror($) {
 	    if ($all_failed) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
-		print "Disabling $id/$type: all archs failed\n";
+		log_message($id, $type, "all archs failed");
 		next;
 	    }
 
 	    if (!exists($db->{$type}{'arch'}{'source'}) && !test_source($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
-		print "Disabling $id/$type: no sources\n";
+		log_message($id, $type, "no sources");
 		next;
 	    }
 	}
     }
+}
+
+sub log_message($$$) {
+    my ($id, $type, $msg) = @_;
+
+    print "[$id/$type] $msg\n";
 }
