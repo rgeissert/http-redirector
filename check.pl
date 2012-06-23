@@ -123,7 +123,7 @@ for my $type (keys %traces) {
 
 		my $mirror = $db->{'all'}{$id};
 
-		$ftpsync_mirrs++ if (!exists($mirror->{$type.'-notftpsync'}) &&
+		$ftpsync_mirrs++ if (!exists($mirror->{$type.'-notinrelease'}) &&
 				    !exists($mirror->{$type.'-disabled'}));
 
 		push @per_continent, $id;
@@ -312,7 +312,7 @@ sub check_mirror($) {
 	    my $disable_reason;
 	    my $ignore_master = 0;
 
-	    delete $mirror->{$type.'-notftpsync'};
+	    delete $mirror->{$type.'-notinrelease'};
 
 	    if (!$site_trace->fetch($mirror->{'site'})) {
 		$ignore_master = 1;
@@ -322,7 +322,7 @@ sub check_mirror($) {
 		$disable_reason = 'old site trace';
 	    } elsif (!$site_trace->uses_ftpsync) {
 		log_message($id, $type, "doesn't use ftpsync");
-		$mirror->{$type.'-notftpsync'} = undef;
+		$mirror->{$type.'-notinrelease'} = undef;
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
 	    }

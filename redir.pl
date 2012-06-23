@@ -165,7 +165,7 @@ if ($archs[0] eq 'source' && !exists($rdb->{'arch'}{'source'})) {
     $archs[0] = '';
 }
 
-our $require_ftpsync = ($url =~ m,/InRelease$,);
+our $require_inrelease = ($url =~ m,/InRelease$,);
 
 Mirror::Math::set_metric($metric);
 
@@ -315,7 +315,7 @@ sub fullfils_request($$) {
 
     return 0 if ($ipv6 && !exists($mirror->{'ipv6'}));
 
-    return 0 if ($require_ftpsync && exists($mirror->{$mirror_type.'-notftpsync'}));
+    return 0 if ($require_inrelease && exists($mirror->{$mirror_type.'-notinrelease'}));
 
     for my $arch (@archs) {
 	next if ($arch eq '');
