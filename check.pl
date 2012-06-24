@@ -328,13 +328,15 @@ sub check_mirror($) {
 		$disable_reason = 'old ftpsync';
 	    }
 
-	    if (!$site_trace->features('inrelease')) {
-		log_message($id, $type, "doesn't handle InRelease files correctly");
-		$mirror->{$type.'-notinrelease'} = undef;
-	    }
-	    if (!$site_trace->features('i18n')) {
-		log_message($id, $type, "doesn't handle i18n files correctly");
-		$mirror->{$type.'-noti18n'} = undef;
+	    unless ($disable_reason) {
+		if (!$site_trace->features('inrelease')) {
+		    log_message($id, $type, "doesn't handle InRelease files correctly");
+		    $mirror->{$type.'-notinrelease'} = undef;
+		}
+		if (!$site_trace->features('i18n')) {
+		    log_message($id, $type, "doesn't handle i18n files correctly");
+		    $mirror->{$type.'-noti18n'} = undef;
+		}
 	    }
 
 	    if (!$ignore_master) {
