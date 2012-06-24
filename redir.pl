@@ -166,6 +166,7 @@ if ($archs[0] eq 'source' && !exists($rdb->{'arch'}{'source'})) {
 }
 
 our $require_inrelease = ($url =~ m,/InRelease$,);
+our $require_i18n = ($url =~ m,^dists/.+/i18n/,);
 
 Mirror::Math::set_metric($metric);
 
@@ -316,6 +317,8 @@ sub fullfils_request($$) {
     return 0 if ($ipv6 && !exists($mirror->{'ipv6'}));
 
     return 0 if ($require_inrelease && exists($mirror->{$mirror_type.'-notinrelease'}));
+
+    return 0 if ($require_i18n && exists($mirror->{$mirror_type.'-noti18n'}));
 
     for my $arch (@archs) {
 	next if ($arch eq '');

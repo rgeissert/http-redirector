@@ -80,4 +80,24 @@ sub good_ftpsync {
     return 0;
 }
 
+sub features {
+    my $self = shift;
+    my $feature = shift;
+
+    return 1
+        if ($self->{'software'} =~ m/^Used ftpsync-pushrsync/);
+
+    if ($self->{'software'} =~ m/^Used ftpsync version: ([0-9]+)$/) {
+	my $version = $1;
+	return 1 if ($feature eq 'inrelease' && $version >= 80387);
+	return 1 if ($feature eq 'i18n' && $version >= 20120521);
+    }
+    if ($self->{'software'} =~ m/^DMS sync dms-([0-9.\w-]+)$/) {
+	my $version = $1;
+	return 1 if ($feature eq 'inrelease' && $version ge '0.1');
+    }
+
+    return 0;
+}
+
 1;

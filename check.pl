@@ -124,6 +124,7 @@ for my $type (keys %traces) {
 		my $mirror = $db->{'all'}{$id};
 
 		$ftpsync_mirrs++ if (!exists($mirror->{$type.'-notinrelease'}) &&
+				    !exists($mirror->{$type.'-noti18n'}) &&
 				    !exists($mirror->{$type.'-disabled'}));
 
 		push @per_continent, $id;
@@ -313,6 +314,7 @@ sub check_mirror($) {
 	    my $ignore_master = 0;
 
 	    delete $mirror->{$type.'-notinrelease'};
+	    delete $mirror->{$type.'-noti18n'};
 
 	    if (!$site_trace->fetch($mirror->{'site'})) {
 		$ignore_master = 1;
@@ -322,9 +324,17 @@ sub check_mirror($) {
 		$disable_reason = 'old site trace';
 	    } elsif (!$site_trace->uses_ftpsync) {
 		log_message($id, $type, "doesn't use ftpsync");
-		$mirror->{$type.'-notinrelease'} = undef;
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
+	    }
+
+	    if (!$site_trace->features('inrelease')) {
+		log_message($id, $type, "doesn't handle InRelease files correctly");
+		$mirror->{$type.'-notinrelease'} = undef;
+	    }
+	    if (!$site_trace->features('i18n')) {
+		log_message($id, $type, "doesn't handle i18n files correctly");
+		$mirror->{$type.'-noti18n'} = undef;
 	    }
 
 	    if (!$ignore_master) {
