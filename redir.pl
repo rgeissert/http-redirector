@@ -231,6 +231,7 @@ if (!$match_type) {
     exit;
 }
 
+
 my @sorted_hosts = sort { $hosts{$a} <=> $hosts{$b} } keys %hosts;
 my @close_hosts;
 my $dev;
@@ -386,7 +387,7 @@ sub check_arch_for_list(@) {
 
 sub url_for_mirror($) {
     my $id = shift;
-    return '' unless ($id);
+    return '' unless (length($id));
     my $mirror = $db->{'all'}{$id};
     return "http://".$mirror->{'site'}.$mirror->{$mirror_type.'-http'};
 }
