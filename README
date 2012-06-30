@@ -49,6 +49,7 @@ Getting started
 
 Required packages:
     libcgi-simple-perl
+    libtimedate-perl
     libgeo-ip-perl
     wget
 
