@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 24;
+use Test::More tests => 28;
 
 use Mirror::Trace;
 use LWP::UserAgent;
@@ -73,3 +73,14 @@ ok($trace->_parse_trace($trace_data), 'Parse trace data');
 ok($trace->uses_ftpsync, 'ftpync-generated trace');
 ok($trace->features('inrelease'), 'dms handles inrelease files');
 ok(!$trace->features('i18n'), 'dms 0.1 does not handle i18n files');
+
+$trace_data = <<EOF;
+Mon Jul  2 21:40:00 UTC 2012
+DMS sync dms-0.2
+Running on host: ftp.de.debian.org
+EOF
+
+ok($trace->_parse_trace($trace_data), 'Parse trace data');
+ok($trace->uses_ftpsync, 'ftpync-generated trace');
+ok($trace->features('inrelease'), 'dms handles inrelease files');
+ok($trace->features('i18n'), 'dms 0.2 does handle i18n files');

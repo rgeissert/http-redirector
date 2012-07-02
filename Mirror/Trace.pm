@@ -95,6 +95,7 @@ sub features {
     if ($self->{'software'} =~ m/^DMS sync dms-([0-9.\w-]+)$/) {
 	my $version = $1;
 	return 1 if ($feature eq 'inrelease' && $version ge '0.1');
+	return 1 if ($feature eq 'i18n' && $version ge '0.2');
     }
 
     return 0;
