@@ -124,6 +124,18 @@ if (!$ipv6) {
 
 my $url = clean_url($q->param('url') || '');
 
+if (($mirror_type eq 'archive' && $url =~ m,^dists/squeeze, && (
+    $url eq 'dists/squeeze/InRelease' ||
+    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
+    $url =~ m,/(?:main|contrib|non-free)/i18n/.+(?<!\.bz2)$,
+    )) ||
+    ($mirror_type eq 'backports' && (
+    $url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
+    ))) {
+    print "Status: 404 Not Found\r\n\r\n";
+    exit;
+}
+
 if (!defined($geo_rec)) {
     # request can be handled locally. So, do it
     if ($action eq 'redir' && scalar(keys %this_host)) {
