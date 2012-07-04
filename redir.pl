@@ -189,7 +189,7 @@ print_xtra('Arch', join(', ', @archs));
 print_xtra('Country', $geo_rec->country_code);
 print_xtra('Continent', $geo_rec->continent_code);
 
-my %hosts;
+our %hosts;
 my $match_type = '';
 
 # match by AS
