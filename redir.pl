@@ -66,6 +66,10 @@ my %nearby_continents = (
     'EU' => [ qw(NA AS SA OC AF) ],
 );
 
+my %nearby_country = (
+    'NA' => [ qw(US CA) ],
+);
+
 sub fullfils_request($$);
 sub print_xtra($$);
 sub find_arch($@);
@@ -182,12 +186,15 @@ our $require_i18n = ($url =~ m,^dists/.+/i18n/,);
 
 Mirror::Math::set_metric($metric);
 
+my $continent = $geo_rec->continent_code;
+$continent = 'EU' if ($continent eq '--');
+
 print_xtra('IP', $IP);
 print_xtra('AS', $as);
 print_xtra('URL', $url);
 print_xtra('Arch', join(', ', @archs));
 print_xtra('Country', $geo_rec->country_code);
-print_xtra('Continent', $geo_rec->continent_code);
+print_xtra('Continent', $continent);
 
 our %hosts;
 my $match_type = '';
@@ -214,24 +221,30 @@ if (!$match_type) {
     }
 }
 
+# match by nearby-country
+if (!$match_type && exists($nearby_country{$continent})) {
+    for my $country (@{$nearby_country{$continent}}) {
+	foreach my $match (keys %{$rdb->{'country'}{$country}}) {
+	    $match_type = 'nearby-country' if (consider_mirror ($match));
+	}
+    }
+}
+
 # match by continent
 if (!$match_type) {
-    my $client_continent = $geo_rec->continent_code;
-    $client_continent = 'EU' if ($client_continent eq '--');
+    my @continents = ($continent, @{$nearby_continents{$continent}});
 
-    my @continents = ($client_continent, @{$nearby_continents{$client_continent}});
-
-    for my $continent (@continents) {
+    for my $mirror_continent (@continents) {
 	last if ($match_type);
 
 	my $mtype;
-	if ($continent eq $client_continent) {
+	if ($mirror_continent eq $continent) {
 	    $mtype = 'continent';
 	} else {
 	    $mtype = 'nearby-continent';
 	}
 
-	foreach my $match (keys %{$rdb->{'continent'}{$continent}}) {
+	foreach my $match (keys %{$rdb->{'continent'}{$mirror_continent}}) {
 	    $match_type = $mtype if (consider_mirror ($match));
 	}
     }
