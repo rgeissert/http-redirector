@@ -441,6 +441,8 @@ sub process_entry($) {
 	# Create skeleton, if missing:
 	$db{$type}{'AS'}{$as} = shared_clone([])
 	    unless (exists ($db{$type}{'AS'}{$as}));
+	push @{$db{$type}{'AS'}{$as}}, $id;
+
 	unless ($entry->{'restricted-to'} eq 'AS') {
 	    $db{$type}{'country'}{$country} = shared_clone({})
 		unless (exists ($db{$type}{'country'}{$country}));
@@ -452,7 +454,6 @@ sub process_entry($) {
 		$db{$type}{'continent'}{$continent}{$id} = undef;
 	    }
 	}
-	push @{$db{$type}{'AS'}{$as}}, $id;
 
 	foreach my $arch (keys %archs) {
 	    # more skeletons...
