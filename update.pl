@@ -289,6 +289,19 @@ sub process_entry($) {
 	}
     }
 
+    if (defined ($entry->{'restricted-to'})) {
+	if ($entry->{'restricted-to'} =~ m/^(?:strict-country|subnet)$/) {
+	    print STDERR "warning: unsupported Restricted-To $entry->{'restricted-to'}\n";
+	    return;
+	}
+	if ($entry->{'restricted-to'} !~ m/^(?:AS|country)$/) {
+	    print STDERR "warning: unknown Restricted-To value: '$entry->{'restricted-to'}'\n";
+	    return;
+	}
+    } else {
+	$entry->{'restricted-to'} = '';
+    }
+
     my ($r, $as) = (undef, '');
 
     my $attempts = 2;
@@ -428,14 +441,19 @@ sub process_entry($) {
 	# Create skeleton, if missing:
 	$db{$type}{'AS'}{$as} = shared_clone([])
 	    unless (exists ($db{$type}{'AS'}{$as}));
-	$db{$type}{'country'}{$country} = shared_clone({})
-	    unless (exists ($db{$type}{'country'}{$country}));
-	$db{$type}{'continent'}{$continent} = shared_clone({})
-	    unless (exists ($db{$type}{'continent'}{$continent}));
-
-	$db{$type}{'country'}{$country}{$id} = undef;
-	$db{$type}{'continent'}{$continent}{$id} = undef;
 	push @{$db{$type}{'AS'}{$as}}, $id;
+
+	unless ($entry->{'restricted-to'} eq 'AS') {
+	    $db{$type}{'country'}{$country} = shared_clone({})
+		unless (exists ($db{$type}{'country'}{$country}));
+	    $db{$type}{'country'}{$country}{$id} = undef;
+
+	    unless ($entry->{'restricted-to'} eq 'country') {
+		$db{$type}{'continent'}{$continent} = shared_clone({})
+		    unless (exists ($db{$type}{'continent'}{$continent}));
+		$db{$type}{'continent'}{$continent}{$id} = undef;
+	    }
+	}
 
 	foreach my $arch (keys %archs) {
 	    # more skeletons...
