@@ -290,11 +290,11 @@ sub process_entry($) {
     }
 
     if (defined ($entry->{'restricted-to'})) {
-	if ($entry->{'restricted-to'} =~ m/^(?:country|subnet)$/) {
+	if ($entry->{'restricted-to'} =~ m/^(?:strict-country|subnet)$/) {
 	    print STDERR "warning: unsupported Restricted-To $entry->{'restricted-to'}\n";
 	    return;
 	}
-	if ($entry->{'restricted-to'} ne 'AS') {
+	if ($entry->{'restricted-to'} !~ m/^(?:AS|country)$/) {
 	    print STDERR "warning: unknown Restricted-To value: '$entry->{'restricted-to'}'\n";
 	    return;
 	}
@@ -444,11 +444,13 @@ sub process_entry($) {
 	unless ($entry->{'restricted-to'} eq 'AS') {
 	    $db{$type}{'country'}{$country} = shared_clone({})
 		unless (exists ($db{$type}{'country'}{$country}));
-	    $db{$type}{'continent'}{$continent} = shared_clone({})
-		unless (exists ($db{$type}{'continent'}{$continent}));
-
 	    $db{$type}{'country'}{$country}{$id} = undef;
-	    $db{$type}{'continent'}{$continent}{$id} = undef;
+
+	    unless ($entry->{'restricted-to'} eq 'country') {
+		$db{$type}{'continent'}{$continent} = shared_clone({})
+		    unless (exists ($db{$type}{'continent'}{$continent}));
+		$db{$type}{'continent'}{$continent}{$id} = undef;
+	    }
 	}
 	push @{$db{$type}{'AS'}{$as}}, $id;
 
