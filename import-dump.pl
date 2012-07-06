@@ -13,7 +13,7 @@ my $file = undef;
 GetOptions('db-output=s' => \$db_output,
 	    'dump-file=s' => \$file);
 
-$file = $db_output.'dump' if (!defined($file));
+$file = $db_output.'.dump' if (!defined($file));
 
 my $db;
 my $VAR1;
