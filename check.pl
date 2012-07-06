@@ -47,6 +47,7 @@ my $store_traces = 0;
 my $check_archs = '';
 my $check_areas = '';
 my $check_everything = 0;
+my $incoming_db = '';
 my $threads = 4;
 my @ids;
 
@@ -57,6 +58,7 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'db-store=s' => \$db_store,
 	    'db-output=s' => \$db_output,
 	    'id|mirror-id=s' => \@ids,
+	    'incoming-db=s' => \$incoming_db,
 	    'store-traces!' => \$store_traces);
 
 if ($check_everything) {
@@ -69,7 +71,18 @@ $| = 1;
 our %traces :shared;
 our $ua;
 my $q = Thread::Queue->new();
-our $db :shared = shared_clone(retrieve($db_store));
+our $db :shared = undef;
+
+if ($incoming_db) {
+    # The db might be gone or not exist at all
+    eval { $db = shared_clone(retrieve($incoming_db)); };
+    if ($@) {
+	$db = undef;
+	$incoming_db = '';
+    }
+}
+$db = shared_clone(retrieve($db_store))
+    unless (defined($db));
 
 unless (scalar(@ids)) {
     @ids = keys %{$db->{'all'}};
@@ -175,6 +188,15 @@ for my $type (keys %traces) {
 
 Mirror::DB::set($db_output);
 Mirror::DB::store($db);
+
+# If we used an 'incoming' db, delete it after storing it as the normal
+# db. If any other process picked the incoming db too, well, they will
+# be using the same data we used, so it's okay.
+# This assumes that any other process will have been started after us,
+# or finished before use otherwise
+if ($incoming_db) {
+    unlink($incoming_db);
+}
 
 if ($store_traces) {
     Mirror::DB::set('traces.db');
