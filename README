@@ -67,6 +67,12 @@ update.sh should be run at least once a month.
 update.pl should be run whenever the master list changes[1]
 check.pl should be run multiple times a day[2]
 
+NOTE: update.sh will leave the new database in a file called "db.in"
+to be renamed to "db" if it is the first time it is created. When
+updating the db of an in-production instance, make sure ./check.pl is
+called with --incoming-db db.in, so that the new db will be picked up
+by the next run.
+
 [1] the script rebuilds the database, so any info collected by check.pl
 regarding the availability of mirrors is lost.
 check.pl --check-everything should be run after update.pl, this is
