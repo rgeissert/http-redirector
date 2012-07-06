@@ -39,5 +39,5 @@ for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.gz asnum/GeoIPASNumv6.dat.gz G
 done
 cd - >/dev/null
 
-./update.pl -j 15 --leave-new
-./check.pl -j 20 --db-store db.new --db-output db --check-everything
+./update.pl -j 15 --db-output db.wip
+./check.pl -j 20 --db-store db.wip --db-output db --check-everything

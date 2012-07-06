@@ -38,12 +38,13 @@ use Thread::Queue;
 
 my $current_list = 'Mirrors.masterlist';
 my $db_store = 'db';
+my $db_output = $db_store;
 my @mirror_types = qw(www volatile archive old nonus
 			backports security cdimage);
 my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile cdimage);
 
 # Options:
-my ($update_list, $threads, $leave_new) = (1, 4, 0);
+my ($update_list, $threads) = (1, 4);
 our $verbose = 0;
 
 sub parse_list($$);
@@ -52,7 +53,7 @@ sub fancy_get_host($);
 
 GetOptions('update-list!' => \$update_list,
 	    'j|threads=i' => \$threads,
-	    'leave-new' => \$leave_new,
+	    'db-output=s' => \$db_output,
 	    'verbose' => \$verbose);
 
 if ($update_list) {
@@ -133,9 +134,7 @@ for my $thr (threads->list()) {
 if (scalar(keys %{$db{'archive'}{'arch'}{'i386'}}) < 10) {
     print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
-    $db_store .= '.new'
-	if ($leave_new);
-    Mirror::DB::set($db_store);
+    Mirror::DB::set($db_output);
     Mirror::DB::store(\%db);
 }
 
