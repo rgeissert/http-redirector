@@ -61,6 +61,9 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'incoming-db=s' => \$incoming_db,
 	    'store-traces!' => \$store_traces);
 
+# Avoid picking up db.in when working on db.wip, for example
+$incoming_db ||= $db_store.'.in';
+
 if ($check_everything) {
     $check_archs = 1 unless ($check_archs ne '');
     $check_areas = 1 unless ($check_areas ne '');
@@ -86,6 +89,8 @@ $db = shared_clone(retrieve($db_store))
 
 unless (scalar(@ids)) {
     @ids = keys %{$db->{'all'}};
+} elsif ($incoming_db) {
+    die("error: passed --id but there's an incoming db: $incoming_db\n");
 }
 
 $q->enqueue(@ids);
