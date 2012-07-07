@@ -155,6 +155,9 @@ $as = Mirror::AS::convert($as);
 $lat = $geo_rec->latitude;
 $lon = $geo_rec->longitude;
 
+# Do not send Link headers on directory requests
+$add_links = 0 if ($add_links && $url =~ m,/$,);
+
 # Even-numbered list: '[default]' => qr/regex/
 # Whenever regex matches but there's no value in the capture #1 then
 # the default value is used.
