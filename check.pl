@@ -328,8 +328,10 @@ sub check_mirror($) {
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
 	my $disable = 0;
 
+	delete $mirror->{$type.'-badmaster'};
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    $mirror->{$type.'-disabled'} = undef;
+	    $mirror->{$type.'-badmaster'} = undef;
 	    log_message($id, $type, "bad master trace");
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
@@ -340,12 +342,15 @@ sub check_mirror($) {
 	    my $disable_reason;
 	    my $ignore_master = 0;
 
+	    delete $mirror->{$type.'-badsite'};
+	    delete $mirror->{$type.'-oldftpsync'};
 	    delete $mirror->{$type.'-notinrelease'};
 	    delete $mirror->{$type.'-noti18n'};
 
 	    if (!$site_trace->fetch($mirror->{'site'})) {
 		$ignore_master = 1;
 		$disable_reason = 'bad site trace';
+		$mirror->{$type.'-badsite'} = undef;
 	    } elsif ($site_trace->date < $master_trace->date) {
 		$ignore_master = 1;
 		$disable_reason = 'old site trace';
@@ -353,6 +358,7 @@ sub check_mirror($) {
 		log_message($id, $type, "doesn't use ftpsync");
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
+		$mirror->{$type.'-oldftpsync'} = undef;
 	    }
 
 	    unless ($disable_reason) {
