@@ -78,6 +78,7 @@ sub consider_mirror($);
 sub check_arch_for_list(@);
 sub url_for_mirror($);
 sub do_redirect($$);
+sub should_blackhole($);
 
 my @output;
 our @archs;
@@ -131,14 +132,7 @@ if (!$ipv6) {
 
 my $url = clean_url($q->param('url') || '');
 
-if (($mirror_type eq 'archive' && $url =~ m,^dists/squeeze, && (
-    $url eq 'dists/squeeze/InRelease' ||
-    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
-    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
-    )) ||
-    ($mirror_type eq 'backports' && (
-    $url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
-    ))) {
+if (should_blackhole($url)) {
     print "Status: 404 Not Found\r\n\r\n";
     exit;
 }
@@ -455,4 +449,20 @@ sub do_redirect($$) {
     print "Content-type: text/plain\r\n";
     print "Status: 302 Moved Temporarily\r\n";
     print "Location: ".url_for_mirror($host).$real_url."\r\n";
+}
+
+sub should_blackhole($) {
+    my $url = shift;
+
+    if (($mirror_type eq 'archive' && $url =~ m,^dists/squeeze, && (
+	$url eq 'dists/squeeze/InRelease' ||
+	$url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
+	$url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
+	)) ||
+	($mirror_type eq 'backports' && (
+	$url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
+	))) {
+	return 1;
+    }
+    return 0;
 }
