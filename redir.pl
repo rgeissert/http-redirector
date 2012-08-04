@@ -181,8 +181,11 @@ if ($archs[0] eq 'source' && !exists($rdb->{'arch'}{'source'})) {
     $archs[0] = '';
 }
 
-our $require_inrelease = ($url =~ m,/InRelease$,);
-our $require_i18n = ($url =~ m,^dists/.+/i18n/,);
+our ($require_inrelease, $require_i18n) = (0, 0);
+if ($mirror_type ne 'old') {
+    $require_inrelease = ($url =~ m,/InRelease$,);
+    $require_i18n = ($url =~ m,^dists/.+/i18n/,);
+}
 
 Mirror::Math::set_metric($metric);
 
