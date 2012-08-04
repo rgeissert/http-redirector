@@ -86,7 +86,10 @@ my $action = 'redir';
 unless ($request_method eq 'HEAD') {
     $xtra_headers = 0;
     $add_links = 0;
+} else {
+    print "Vary: x-web-demo\r\n";
 }
+
 $mirror_type = $q->param('mirror') || 'archive';
 
 if ($mirror_type =~ s/\.list$//) {
