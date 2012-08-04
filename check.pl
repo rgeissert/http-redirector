@@ -40,6 +40,7 @@ sub test_areas($$);
 sub create_agent();
 sub check_mirror($);
 sub log_message($$$);
+sub mirror_is_good($$);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -141,9 +142,7 @@ for my $type (keys %traces) {
 
 		my $mirror = $db->{'all'}{$id};
 
-		$good_mirrors++ if (!exists($mirror->{$type.'-notinrelease'}) &&
-				    !exists($mirror->{$type.'-noti18n'}) &&
-				    !exists($mirror->{$type.'-disabled'}));
+		$good_mirrors++ if (mirror_is_good($mirror, $type));
 
 		push @per_continent, $id;
 	    }
@@ -206,6 +205,19 @@ if ($incoming_db) {
 if ($store_traces) {
     Mirror::DB::set('traces.db');
     Mirror::DB::store(\%traces);
+}
+
+sub mirror_is_good($$) {
+    my ($mirror, $type) = @_;
+
+    return 0 if (exists($mirror->{$type.'-disabled'}));
+
+    return 1 if ($type eq 'old');
+
+    return 0 if (exists($mirror->{$type.'-notinrelease'}));
+    return 0 if (exists($mirror->{$type.'-noti18n'}));
+
+    return 1;
 }
 
 sub has_type_reference {
