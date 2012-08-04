@@ -24,7 +24,6 @@ use strict;
 use warnings;
 use Getopt::Long;
 use File::stat qw(stat);
-use Storable qw(store dclone);
 use Socket;
 
 use Mirror::AS;
