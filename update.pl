@@ -479,7 +479,8 @@ sub process_entry($) {
     delete $entry->{'comments'};
     delete $entry->{'type'};
     delete $entry->{'updates'};
-    delete $entry->{'restricted-to'};
+    delete $entry->{'restricted-to'}
+	unless (length($entry->{'restricted-to'}));
 }
 
 sub fancy_get_host($) {
