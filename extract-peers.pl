@@ -29,7 +29,7 @@ my $print_progress = 0;
 my $max_distance = 1;
 
 GetOptions('progress!' => \$print_progress,
-	    'distance=i' => \$max_distance);
+	    'distance=i' => \$max_distance) or exit 1;
 
 my %as_routes;
 my $count = -1;

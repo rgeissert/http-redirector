@@ -41,7 +41,7 @@ GetOptions('mirrors-db=s' => \$mirrors_db_file,
 	    'peers-limit=i' => \$max_peers,
 	    'distance=i' => \$max_distance,
 	    'store-distance!' => \$store_distance,
-	    's|store-db=s' => \$db_out);
+	    's|store-db=s' => \$db_out) or exit 1;
 
 our $mirrors_db = retrieve($mirrors_db_file);
 

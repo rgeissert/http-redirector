@@ -60,7 +60,7 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'db-output=s' => \$db_output,
 	    'id|mirror-id=s' => \@ids,
 	    'incoming-db=s' => \$incoming_db,
-	    'store-traces!' => \$store_traces);
+	    'store-traces!' => \$store_traces) or exit 1;
 
 # Avoid picking up db.in when working on db.wip, for example
 $incoming_db ||= $db_store.'.in';

@@ -35,7 +35,7 @@ my $generate_url = 0;
 GetOptions('db|mirrors-db=s' => \$db_store,
 	    'i|translate-id!' => \$translate_id,
 	    't|translate-type!' => \$translate_type,
-	    'u|generate-url!' => \$generate_url);
+	    'u|generate-url!' => \$generate_url) or exit 1;
 
 if ($generate_url) {
     $translate_id = 1;

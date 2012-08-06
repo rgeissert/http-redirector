@@ -53,7 +53,7 @@ sub fancy_get_host($);
 GetOptions('update-list!' => \$update_list,
 	    'j|threads=i' => \$threads,
 	    'db-output=s' => \$db_output,
-	    'verbose' => \$verbose);
+	    'verbose' => \$verbose) or exit 1;
 
 if ($update_list) {
     # TODO: use LWP
