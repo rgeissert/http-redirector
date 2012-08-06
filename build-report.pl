@@ -62,5 +62,12 @@ for my $id (keys %{$db->{'all'}}) {
 	    if (exists($mirror->{$type.'-noti18n'}));
 	print "\tToo old ftpsync\n"
 	    if (exists($mirror->{$type.'-oldftpsync'}));
+	for my $key (keys %{$mirror}) {
+	    next unless ($key =~ m/^\Q$type-\E/);
+	    if ($key =~ m/^\Q$type-\E(.+?)-disabled$/) {
+		next unless (exists($db->{$type}{'arch'}{$1}));
+		print "\tMissing architecture: $1, but listed\n";
+	    }
+	}
     }
 }
