@@ -35,7 +35,7 @@ my $db = retrieve($db_store);
 print "Mirrors db report\n";
 print "=================\n";
 
-for my $id (keys %{$db->{'all'}}) {
+for my $id (sort keys %{$db->{'all'}}) {
     my $mirror = $db->{'all'}{$id};
     my @mirror_types;
 
