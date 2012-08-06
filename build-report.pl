@@ -47,6 +47,7 @@ for my $id (keys %{$db->{'all'}}) {
     }
     for my $type (@mirror_types) {
 	print "Type: $type\n";
+	print "Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
 	print "Path: ",$mirror->{"$type-http"},"\n";
 	print "\tBad master trace\n"
 	    if (exists($mirror->{$type.'-badmaster'}));
