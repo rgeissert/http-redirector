@@ -37,15 +37,27 @@ sub _parse_trace {
     my $self = shift;
     my $trace = shift;
 
-    my ($date, $software) = split /\n/,$trace,3;
+    my ($date, $software, $archs);
+
+    my @trace_lines = split /\n/,$trace;
+    ($date, $software) = (shift @trace_lines, shift @trace_lines);
 
     return 0 unless (defined($date));
 
     return 0
 	unless ($date =~ m/^\w{3} \s+ \w{3} \s+ \d{1,2} \s+ (?:\d{2}:){2}\d{2} \s+ UTC \s+ \d{4}$/x);
 
-    $self->{'software'} = $software;
+    for my $line (@trace_lines) {
+	return 0 unless ($line =~ m/^([\w -]+):(.*)\s*$/);
+	my ($key, $val) = ($1, $2);
+
+	$archs = $val if ($key eq 'Architectures');
+    }
+
+    $self->{'software'} = $software || '';
     $self->{'date'} = str2time($date) or return 0;
+    $self->{'archs'} = $archs;
+
     return 1;
 }
 
@@ -84,6 +96,10 @@ sub features {
     my $self = shift;
     my $feature = shift;
 
+    if ($feature eq 'architectures') {
+	return defined($self->{'archs'});
+    }
+
     return 1
         if ($self->{'software'} =~ m/^Used ftpsync-pushrsync/);
 
@@ -99,6 +115,13 @@ sub features {
     }
 
     return 0;
+}
+
+sub arch {
+    my $self = shift;
+    my $arch = shift;
+
+    return ($self->{'archs'} =~ m/\b$arch\b/ || $self->{'archs'} =~ m/\bFULL\b/);
 }
 
 1;

@@ -40,11 +40,13 @@ sub test_areas($$);
 sub create_agent();
 sub check_mirror($);
 sub log_message($$$);
+sub archs_by_mirror($$);
 
 my $db_store = 'db';
 my $db_output = $db_store;
 my $store_traces = 0;
 my $check_archs = '';
+my $check_trace_archs = '';
 my $check_areas = '';
 my $check_everything = 0;
 my $incoming_db = '';
@@ -53,6 +55,7 @@ my @ids;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'check-areas!' => \$check_areas,
+	    'check-trace-architectures!' => \$check_trace_archs,
 	    'check-everything' => \$check_everything,
 	    'j|threads=i' => \$threads,
 	    'db-store=s' => \$db_store,
@@ -67,6 +70,7 @@ $incoming_db ||= $db_store.'.in';
 if ($check_everything) {
     $check_archs = 1 unless ($check_archs ne '');
     $check_areas = 1 unless ($check_areas ne '');
+    $check_trace_archs = 1 unless ($check_trace_archs ne '');
 }
 
 $| = 1;
@@ -310,6 +314,20 @@ sub create_agent() {
     return $ua;
 }
 
+sub archs_by_mirror($$) {
+    my ($id, $type) = @_;
+
+    # Find the list of architectures supposedly included by the
+    # given mirror. Traverse the inverted indexes to determine them
+    my @all_archs = keys %{$db->{$type}{'arch'}};
+    my @archs;
+    for my $arch (@all_archs) {
+	next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
+	push @archs, $arch;
+    }
+    return @archs;
+}
+
 sub check_mirror($) {
     my $id = shift;
     my $mirror = $db->{'all'}{$id};
@@ -321,6 +339,7 @@ sub check_mirror($) {
     }
 
     for my $type (@mirror_types) {
+	next if (exists($mirror->{$type.'-tracearchcheck-disabled'}) && !$check_trace_archs);
 	next if (exists($mirror->{$type.'-archcheck-disabled'}) && !$check_archs);
 	next if (exists($mirror->{$type.'-areascheck-disabled'}) && !$check_areas);
 
@@ -364,6 +383,36 @@ sub check_mirror($) {
 		    log_message($id, $type, "doesn't handle i18n files correctly");
 		    $mirror->{$type.'-noti18n'} = undef;
 		}
+		if ($site_trace->features('architectures')) {
+		    if ($check_trace_archs) {
+			delete $mirror->{$type.'-tracearchcheck-disabled'};
+
+			my @archs = archs_by_mirror($id, $type);
+			for my $arch (@archs) {
+			    if (!$site_trace->arch($arch)) {
+				# Whenever disabling an arch because it
+				# isn't listed in the site's trace file,
+				# always require this check to be performed
+				# before re-enabling the arch
+				$mirror->{$type.'-'.$arch.'-trace-disabled'} = undef;
+				$mirror->{$type.'-'.$arch.'-disabled'} = undef;
+				log_message($id, $type, "missing $arch (det. from trace file)");
+			    } elsif (exists($mirror->{$type.'-'.$arch.'-trace-disabled'})) {
+				log_message($id, $type, "re-enabling $arch (det. from trace file)")
+				    if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
+				delete $mirror->{$type.'-'.$arch.'-disabled'};
+				delete $mirror->{$type.'-'.$arch.'-trace-disabled'};
+			    }
+			}
+
+			if (!exists($db->{$type}{'arch'}{'source'}) && !$site_trace->arch('source')) {
+			    $mirror->{$type.'-tracearchcheck-disabled'} = undef;
+			    $disable_reason = "no sources (det. from trace file)";
+			}
+		    }
+		} else {
+		    log_message($id, $type, "doesn't list architectures");
+		}
 	    }
 
 	    if (!$ignore_master) {
@@ -404,13 +453,13 @@ sub check_mirror($) {
 	    delete $mirror->{$type.'-disabled'} unless ($disable);
 	    delete $mirror->{$type.'-archcheck-disabled'};
 
-	    # Find the list of architectures supposedly included by the
-	    # given mirror. There's no index for it, so the search is a bit
-	    # more expensive
-	    my @archs = keys %{$db->{$type}{'arch'}};
+	    my @archs = archs_by_mirror($id, $type);
 	    my $all_failed = 1;
 	    for my $arch (@archs) {
-		next unless (exists($db->{$type}{'arch'}{$arch}{$id}));
+		# Don't even check it if it was disabled because the
+		# trace file says it is not included
+		next if (exists($mirror->{$type.'-'.$arch.'-trace-disabled'}));
+
 		if (!test_arch($base_url, $type, $arch)) {
 		    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
 		    log_message($id, $type, "missing $arch");
