@@ -389,6 +389,10 @@ sub check_mirror($) {
 
 			my @archs = archs_by_mirror($id, $type);
 			for my $arch (@archs) {
+			    if ($arch eq 'any' && $site_trace->arch('GUESSED')) {
+				# not much can be done about it
+				next;
+			    }
 			    if (!$site_trace->arch($arch)) {
 				# Whenever disabling an arch because it
 				# isn't listed in the site's trace file,
