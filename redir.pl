@@ -112,6 +112,21 @@ $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 
 our $ipv6 = ($IP =~ m/:/);
 
+# Handle IPv6 over IPv4 requests as if they originated from an IPv4
+if ($ipv6 && $IP =~ m/^200([12]):/) {
+    my $tunnel_type = $1;
+    $ipv6 = 0;
+    print_xtra('IPv6', $IP);
+
+    if ($tunnel_type == 1) { # teredo
+	$IP =~ m/:(\w{2})(\w{2}):(\w{2})(\w{2})$/ or die;
+	$IP = join('.', hex($1)^0xff, hex($2)^0xff, hex($3)^0xff, hex($4)^0xff);
+    } elsif ($tunnel_type == 2) { # 6to4
+	$IP =~ m/^2002:(\w{2})(\w{2}):(\w{2})(\w{2}):/ or die;
+	$IP = join('.', hex($1), hex($2), hex($3), hex($4));
+    }
+}
+
 my ($g_city, $g_as);
 my ($geo_rec, $as);
 our ($lat, $lon);
