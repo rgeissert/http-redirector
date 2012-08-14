@@ -39,7 +39,7 @@ needs to be done is:
 
 * Improve the mirror checker. Monitor mirrors (probably by ping)
 
-* Better IPv6 support. Better handling of teredo clients.
+* Better IPv6 support.
 
 For the rest, check the issues list at github:
 https://github.com/rgeissert/http-redirector/issues
