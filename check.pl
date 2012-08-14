@@ -414,8 +414,7 @@ sub check_mirror($) {
 				$mirror->{$type.'-'.$arch.'-disabled'} = undef;
 				log_message($id, $type, "missing $arch (det. from trace file)");
 			    } elsif (exists($mirror->{$type.'-'.$arch.'-trace-disabled'})) {
-				log_message($id, $type, "re-enabling $arch (det. from trace file)")
-				    if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
+				log_message($id, $type, "re-enabling $arch (det. from trace file)");
 				delete $mirror->{$type.'-'.$arch.'-disabled'};
 				delete $mirror->{$type.'-'.$arch.'-trace-disabled'};
 			    }
