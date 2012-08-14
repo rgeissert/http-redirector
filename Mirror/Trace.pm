@@ -37,7 +37,7 @@ sub _parse_trace {
     my $self = shift;
     my $trace = shift;
 
-    my ($date, $software, $archs);
+    my ($date, $software, $archs, $revisions);
 
     my @trace_lines = split /\n/,$trace;
     ($date, $software) = (shift @trace_lines, shift @trace_lines);
@@ -52,11 +52,18 @@ sub _parse_trace {
 	my ($key, $val) = ($1, $2);
 
 	$archs = $val if ($key eq 'Architectures');
+	$revisions = $val if ($key eq 'Revision');
+    }
+
+    if (defined($revisions)) {
+	my @revs = split /\s+/,$revisions;
+	$revisions = { map { lc($_) => 1 } @revs };
     }
 
     $self->{'software'} = $software || '';
     $self->{'date'} = str2time($date) or return 0;
     $self->{'archs'} = $archs;
+    $self->{'revision'} = $revisions;
 
     return 1;
 }
@@ -98,6 +105,12 @@ sub features {
 
     if ($feature eq 'architectures') {
 	return defined($self->{'archs'});
+    }
+
+    return 1
+	if ($feature eq 'revision' && defined($self->{'revision'}));
+    if (defined($self->{'revision'})) {
+	return (exists($self->{'revision'}{$feature}));
     }
 
     return 1
