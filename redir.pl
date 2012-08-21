@@ -113,7 +113,7 @@ $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
 our $ipv6 = ($IP =~ m/:/);
 
 # Handle IPv6 over IPv4 requests as if they originated from an IPv4
-if ($ipv6 && $IP =~ m/^200([12]):/) {
+if ($ipv6 && $IP =~ m/^200(2|1(?=:0:)):/) {
     my $tunnel_type = $1;
     $ipv6 = 0;
     print_xtra('IPv6', $IP);
