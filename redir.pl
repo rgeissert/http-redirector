@@ -473,6 +473,10 @@ sub should_blackhole($) {
     my $url = shift;
 
     if ($mirror_type eq 'archive') {
+	return 1 if ($url =~ m,^dists/wheezy, && (
+	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
+	    ));
 	return 1 if ($url =~ m,^dists/squeeze, && (
 	    $url eq 'dists/squeeze/InRelease' ||
 	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
