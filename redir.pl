@@ -119,10 +119,10 @@ if ($ipv6 && $IP =~ m/^200(2|1(?=:0:)):/) {
     print_xtra('IPv6', $IP);
 
     if ($tunnel_type == 1) { # teredo
-	$IP =~ m/:(\w{2})(\w{2}):(\w{2})(\w{2})$/ or die;
+	$IP =~ m/:(\w{0,2}?)(\w{1,2}):(\w{0,2}?)(\w{1,2})$/ or die;
 	$IP = join('.', hex($1)^0xff, hex($2)^0xff, hex($3)^0xff, hex($4)^0xff);
     } elsif ($tunnel_type == 2) { # 6to4
-	$IP =~ m/^2002:(\w{2})(\w{2}):(\w{2})(\w{2}):/ or die;
+	$IP =~ m/^2002:(\w{0,2}?)(\w{1,2}):(\w{0,2}?)(\w{1,2}):/ or die;
 	$IP = join('.', hex($1), hex($2), hex($3), hex($4));
     }
 }
