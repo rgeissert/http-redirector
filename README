@@ -51,6 +51,7 @@ Required packages:
     libcgi-simple-perl
     libtimedate-perl
     libgeo-ip-perl
+    libwww-perl
     wget
 
 Run ./update.sh, it will download the geoip databases, the mirrors
