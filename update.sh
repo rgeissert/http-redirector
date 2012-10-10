@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ####################
-#    Copyright (C) 2011 by Raphael Geissert <geissert@debian.org>
+#    Copyright (C) 2011, 2012 by Raphael Geissert <geissert@debian.org>
 #
 #    This file is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -20,22 +20,48 @@
 #    Public License 3 can be found in '/usr/share/common-licenses/GPL-3'.
 ####################
 
-set -e
+set -eu
+
+compression=gz
+if which unxz >/dev/null; then
+    compression=xz
+fi
 
 mkdir -p geoip
 cd geoip
-for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.gz asnum/GeoIPASNumv6.dat.gz GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz; do
+for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.$compression asnum/GeoIPASNumv6.dat.gz GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz; do
     wget -U '' -N http://geolite.maxmind.com/download/geoip/database/$db
     db="$(basename "$db")"
-    if [ -f ${db%.gz} ]; then
-	[ $db -nt ${db%.gz} ] || continue
+    case "$db" in
+	*.gz|*.xz)
+	    file_comp="${db##*.}"
+	;;
+	*)
+	    echo "error: unknown compression of file $db" >&2
+	    exit 1
+	;;
+    esac
+
+    decomp_db="${db%.$file_comp}"
+    if [ -f $decomp_db ]; then
+	[ $db -nt $decomp_db ] || continue
     fi
     rm -f new.$db
     ln $db new.$db
-    gunzip -f new.$db
-    db=${db%.gz}
-    mv new.$db $db
-    touch -r $db.gz $db
+    case "$file_comp" in
+	gz)
+	    gunzip -f new.$db
+	;;
+	xz)
+	    unxz -f new.$db
+	;;
+	*)
+	    echo "error: unknown decompressor for .$file_comp" >&2
+	    exit 1
+	;;
+    esac
+    mv new.$decomp_db $decomp_db
+    touch -r $db $decomp_db
 done
 cd - >/dev/null
 
