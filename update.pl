@@ -373,6 +373,13 @@ sub process_entry($) {
     $entry->{'lat'} = $lat;
     $entry->{'lon'} = $lon;
 
+    # Remove trailing zeros
+    for my $coord_type (qw(lat lon)) {
+	next unless ($entry->{$coord_type} =~ m/\./);
+	$entry->{$coord_type} =~ s/0+$//;
+	$entry->{$coord_type} =~ s/\.$//;
+    }
+
     if (defined($entry->{'bandwidth'})) {
 	my $bw = 0;
 	if ($entry->{'bandwidth'} =~ m/([\d.]+)\s*([tgm])/i) {
