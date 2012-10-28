@@ -399,7 +399,8 @@ sub clean_url($) {
     $url =~ s,^/,,;
     $url =~ s,^\.\.?/,,g;
     $url =~ s,(?<=/)\.\.?(?:/|$),,g;
-    $url =~ s, ,+,g;
+    $url = CGI::Simple->url_encode($url);
+    $url =~ s,%2F,/,g;
     return $url;
 }
 
