@@ -66,4 +66,4 @@ done
 cd - >/dev/null
 
 ./update.pl -j 15 --db-output db.wip
-./check.pl -j 20 --db-store db.wip --db-output db.in --check-everything
+./check.pl -j 20 --db-store db.wip --db-output db.in --check-everything --disable-sites ''
