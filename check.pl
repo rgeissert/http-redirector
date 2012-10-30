@@ -320,7 +320,7 @@ sub create_agent() {
     $ua->timeout(10);
     $ua->agent("MirrorChecker/0.1 ");
     $ua->conn_cache(LWP::ConnCache->new());
-    $ua->max_redirect(1);
+    $ua->max_redirect(0);
     $ua->max_size(1024);
 
     return $ua;
