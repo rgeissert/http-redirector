@@ -27,10 +27,18 @@ sub fetch {
     my $req_url = $self->{'base_url'}.'project/trace/'.$file;
 
     my $response = $self->{'ua'}->get($req_url);
-    return 0 unless ($response->is_success);
+    unless ($response->is_success) {
+	$self->{'fetch_error'} = $response->status_line;
+	return 0;
+    }
 
     my $trace = $response->decoded_content;
     return $self->_parse_trace($trace);
+}
+
+sub fetch_error {
+    my $self = shift;
+    return $self->{'fetch_error'};
 }
 
 sub _parse_trace {

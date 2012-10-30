@@ -360,8 +360,9 @@ sub check_mirror($) {
 	my $disable = 0;
 
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
+	    my $error = $master_trace->fetch_error || 'parse error';
 	    $mirror->{$type.'-disabled'} = undef;
-	    log_message($id, $type, "bad master trace");
+	    log_message($id, $type, "bad master trace ($error)");
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
 	}
@@ -375,8 +376,9 @@ sub check_mirror($) {
 	    delete $mirror->{$type.'-noti18n'};
 
 	    if (!$site_trace->fetch($mirror->{'site'})) {
+		my $error = $site_trace->fetch_error || 'parse error';
 		$ignore_master = 1;
-		$disable_reason = 'bad site trace';
+		$disable_reason = "bad site trace ($error)";
 	    } elsif ($site_trace->date < $master_trace->date) {
 		$ignore_master = 1;
 		$disable_reason = 'old site trace';
