@@ -108,6 +108,29 @@ use the following on your sources.list:
 Note: accessing the redirector from a local IP address is not ideal and
 may only work with hacks.
 
+Forcibly disabling mirrors
+==========================
+
+If necessary, mirrors can forcibly be disabled by passing a file name
+to check.pl's --disable-sites option (default: sites.disabled)
+
+The format of this file is:
+
+<domain name>[/mirror type]
+
+Whenever the option is passed and the file exists, every mirror
+matching an entry in the file will be disabled without further checks.
+If a mirror type is specified, only that mirror type of the given
+mirror will be disabled.
+
+An empty file name can be specified to override the default and to
+prevent the parsing of said file. In order to re-enable a mirror an
+existing file name must be specified.
+
+NOTE: any disabled mirror that is no longer in the list will be
+re-enabled. E.g. passing --disable-sites /dev/null to check.pl will
+re-enable *all* disabled mirrors.
+
 Running the redirector on top of a real mirror
 ==============================================
 
