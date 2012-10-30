@@ -42,6 +42,7 @@ sub check_mirror($);
 sub log_message($$$);
 sub mirror_is_good($$);
 sub archs_by_mirror($$);
+sub parse_disable_file($);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -51,6 +52,7 @@ my $check_trace_archs = '';
 my $check_areas = '';
 my $check_everything = 0;
 my $incoming_db = '';
+my $disable_sites = 'sites.disabled';
 my $threads = 4;
 my @ids;
 
@@ -63,7 +65,8 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'db-output=s' => \$db_output,
 	    'id|mirror-id=s' => \@ids,
 	    'incoming-db=s' => \$incoming_db,
-	    'store-traces!' => \$store_traces) or exit 1;
+	    'store-traces!' => \$store_traces,
+	    'disable-sites=s' => \$disable_sites) or exit 1;
 
 # Avoid picking up db.in when working on db.wip, for example
 $incoming_db ||= $db_store.'.in';
@@ -80,6 +83,19 @@ our %traces :shared;
 our $ua;
 my $q = Thread::Queue->new();
 our $db :shared = undef;
+our %sites_to_disable :shared;
+
+if (-f $disable_sites) {
+    eval {
+    %sites_to_disable = %{shared_clone(parse_disable_file($disable_sites))};
+    };
+    # If there was an exception take it as if we hadn't been requested to
+    # process the file
+    if ($@) {
+	warn $@;
+	$disable_sites = '';
+    }
+}
 
 if ($incoming_db) {
     # The db might be gone or not exist at all
@@ -354,6 +370,24 @@ sub check_mirror($) {
 	next if (exists($mirror->{$type.'-tracearchcheck-disabled'}) && !$check_trace_archs);
 	next if (exists($mirror->{$type.'-archcheck-disabled'}) && !$check_archs);
 	next if (exists($mirror->{$type.'-areascheck-disabled'}) && !$check_areas);
+	next if (exists($mirror->{$type.'-file-disabled'}) && !$disable_sites);
+
+	if ($disable_sites) {
+	    my $todisable = $sites_to_disable{$mirror->{'site'}};
+	    my $disabled = exists($mirror->{$type.'-file-disabled'});
+
+	    if (exists($todisable->{$type}) || exists($todisable->{'any'})) {
+		log_message($id, $type, "blacklisted")
+		    unless ($disabled);
+		$mirror->{$type.'-disabled'} = undef;
+		$mirror->{$type.'-file-disabled'} = undef;
+		next;
+	    } else {
+		log_message($id, $type, "no longer blacklisted")
+		    if ($disabled);
+		delete $mirror->{$type.'-file-disabled'};
+	    }
+	}
 
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
@@ -507,4 +541,34 @@ sub log_message($$$) {
     my ($id, $type, $msg) = @_;
 
     print "[$id/$type] $msg\n";
+}
+
+sub parse_disable_file($) {
+    my $disable_file = shift;
+    my %disable_index;
+
+    open(my $fh, '<', $disable_file) or
+	die "warning: could not open '$disable_file' for reading\n";
+
+    while (<$fh>) {
+	next if (m/^\s*#?\s*$/);
+	chomp;
+
+	my @parts = split(qr</>, $_, 3);
+	if (scalar(@parts) == 3) {
+	    warn "warning: malformed input (should be 'site[/type]')";
+	    next;
+	}
+
+	unless (exists($disable_index{$parts[0]})) {
+	    $disable_index{$parts[0]} = {};
+	}
+	if (defined($parts[1])) {
+	    $disable_index{$parts[0]}{$parts[1]} = 1;
+	} else {
+	    $disable_index{$parts[0]}{'any'} = 1;
+	}
+    }
+    close ($fh);
+    return \%disable_index;
 }
