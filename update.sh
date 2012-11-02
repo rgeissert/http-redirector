@@ -22,48 +22,76 @@
 
 set -eu
 
-compression=gz
-if which unxz >/dev/null; then
-    compression=xz
+geoip=true
+mirrors=true
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+	--geoip-only)
+	    mirrors=false
+	;;
+	--mirrors-only)
+	    geoip=false
+	;;
+	*)
+	    echo "usage: $(basename "$0") [--geoip-only|--mirrors-only]" >&2
+	    exit 1
+	;;
+    esac
+    shift
+done
+
+if ! $geoip && ! $mirrors; then
+    echo "nice try"
+    exit 1
 fi
 
-mkdir -p geoip
-cd geoip
-for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.$compression asnum/GeoIPASNumv6.dat.gz GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz; do
-    wget -U '' -N http://geolite.maxmind.com/download/geoip/database/$db
-    db="$(basename "$db")"
-    case "$db" in
-	*.gz|*.xz)
-	    file_comp="${db##*.}"
-	;;
-	*)
-	    echo "error: unknown compression of file $db" >&2
-	    exit 1
-	;;
-    esac
-
-    decomp_db="${db%.$file_comp}"
-    if [ -f $decomp_db ]; then
-	[ $db -nt $decomp_db ] || continue
+if $geoip; then
+    compression=gz
+    if which unxz >/dev/null; then
+	compression=xz
     fi
-    rm -f new.$db
-    ln $db new.$db
-    case "$file_comp" in
-	gz)
-	    gunzip -f new.$db
-	;;
-	xz)
-	    unxz -f new.$db
-	;;
-	*)
-	    echo "error: unknown decompressor for .$file_comp" >&2
-	    exit 1
-	;;
-    esac
-    mv new.$decomp_db $decomp_db
-    touch -r $db $decomp_db
-done
-cd - >/dev/null
 
-./update.pl -j 15 --db-output db.wip
-./check.pl -j 20 --db-store db.wip --db-output db.in --check-everything --disable-sites ''
+    mkdir -p geoip
+    cd geoip
+    for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.$compression asnum/GeoIPASNumv6.dat.gz GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz; do
+	wget -U '' -N http://geolite.maxmind.com/download/geoip/database/$db
+	db="$(basename "$db")"
+	case "$db" in
+	    *.gz|*.xz)
+		file_comp="${db##*.}"
+	    ;;
+	    *)
+		echo "error: unknown compression of file $db" >&2
+		exit 1
+	    ;;
+	esac
+
+	decomp_db="${db%.$file_comp}"
+	if [ -f $decomp_db ]; then
+	    [ $db -nt $decomp_db ] || continue
+	fi
+	rm -f new.$db
+	ln $db new.$db
+	case "$file_comp" in
+	    gz)
+		gunzip -f new.$db
+	    ;;
+	    xz)
+		unxz -f new.$db
+	    ;;
+	    *)
+		echo "error: unknown decompressor for .$file_comp" >&2
+		exit 1
+	    ;;
+	esac
+	mv new.$decomp_db $decomp_db
+	touch -r $db $decomp_db
+    done
+    cd - >/dev/null
+fi
+
+if $mirrors; then
+    ./update.pl -j 15 --db-output db.wip
+    ./check.pl -j 20 --db-store db.wip --db-output db.in --check-everything --disable-sites ''
+fi
