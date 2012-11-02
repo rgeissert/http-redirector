@@ -80,7 +80,7 @@ while (<>) {
 
     # allow the destination to be specified as the domain name of the
     # mirror
-    if ($dests[0] !~ m/^(?:AS)?\d+$/) {
+    if ($dests[0] !~ m/^(?:AS)?(?:\d\.)?\d+$/) {
 	%site2id or %site2id = build_site2id_index;
 	if (!exists($site2id{$dests[0]})) {
 	    die "Unknown site ".$dests[0];
