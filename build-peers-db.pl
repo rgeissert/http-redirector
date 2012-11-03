@@ -67,10 +67,14 @@ while (<>) {
     my @clientsASN = shift @parts;
     my @dests = shift @parts;
     my $dist = int(shift @parts || 0);
+    my %ipv = map { s/^v//; $_ => 1 } split(/,/, shift @parts || 'v4');
 
     if ($count != -1 && ($count++)%1000 == 0) {
 	print STDERR "Processed: $count...\r";
     }
+
+    # The db is IPv4-only, for now:
+    next unless (defined($ipv{4}));
 
     last unless ($max_distance == -1 || $dist < $max_distance);
 

@@ -47,7 +47,8 @@ while (<>) {
 
     my @dests = pop @parts;
     # get rid of the network mask
-    shift @parts;
+    my $address = shift @parts;
+    my $ipv = ($address =~ m/:/)? 'v6' : 'v4';
 
     if ($dests[0] =~ s/^\{// && $dests[0] =~ s/\}$//) {
 	@dests = split (/,/, $dests[0]);
@@ -62,7 +63,7 @@ while (<>) {
 	    next if ($dest eq $peer);
 	    $distance++;
 
-	    my $output = "$dest $peer $distance";
+	    my $output = "$dest $peer $distance $ipv";
 
 	    print "$output\n" if (not seen($output));
 	}

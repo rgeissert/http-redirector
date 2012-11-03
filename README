@@ -195,7 +195,7 @@ located. The database can be built with the build-peers-db.pl script.
 
 Its input is in the following format:
 
-<client AS> <mirror domain name|mirror AS> [distance]
+<client AS> <mirror domain name|mirror AS> [distance [IPv]]
 
 The preferred form of the second value is by domain name. When an AS is
 specified, it will internally be rewritten to the existing mirrors in
@@ -209,6 +209,11 @@ The distance is currently not used by the redirector, but at some point
 it might. It defaults to 0. Any positive integer may be specified.
 It is expected to be read as 0 being the most preferred mirror, 1 being
 the second, 2 being the third, and so on.
+
+The IPv field, if specified, should be "v4", "v6", or the two separated
+by a comma with no specific order. It can be used to indicate that the
+given peering rule only applies to the version of the IP specified in
+the field. It defaults to "v4".
 
 Mirrors chosen by this database are still subject to geo location
 restriction. I.e. from the set of candidates, a subset of those that
