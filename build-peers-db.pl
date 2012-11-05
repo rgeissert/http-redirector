@@ -89,7 +89,7 @@ for my $list (sort @input_files) {
 	# The db is IPv4-only, for now:
 	next unless (defined($ipv{4}));
 
-	last unless ($max_distance == -1 || $dist < $max_distance);
+	next unless ($max_distance == -1 || $dist < $max_distance);
 
 	if ($clientsASN[0] =~ s/^\{// && $clientsASN[0] =~ s/\}$//) {
 	    @clientsASN = split (/,/, $clientsASN[0]);
