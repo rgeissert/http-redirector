@@ -35,10 +35,12 @@ my $max_distance = -1;
 my $max_peers = 100;
 my $store_distance = 0;
 my $db_out = 'db.peers';
+my $input_dir = 'peers.lst.d';
 
 GetOptions('mirrors-db=s' => \$mirrors_db_file,
 	    'progress!' => \$print_progress,
 	    'peers-limit=i' => \$max_peers,
+	    'list-directory=s' => \$input_dir,
 	    'distance=i' => \$max_distance,
 	    'store-distance!' => \$store_distance,
 	    's|store-db=s' => \$db_out) or exit 1;
@@ -50,73 +52,86 @@ my $count = -1;
 my %site2id;
 my %AS2ids;
 my %id_counter;
+my @input_files;
 
 sub build_site2id_index;
 sub build_AS2ids_index;
+sub get_lists($);
 
+die("error: '$input_dir' is not a directory\n")
+    unless (-d $input_dir);
+
+@input_files = get_lists($input_dir);
 
 $count = 0 if ($print_progress);
 
-while (<>) {
-    # allow comments and empty lines
-    next if ($_ eq '' || m/^\s*#/);
+for my $list (sort @input_files) {
+    my $fh;
+    open($fh, '<', $list)
+	or die("error: could not open '$list' for reading\n");
 
-    my @parts = split;
-    die "malformed input" unless (scalar(@parts) >= 2);
+    while (<$fh>) {
+	# allow comments and empty lines
+	next if ($_ eq '' || m/^\s*#/);
 
-    my @clientsASN = shift @parts;
-    my @dests = shift @parts;
-    my $dist = int(shift @parts || 0);
-    my %ipv = map { s/^v//; $_ => 1 } split(/,/, shift @parts || 'v4');
+	my @parts = split;
+	die "malformed input" unless (scalar(@parts) >= 2);
 
-    if ($count != -1 && ($count++)%1000 == 0) {
-	print STDERR "Processed: $count...\r";
-    }
+	my @clientsASN = shift @parts;
+	my @dests = shift @parts;
+	my $dist = int(shift @parts || 0);
+	my %ipv = map { s/^v//; $_ => 1 } split(/,/, shift @parts || 'v4');
 
-    # The db is IPv4-only, for now:
-    next unless (defined($ipv{4}));
-
-    last unless ($max_distance == -1 || $dist < $max_distance);
-
-    if ($clientsASN[0] =~ s/^\{// && $clientsASN[0] =~ s/\}$//) {
-	@clientsASN = split (/,/, $clientsASN[0]);
-    }
-
-    # allow the destination to be specified as the domain name of the
-    # mirror
-    if ($dests[0] !~ m/^(?:AS)?(?:\d\.)?\d+$/) {
-	%site2id or %site2id = build_site2id_index;
-	if (!exists($site2id{$dests[0]})) {
-	    die "Unknown site ".$dests[0];
+	if ($count != -1 && ($count++)%1000 == 0) {
+	    print STDERR "Processed: $count...\r";
 	}
-	$dests[0] = $site2id{$dests[0]};
-    } else {
-	%AS2ids or %AS2ids = build_AS2ids_index;
-	$dests[0] = Mirror::AS::convert($dests[0]);
 
-	next unless (exists($AS2ids{$dests[0]}));
-	@dests = @{$AS2ids{$dests[0]}};
-    }
+	# The db is IPv4-only, for now:
+	next unless (defined($ipv{4}));
 
-    for my $client (@clientsASN) {
-	$client = Mirror::AS::convert($client);
+	last unless ($max_distance == -1 || $dist < $max_distance);
 
-	$peers_db{$client} = {}
-	    unless (exists($peers_db{$client}));
+	if ($clientsASN[0] =~ s/^\{// && $clientsASN[0] =~ s/\}$//) {
+	    @clientsASN = split (/,/, $clientsASN[0]);
+	}
 
-	for my $dest (@dests) {
-	    my $min_dist = undef;
-
-	    if ($store_distance) {
-		$min_dist = $dist;
-		$min_dist = $peers_db{$client}->{$dest}
-		    if (exists($peers_db{$client}->{$dest}) && $peers_db{$client}->{$dest} < $min_dist);
+	# allow the destination to be specified as the domain name of the
+	# mirror
+	if ($dests[0] !~ m/^(?:AS)?(?:\d\.)?\d+$/) {
+	    %site2id or %site2id = build_site2id_index;
+	    if (!exists($site2id{$dests[0]})) {
+		die "Unknown site ".$dests[0];
 	    }
-	    $id_counter{$dest} = (exists($id_counter{$dest})?$id_counter{$dest}+1:1)
-		unless (exists($peers_db{$client}->{$dest}));
-	    $peers_db{$client}->{$dest} = $min_dist;
+	    $dests[0] = $site2id{$dests[0]};
+	} else {
+	    %AS2ids or %AS2ids = build_AS2ids_index;
+	    $dests[0] = Mirror::AS::convert($dests[0]);
+
+	    next unless (exists($AS2ids{$dests[0]}));
+	    @dests = @{$AS2ids{$dests[0]}};
+	}
+
+	for my $client (@clientsASN) {
+	    $client = Mirror::AS::convert($client);
+
+	    $peers_db{$client} = {}
+		unless (exists($peers_db{$client}));
+
+	    for my $dest (@dests) {
+		my $min_dist = undef;
+
+		if ($store_distance) {
+		    $min_dist = $dist;
+		    $min_dist = $peers_db{$client}->{$dest}
+			if (exists($peers_db{$client}->{$dest}) && $peers_db{$client}->{$dest} < $min_dist);
+		}
+		$id_counter{$dest} = (exists($id_counter{$dest})?$id_counter{$dest}+1:1)
+		    unless (exists($peers_db{$client}->{$dest}));
+		$peers_db{$client}->{$dest} = $min_dist;
+	    }
 	}
     }
+    close($fh);
 }
 
 my @sorted_ids = sort { $id_counter{$b} <=> $id_counter{$a} } keys %id_counter;
@@ -164,4 +179,17 @@ sub build_AS2ids_index {
 	$AS2site{$AS} = \@ids;
     }
     return %AS2site;
+}
+
+sub get_lists($) {
+    my $input_dir = shift;
+    my @lists;
+    my $dh;
+
+    opendir($dh, $input_dir)
+	or die("error: could not open '$input_dir' directory: $!\n");
+    @lists = grep { m/\.lst$/ && s,^,$input_dir/, } readdir($dh);
+    closedir($dh);
+
+    return @lists;
 }

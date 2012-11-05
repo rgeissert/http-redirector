@@ -193,7 +193,8 @@ It is possible to instruct the redirector to serve clients from an
 originating AS to one or a set of destination AS' where mirrors are
 located. The database can be built with the build-peers-db.pl script.
 
-Its input is in the following format:
+Its input are *.lst files in the peers.lst.d directory in the following
+format:
 
 <client AS> <mirror domain name|mirror AS> [distance [IPv]]
 

@@ -27,9 +27,11 @@ use Getopt::Long;
 
 my $print_progress = 0;
 my $max_distance = 1;
+my $output_file = 'peers.lst.d/routing-table.lst';
 
 GetOptions('progress!' => \$print_progress,
-	    'distance=i' => \$max_distance) or exit 1;
+	    'distance=i' => \$max_distance,
+	    'output-file=s' => \$output_file) or exit 1;
 
 my %as_routes;
 my $count = -1;
@@ -38,8 +40,17 @@ $count = 0 if ($print_progress);
 
 sub seen;
 
-print "# AS peering table\n";
-print "# Using a maximum distance of $max_distance\n";
+my $out;
+
+if ($output_file eq '-') {
+    $out = \*STDOUT;
+} else {
+    open($out, '>', $output_file)
+	or die("error: could not open '$output_file' for writing: $!\n");
+}
+
+print $out "# AS peering table\n";
+print $out "# Using a maximum distance of $max_distance\n";
 
 while (<>) {
     my @parts = split;
@@ -65,7 +76,7 @@ while (<>) {
 
 	    my $output = "$dest $peer $distance $ipv";
 
-	    print "$output\n" if (not seen($output));
+	    print $out "$output\n" if (not seen($output));
 	}
     }
 
