@@ -3,3 +3,4 @@ Mirrors.masterlist*
 geoip
 tmon.out
 nytprof*
+peers.lst.d/*.lst
