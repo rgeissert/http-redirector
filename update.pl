@@ -64,20 +64,6 @@ if ($update_list) {
 
     rename('Mirrors.masterlist.new', $current_list)
 	or die ("mv Mirrors.masterlist{.new,} failed: $?");
-
-=foo
-    # Before enabling this code we need to find a place where we can
-    # download the latest Mirrors list from, while preserving mtime
-    if (-f $current_list) {
-	my ($current, $new);
-	$current = stat($current_list);
-	$new = stat('Mirrors.masterlist');
-	
-	if ($current->mtime() >= $new->mtime()) {
-	    exit 0;
-	}
-    }
-=cut
 }
 
 my %all_sites;
