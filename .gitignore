@@ -1,4 +1,5 @@
 db
+db.peers
 Mirrors.masterlist*
 geoip
 tmon.out
