@@ -56,12 +56,16 @@ GetOptions('update-list!' => \$update_list,
 	    'verbose' => \$verbose) or exit 1;
 
 if ($update_list) {
-    # TODO: use LWP
-    system('wget',
-	    '-OMirrors.masterlist.new',
-	    'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
-	) and die ("wget Mirrors.masterlist failed: $?");
+    use LWP::UserAgent;
+    my $ua = LWP::UserAgent->new;
+    $ua->protocols_allowed(['http', 'https']);
 
+    my $res = $ua->mirror(
+	'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co',
+	'Mirrors.masterlist.new');
+    if ($res->is_error) {
+	die("error: failed to fetch Mirrors.masterlist: ",$res->status_line,"\n");
+    }
     rename('Mirrors.masterlist.new', $current_list)
 	or die ("mv Mirrors.masterlist{.new,} failed: $?");
 }
