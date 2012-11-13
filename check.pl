@@ -420,6 +420,10 @@ sub check_mirror($) {
 		my $error = $site_trace->fetch_error || 'parse error';
 		$ignore_master = 1;
 		$disable_reason = "bad site trace ($error)";
+		if (fatal_connection_error($error)) {
+		    $fatal_error = 1;
+		    last;
+		}
 	    } elsif ($site_trace->date < $master_trace->date) {
 		$ignore_master = 1;
 		$disable_reason = 'old site trace';
