@@ -79,6 +79,7 @@ sub check_arch_for_list(@);
 sub url_for_mirror($);
 sub do_redirect($$);
 sub should_blackhole($);
+sub mirror_is_in_continent($$$);
 
 my @output;
 our @archs;
@@ -219,6 +220,8 @@ my $match_type = '';
 
 # match by AS
 foreach my $match (@{$rdb->{'AS'}{$as}}) {
+    next unless (mirror_is_in_continent($rdb, $match, $continent));
+
     $match_type = 'AS' if (consider_mirror ($match));
 }
 
@@ -228,6 +231,8 @@ if (!$match_type && $as && $peers_db_store && !$ipv6 && -f $peers_db_store) {
 
     foreach my $match (keys %{$peers_db->{$as}}) {
 	next unless (exists($db->{'all'}{$match}{$mirror_type.'-http'}));
+	next unless (mirror_is_in_continent($rdb, $match, $continent));
+
 	$match_type = 'AS-peer' if (consider_mirror ($match));
     }
 }
@@ -489,4 +494,10 @@ sub should_blackhole($) {
 	    );
     }
     return 0;
+}
+
+sub mirror_is_in_continent($$$) {
+    my ($rdb, $id, $continent) = @_;
+
+    return (exists($rdb->{'continent'}{$continent}{$id}));
 }
