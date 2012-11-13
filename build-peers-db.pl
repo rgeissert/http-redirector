@@ -47,6 +47,10 @@ GetOptions('mirrors-db=s' => \$mirrors_db_file,
 
 our $mirrors_db = retrieve($mirrors_db_file);
 
+if (exists($mirrors_db->{'id'})) {
+    $db_out .= '-'.$mirrors_db->{'id'};
+}
+
 my %peers_db;
 my $count = -1;
 my %site2id;
@@ -164,7 +168,7 @@ sub build_site2id_index {
 sub build_AS2ids_index {
     my %AS2site;
     for my $type (keys %{$mirrors_db}) {
-	next if ($type eq 'all');
+	next if ($type eq 'all' || $type eq 'id');
 	for my $AS (keys %{$mirrors_db->{$type}{'AS'}}) {
 	    for my $id (@{$mirrors_db->{$type}{'AS'}{$AS}}) {
 		$AS2site{$AS} = {}
