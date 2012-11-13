@@ -89,6 +89,7 @@ foreach my $mirror_type (@mirror_types) {
     $semaphore{$mirror_type} = Thread::Semaphore->new();
 }
 $db{'all'} = shared_clone({});
+$db{'id'} = time;
 $semaphore{'main'} = Thread::Semaphore->new();
 
 my ($g_city, $g_as);

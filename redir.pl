@@ -197,6 +197,10 @@ if ($archs[0] eq 'source' && !exists($rdb->{'arch'}{'source'})) {
     $archs[0] = '';
 }
 
+if (exists($db->{'id'})) {
+    $peers_db_store .= '-'.$db->{'id'} if ($peers_db_store);
+}
+
 our ($require_inrelease, $require_i18n) = (0, 0);
 if ($mirror_type ne 'old') {
     $require_inrelease = ($url =~ m,/InRelease$,);
