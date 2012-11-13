@@ -43,6 +43,7 @@ sub log_message($$$);
 sub mirror_is_good($$);
 sub archs_by_mirror($$);
 sub parse_disable_file($);
+sub fatal_connection_error($);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -361,6 +362,8 @@ sub check_mirror($) {
     my $mirror = $db->{'all'}{$id};
     my @mirror_types;
 
+    my $fatal_error = 0;
+
     for my $k (keys %$mirror) {
 	next unless ($k =~ m/^(.+)-http$/);
 	push @mirror_types, $1;
@@ -397,6 +400,10 @@ sub check_mirror($) {
 	    my $error = $master_trace->fetch_error || 'parse error';
 	    $mirror->{$type.'-disabled'} = undef;
 	    log_message($id, $type, "bad master trace ($error)");
+	    if (fatal_connection_error($error)) {
+		$fatal_error = 1;
+		last;
+	    }
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
 	}
@@ -537,6 +544,27 @@ sub check_mirror($) {
 	    }
 	}
     }
+
+    # The mirror couldn't be checked due to what's considered a "fatal error"
+    # i.e. some kind of error from which it is unlikely to recover any time soon
+    # As such, some checks might have been skipped. So mark it as
+    # disabled by any check that would have otherwise been run.
+    # It might be possible for the mirror to recover at a later time, however.
+    if ($fatal_error) {
+	for my $type (@mirror_types) {
+	    log_message($id, $type, "disabling due to fatal error");
+	    $mirror->{$type.'-disabled'} = undef;
+
+	    $mirror->{$type.'-tracearchcheck-disabled'} = undef
+		if ($check_trace_archs);
+	    $mirror->{$type.'-archcheck-disabled'} = undef
+		if ($check_archs);
+	    $mirror->{$type.'-areascheck-disabled'} = undef
+		if ($check_areas);
+	    $mirror->{$type.'-file-disabled'} = undef
+		if ($disable_sites);
+	}
+    }
 }
 
 sub log_message($$$) {
@@ -573,4 +601,12 @@ sub parse_disable_file($) {
     }
     close ($fh);
     return \%disable_index;
+}
+
+sub fatal_connection_error($) {
+    my $error = shift;
+
+    return 0 unless ($error =~ m/^500/);
+    return ($error =~ m/Bad hostname/ || $error =~ m/Connection refused/
+	    || $error =~ m/connect: timeout/);
 }
