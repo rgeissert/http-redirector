@@ -71,6 +71,8 @@ Keeping everything in shape
 update.sh should be run at least once a month.
 update.pl should be run whenever the master list changes[1]
 check.pl should be run multiple times a day[2]
+build-peers-db.pl should be run after every execution of update.pl or
+whenever the peers lists are updated[3]
 
 NOTE: update.sh will leave the new database in a file called "db.in"
 to be renamed to "db" if it is the first time it is created. When
@@ -88,6 +90,11 @@ done automatically when running update.sh.
 [2] it really depends on the kind of setup one wants and the hosts that
 conform the mirrors network. For Debian's archive, it should be run
 at least every ten minutes, every five minutes being better.
+
+[3] it only applies when using an AS peers database. The name of the
+peers database is specific to the mirrors database on which it is
+based. At present, peers databases for old mirrors databases are not
+cleaned up automatically.
 
 Real life testing
 =================
