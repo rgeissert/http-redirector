@@ -26,6 +26,9 @@ use warnings;
 use Getopt::Long;
 use Storable qw(retrieve);
 
+sub print_note;
+
+our $print_note_block;
 my $db_store = 'db';
 
 GetOptions('db-store=s' => \$db_store);
@@ -46,22 +49,23 @@ for my $id (sort keys %{$db->{'all'}}) {
 	push @mirror_types, $1;
     }
     for my $type (@mirror_types) {
-	print "Type: $type\n";
-	print "Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
-	print "Path: ",$mirror->{"$type-http"},"\n";
-	print "\tBad master trace\n"
+	$print_note_block = 1;
+	print "- Type: $type\n";
+	print "  Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
+	print "  Path: ",$mirror->{"$type-http"},"\n";
+	print_note "Bad master trace"
 	    if (exists($mirror->{$type.'-badmaster'}));
-	print "\tBad site trace\n"
+	print_note "Bad site trace"
 	    if (exists($mirror->{$type.'-badsite'}));
-	print "\tMissing all architectures, or source packages\n"
+	print_note "Missing all architectures, or source packages"
 	    if (exists($mirror->{$type.'-archcheck-disabled'}));
-	print "\tMissing archive areas (main, contrib, or non-free)\n"
+	print_note "Missing archive areas (main, contrib, or non-free)"
 	    if (exists($mirror->{$type.'-areascheck-disabled'}));
-	print "\tNot reliable for serving InRelease files\n"
+	print_note "Not reliable for serving InRelease files"
 	    if (exists($mirror->{$type.'-notinrelease'}));
-	print "\tNot reliable for serving i18n/ files\n"
+	print_note "Not reliable for serving i18n/ files"
 	    if (exists($mirror->{$type.'-noti18n'}));
-	print "\tToo old ftpsync\n"
+	print_note "Too old ftpsync"
 	    if (exists($mirror->{$type.'-oldftpsync'}));
 	for my $key (keys %{$mirror}) {
 	    next unless ($key =~ m/^\Q$type-\E/);
@@ -72,12 +76,21 @@ for my $id (sort keys %{$db->{'all'}}) {
 
 		# If disabled by trace file:
 		if (defined($2)) {
-		    print "\tDropped architecture: $arch, but listed\n";
+		    print_note "Dropped architecture: $arch, but listed";
 		# Don't report it twice:
 		} elsif (!exists($mirror->{"$type-$arch-trace-disabled"})) {
-		    print "\tMissing architecture: $arch, but listed\n";
+		    print_note "Missing architecture: $arch, but listed";
 		}
 	    }
 	}
     }
+}
+
+sub print_note {
+    my $note = shift;
+    if ($print_note_block) {
+	print "  Notes:\n";
+	$print_note_block = 0;
+    }
+    print "   $note\n";
 }
