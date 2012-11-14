@@ -65,9 +65,17 @@ for my $id (sort keys %{$db->{'all'}}) {
 	    if (exists($mirror->{$type.'-oldftpsync'}));
 	for my $key (keys %{$mirror}) {
 	    next unless ($key =~ m/^\Q$type-\E/);
-	    if ($key =~ m/^\Q$type-\E(.+?)-disabled$/) {
-		next unless (exists($db->{$type}{'arch'}{$1}));
-		print "\tMissing architecture: $1, but listed\n";
+	    if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
+		my $arch = $1;
+		next unless (exists($db->{$type}{'arch'}{$arch}));
+
+		# If disabled by trace file:
+		if (defined($2)) {
+		    print "\tDropped architecture: $arch, but listed\n";
+		# Don't report it twice:
+		} elsif (!exists($mirror->{"$type-$arch-trace-disabled"})) {
+		    print "\tMissing architecture: $arch, but listed\n";
+		}
 	    }
 	}
     }
