@@ -231,7 +231,10 @@ are geographically closer will be created and used.
 
 Caveats: since the database is AS-based, large Autonomous Systems that
 traverse countries or continents will still be considered, even if not
-desired.
+desired. At present, the redirector skips mirrors that are located in a
+different continent, but that's done to work around another issue and
+the behaviour is not guaranteed to persist after the other issue is
+properly addressed.
 
 Assumptions
 ===========
