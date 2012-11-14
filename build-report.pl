@@ -67,6 +67,7 @@ for my $id (sort keys %{$db->{'all'}}) {
 	    next unless ($key =~ m/^\Q$type-\E/);
 	    if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
 		my $arch = $1;
+		next if (exists($mirror->{$type.'-archcheck-disabled'}));
 		next unless (exists($db->{$type}{'arch'}{$arch}));
 
 		# If disabled by trace file:
