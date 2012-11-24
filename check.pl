@@ -553,7 +553,8 @@ sub parse_disable_file($) {
 	die "warning: could not open '$disable_file' for reading\n";
 
     while (<$fh>) {
-	next if (m/^\s*#?\s*$/);
+	next if (m/^\s*$/);
+	next if (m/^\s*#/);
 	chomp;
 
 	my @parts = split(qr</>, $_, 3);
