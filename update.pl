@@ -396,22 +396,12 @@ sub process_entry($) {
     my $mirror_recorded = 0;
 
     foreach my $type (@mirror_types) {
-	delete $entry->{$type.'-ftp'};
-	delete $entry->{$type.'-rsync'};
-	delete $entry->{$type.'-nfs'};
-	delete $entry->{$type.'-upstream'};
-	delete $entry->{$type.'-method'};
-
 	if ($exclude_mirror_types{$type}) {
 	    delete $entry->{$type.'-http'};
-	    delete $entry->{$type.'-architecture'};
 	    next;
 	}
 
-	unless (defined($entry->{$type.'-http'})) {
-	    delete $entry->{$type.'-architecture'};
-	    next;
-	}
+	next unless (defined($entry->{$type.'-http'}));
 
 	if (!defined($entry->{$type.'-architecture'}) && $type eq 'archive') {
 	    print STDERR "warning: no $type-architecture list for $entry->{'site'}\n";
@@ -461,24 +451,29 @@ sub process_entry($) {
 
 	$semaphore{$type}->up();
 	# end: now store the results
-
-	# cleanup
-	delete $entry->{$type.'-architecture'};
     }
 
-    # remove unused fields
-    delete $entry->{'sponsor'};
-    delete $entry->{'country'};
-    delete $entry->{'maintainer'};
-    delete $entry->{'location'};
-    delete $entry->{'alias'};
-    delete $entry->{'aliases'};
-    delete $entry->{'comment'};
-    delete $entry->{'comments'};
-    delete $entry->{'type'};
-    delete $entry->{'updates'};
-    delete $entry->{'restricted-to'}
-	unless (length($entry->{'restricted-to'}));
+    # remove any remaining fields we don't use
+    my %wanted_fields = map { $_ => 1 } qw(
+	bandwidth
+	ipv6
+	lat
+	lon
+	site
+	restricted-to
+    );
+    for my $key (keys %{$entry}) {
+	next if ($key =~ m/-http$/);
+	next if ($key =~ m/-reference$/);
+
+	if (defined($wanted_fields{$key})) {
+	    # undef has a special meaning
+	    next if (!defined($entry->{$key}));
+	    # empty fields are not useful
+	    next if (length($entry->{$key}));
+	}
+	delete $entry->{$key};
+    }
 }
 
 sub fancy_get_host($) {
