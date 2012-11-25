@@ -36,7 +36,8 @@ my $q = new CGI::Simple;
 my $request_method = $q->request_method() || 'HEAD';
 # abort POST and other requests ASAP
 if ($request_method ne 'GET' && $request_method ne 'HEAD') {
-    print "Status: 501 Not Implemented\r\n\r\n";
+    print "Status: 405 Not Allowed\r\n";
+    print "Allow: GET, HEAD\r\n\r\n";
     exit;
 }
 
