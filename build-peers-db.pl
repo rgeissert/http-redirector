@@ -75,6 +75,7 @@ for my $list (sort @input_files) {
 	or die("error: could not open '$list' for reading\n");
 
     while (<$fh>) {
+	chomp;
 	# allow comments and empty lines
 	next if ($_ eq '' || m/^\s*#/);
 
