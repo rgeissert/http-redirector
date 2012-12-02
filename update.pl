@@ -103,8 +103,10 @@ while ($threads--) {
 		# on each individual thread.
 		# (even in this case, *_by_name fail; don't know why)
 		use Geo::IP;
-		$g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
-		$g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
+		$g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE)
+		    or die;
+		$g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE)
+		    or die;
 
 		# we wait until all threads are done processing the queue
 		# and since the queue is filled and no new items are added
