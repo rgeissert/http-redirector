@@ -42,6 +42,8 @@ if ($generate_url) {
     $translate_type = 1;
 }
 
+$| = 1;
+
 our $db = retrieve($db_store);
 
 while (<>) {
