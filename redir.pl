@@ -210,7 +210,9 @@ if ($mirror_type ne 'old') {
 
 if ($permanent_redirect) {
     $permanent_redirect = 0
-	unless ($url =~ m,^pool/, || $mirror_type eq 'old');
+	unless ($url =~ m,^pool/, ||
+		$url =~ m,\.diff/.+\.(?:gz|bz2|xz|lzma)$, ||
+		$mirror_type eq 'old');
 }
 
 Mirror::Math::set_metric($metric);
