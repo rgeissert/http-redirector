@@ -32,6 +32,7 @@ use Storable qw(retrieve);
 use lib '.';
 use Mirror::DB;
 use Mirror::Trace;
+use Mirror::RateLimiter;
 
 sub head_url($$);
 sub test_arch($$$);
@@ -392,6 +393,12 @@ sub check_mirror($) {
 	    }
 	}
 
+	$mirror->{$type.'-rtltr'} = undef
+	    unless (exists($mirror->{$type.'-rtltr'}));
+	my $rtltr = Mirror::RateLimiter->load(\$mirror->{$type.'-rtltr'});
+
+	next if ($rtltr->should_skip);
+
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
 	my $disable = 0;
@@ -400,6 +407,7 @@ sub check_mirror($) {
 	    my $error = $master_trace->fetch_error || 'parse error';
 	    $mirror->{$type.'-disabled'} = undef;
 	    log_message($id, $type, "bad master trace ($error)");
+	    $rtltr->record_failure;
 	    if (fatal_connection_error($error)) {
 		$fatal_error = 1;
 		last;
@@ -420,6 +428,7 @@ sub check_mirror($) {
 		my $error = $site_trace->fetch_error || 'parse error';
 		$ignore_master = 1;
 		$disable_reason = "bad site trace ($error)";
+		$rtltr->record_failure;
 		if (fatal_connection_error($error)) {
 		    $fatal_error = 1;
 		    last;
@@ -431,6 +440,7 @@ sub check_mirror($) {
 		log_message($id, $type, "doesn't use ftpsync");
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
+		$rtltr->record_failure;
 	    }
 
 	    unless ($disable_reason) {
@@ -468,6 +478,7 @@ sub check_mirror($) {
 			}
 
 			if (!exists($db->{$type}{'arch'}{'source'}) && !$site_trace->arch('source')) {
+			    $rtltr->record_failure;
 			    $mirror->{$type.'-tracearchcheck-disabled'} = undef;
 			    $disable_reason = "no sources (det. from trace file)";
 			}
@@ -505,6 +516,7 @@ sub check_mirror($) {
 	    if (!test_areas($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-areascheck-disabled'} = undef;
+		$rtltr->record_failure;
 		log_message($id, $type, "missing areas");
 		next unless ($check_archs);
 		$disable = 1;
@@ -536,6 +548,7 @@ sub check_mirror($) {
 	    if ($all_failed) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
+		$rtltr->record_failure;
 		log_message($id, $type, "all archs failed");
 		next;
 	    }
@@ -543,6 +556,7 @@ sub check_mirror($) {
 	    if (!exists($db->{$type}{'arch'}{'source'}) && !test_source($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
+		$rtltr->record_failure;
 		log_message($id, $type, "no sources");
 		next;
 	    }
