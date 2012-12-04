@@ -342,13 +342,22 @@ if ($add_links && (scalar(@close_hosts) > 1 || $action eq 'demo')) {
     # A client strictly adhering to the RFC would ignore these since we
     # don't provide a digest, and we wont.
     for my $host (@close_hosts) {
+	my $depth = 0;
 	my $priority = $hosts{$host};
 
 	$priority *= 100;
 	$priority = 1 if ($priority == 0);
 	$priority = sprintf("%.0f", $priority);
 
-	print "Link: <".url_for_mirror($host).$url.">; rel=duplicate; pri=$priority\r\n";
+	if ($url =~ m,^dists/[^/]+/(?:main|contrib|non-free)/Contents-[^.]+\.diff(/.*)$, ||
+	    $url =~ m,^dists/[^/]+/(?:main|contrib|non-free)/binary-[^/]+(/.*)$, ||
+	    $url =~ m,^dists/[^/]+/(?:main|contrib|non-free)/i18n(/.*)$, ||
+	    $url =~ m,^project(/.*)$, ||
+	    $url =~ m,^tools(/.*)$,) {
+	    $depth = $1 =~ tr[/][/];
+	}
+
+	print "Link: <".url_for_mirror($host).$url.">; rel=duplicate; pri=$priority; depth=$depth\r\n";
     }
 }
 

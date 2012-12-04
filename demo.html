@@ -53,7 +53,7 @@ function ajaxResponse() {
 	document.getElementById('country').textContent = 'Country: '+country;
 	document.getElementById('continent').textContent = 'Continent: '+continent;
 
-	links = links.replace(/; rel=duplicate; pri=[0-9]+/g,'');
+	links = links.replace(/; rel=duplicate; pri=[0-9]+; depth=[0-9]+/g,'');
 	links = links.replace(/(\u003C|\u003E)/g, '');
 	links = links.replace(/,/g, '</li><li>');
 
