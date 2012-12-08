@@ -345,8 +345,18 @@ sub process_entry($) {
     # AP: Asia/Pacific region
     if ($country =~ m/^(?:A1|A2|EU|AP)$/) {
 	print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $entry->{'site'}\n";
+	print STDERR "\tusing listed country ($listed_country)";
 	$country = $listed_country;
-	print STDERR "\tusing listed country ($listed_country), will need fix in redir.pl\n";
+
+	require Mirror::CountryCoords;
+	my $coords = Mirror::CountryCoords::country($country);
+	if ($coords) {
+	    $lat = $coords->{'lat'};
+	    $lon = $coords->{'lon'};
+	    print STDERR " and country coordinates\n";
+	} else {
+	    print STDERR ", but country coordinates could not be found\n";
+	}
     } elsif ($listed_country ne $country) {
 	print STDERR "warning: listed country for $entry->{'site'} doesn't match GeoIP db\n";
 	print STDERR "\t$listed_country (listed) vs $country (db), ";
