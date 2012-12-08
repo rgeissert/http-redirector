@@ -8,12 +8,17 @@ use vars qw(%countries);
 sub country {
     my $country = shift;
 
+    return $countries{$country}
+	if (exists($countries{$country}));
+
     while (<DATA>) {
 	chomp;
 	next if (m/^\s*(?:#|$)/);
 
 	my ($c, $lat, $lon) = split(/:/);
 	$countries{$c} = { 'lat' => $lat, 'lon' => $lon};
+
+	last if ($country eq $c);
     }
     return $countries{$country};
 }
