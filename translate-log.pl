@@ -27,7 +27,7 @@ use Storable qw(retrieve);
 
 use Getopt::Long;
 
-my $db_store = 'db';
+my $db_store = '';
 my $translate_id = 1;
 my $translate_type = 0;
 my $generate_url = 0;
@@ -44,9 +44,16 @@ if ($generate_url) {
 
 $| = 1;
 
-our $db = retrieve($db_store);
+our $db;
 
 while (<>) {
+    if ($. == 1) {
+	if (m/^{db:([^}]+)}$/) {
+	    $db_store = $1;
+	    $_ = '';
+	}
+	$db = retrieve($db_store || 'db');
+    }
     if (s,^\[(\w+)/(\w+)\],,) {
 	my ($id, $type) = ($1, $2);
 	my $replacement = $id;

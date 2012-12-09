@@ -108,6 +108,8 @@ if ($incoming_db) {
 $db = shared_clone(retrieve($db_store))
     unless (defined($db));
 
+print "{db:",($incoming_db||$db_store),"}\n";
+
 unless (scalar(@ids)) {
     @ids = keys %{$db->{'all'}};
 } elsif ($incoming_db) {
