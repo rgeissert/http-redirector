@@ -126,7 +126,7 @@ while ($threads--) {
 
 		$ua = create_agent();
 
-		while (my $id = $q->dequeue_nb()) {
+		while (defined(my $id = $q->dequeue_nb())) {
 		    check_mirror($id);
 		}
 	    }
@@ -149,7 +149,7 @@ for my $type (keys %traces) {
 	my $is_type_ref = has_type_reference($type, @{$traces{$type}{$stamp}});
 
 	if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
-	    while (my $id = pop @{$traces{$type}{$stamp}}) {
+	    while (defined(my $id = pop @{$traces{$type}{$stamp}})) {
 		$db->{'all'}{$id}{$type.'-disabled'} = undef;
 		log_message($id, $type, "old or not popular master stamp '$stamp'");
 	    }
@@ -183,7 +183,7 @@ for my $type (keys %traces) {
 	    if (exists($master_stamps{$continent})) {
 		# if a master stamp has been recorded already it means
 		# there are more up to date mirrors
-		while (my $id = pop @per_continent) {
+		while (defined(my $id = pop @per_continent)) {
 		    $db->{'all'}{$id}{$type.'-disabled'} = undef;
 		    log_message($id, $type, "old master trace re $continent");
 		}
