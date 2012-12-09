@@ -488,14 +488,19 @@ sub should_blackhole($) {
 	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
 	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
 	    ));
+	return 1 if ($url =~ m,^dists/(?:squeeze|wheezy)-updates/(?:main|contrib|non-free)/i18n/,);
 	return 1 if ($url =~ m,^dists/squeeze, && (
 	    $url eq 'dists/squeeze/InRelease' ||
 	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
-	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$, ||
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation-en_(?:US|GB),
 	    ));
 	return 1 if ($url =~ m,^dists/lenny,);
     } elsif ($mirror_type eq 'backports') {
 	return 1 if ($url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
+	    );
+    } elsif ($mirror_type eq 'security') {
+	return 1 if ($url =~ m,^dists/[^/]+/updates/(?:main|contrib|non-free)/i18n/,
 	    );
     }
     return 0;
