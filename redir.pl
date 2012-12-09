@@ -57,6 +57,7 @@ our $mirror_type = 'archive';
 our %this_host = map { $_ => 1 } qw(); # this host's hostname
 our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
 our $subrequest_prefix = 'serve/';
+our $permanent_redirect = 1;
 
 my %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -206,6 +207,13 @@ our ($require_inrelease, $require_i18n) = (0, 0);
 if ($mirror_type ne 'old') {
     $require_inrelease = ($url =~ m,/InRelease$,);
     $require_i18n = ($url =~ m,^dists/.+/i18n/,);
+}
+
+if ($permanent_redirect) {
+    $permanent_redirect = 0
+	unless ($url =~ m,^pool/, ||
+		$url =~ m,\.diff/.+\.(?:gz|bz2|xz|lzma)$, ||
+		$mirror_type eq 'old');
 }
 
 Mirror::Math::set_metric($metric);
@@ -485,7 +493,11 @@ sub do_redirect($$) {
     }
 
     print "Content-type: text/plain\r\n";
-    print "Status: 302 Moved Temporarily\r\n";
+    if ($permanent_redirect) {
+	print "Status: 301 Moved Permanently\r\n";
+    } else {
+	print "Status: 302 Moved Temporarily\r\n";
+    }
     print "Location: ".url_for_mirror($host).$real_url."\r\n";
 }
 
