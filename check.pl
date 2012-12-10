@@ -32,6 +32,7 @@ use Storable qw(retrieve);
 use lib '.';
 use Mirror::DB;
 use Mirror::Trace;
+use Mirror::RateLimiter;
 
 sub head_url($$);
 sub test_arch($$$);
@@ -43,6 +44,7 @@ sub log_message($$$);
 sub mirror_is_good($$);
 sub archs_by_mirror($$);
 sub parse_disable_file($);
+sub fatal_connection_error($);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -363,6 +365,8 @@ sub check_mirror($) {
     my $mirror = $db->{'all'}{$id};
     my @mirror_types;
 
+    my $fatal_error = 0;
+
     for my $k (keys %$mirror) {
 	next unless ($k =~ m/^(.+)-http$/);
 	push @mirror_types, $1;
@@ -391,6 +395,12 @@ sub check_mirror($) {
 	    }
 	}
 
+	$mirror->{$type.'-rtltr'} = undef
+	    unless (exists($mirror->{$type.'-rtltr'}));
+	my $rtltr = Mirror::RateLimiter->load(\$mirror->{$type.'-rtltr'});
+
+	next if ($rtltr->should_skip);
+
 	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
 	my $disable = 0;
@@ -399,6 +409,11 @@ sub check_mirror($) {
 	    my $error = $master_trace->fetch_error || 'parse error';
 	    $mirror->{$type.'-disabled'} = undef;
 	    log_message($id, $type, "bad master trace ($error)");
+	    $rtltr->record_failure;
+	    if (fatal_connection_error($error)) {
+		$fatal_error = 1;
+		last;
+	    }
 	    next unless ($check_archs || $check_areas);
 	    $disable = 1;
 	}
@@ -415,6 +430,11 @@ sub check_mirror($) {
 		my $error = $site_trace->fetch_error || 'parse error';
 		$ignore_master = 1;
 		$disable_reason = "bad site trace ($error)";
+		$rtltr->record_failure;
+		if (fatal_connection_error($error)) {
+		    $fatal_error = 1;
+		    last;
+		}
 	    } elsif ($site_trace->date < $master_trace->date) {
 		$ignore_master = 1;
 		$disable_reason = 'old site trace';
@@ -422,6 +442,7 @@ sub check_mirror($) {
 		log_message($id, $type, "doesn't use ftpsync");
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
+		$rtltr->record_failure;
 	    }
 
 	    unless ($disable_reason) {
@@ -459,6 +480,7 @@ sub check_mirror($) {
 			}
 
 			if (!exists($db->{$type}{'arch'}{'source'}) && !$site_trace->arch('source')) {
+			    $rtltr->record_failure;
 			    $mirror->{$type.'-tracearchcheck-disabled'} = undef;
 			    $disable_reason = "no sources (det. from trace file)";
 			}
@@ -496,6 +518,7 @@ sub check_mirror($) {
 	    if (!test_areas($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-areascheck-disabled'} = undef;
+		$rtltr->record_failure;
 		log_message($id, $type, "missing areas");
 		next unless ($check_archs);
 		$disable = 1;
@@ -527,6 +550,7 @@ sub check_mirror($) {
 	    if ($all_failed) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
+		$rtltr->record_failure;
 		log_message($id, $type, "all archs failed");
 		next;
 	    }
@@ -534,9 +558,31 @@ sub check_mirror($) {
 	    if (!exists($db->{$type}{'arch'}{'source'}) && !test_source($base_url, $type)) {
 		$mirror->{$type.'-disabled'} = undef;
 		$mirror->{$type.'-archcheck-disabled'} = undef;
+		$rtltr->record_failure;
 		log_message($id, $type, "no sources");
 		next;
 	    }
+	}
+    }
+
+    # The mirror couldn't be checked due to what's considered a "fatal error"
+    # i.e. some kind of error from which it is unlikely to recover any time soon
+    # As such, some checks might have been skipped. So mark it as
+    # disabled by any check that would have otherwise been run.
+    # It might be possible for the mirror to recover at a later time, however.
+    if ($fatal_error) {
+	for my $type (@mirror_types) {
+	    log_message($id, $type, "disabling due to fatal error");
+	    $mirror->{$type.'-disabled'} = undef;
+
+	    $mirror->{$type.'-tracearchcheck-disabled'} = undef
+		if ($check_trace_archs);
+	    $mirror->{$type.'-archcheck-disabled'} = undef
+		if ($check_archs);
+	    $mirror->{$type.'-areascheck-disabled'} = undef
+		if ($check_areas);
+	    $mirror->{$type.'-file-disabled'} = undef
+		if ($disable_sites);
 	}
     }
 }
@@ -576,4 +622,12 @@ sub parse_disable_file($) {
     }
     close ($fh);
     return \%disable_index;
+}
+
+sub fatal_connection_error($) {
+    my $error = shift;
+
+    return 0 unless ($error =~ m/^500/);
+    return ($error =~ m/Bad hostname/ || $error =~ m/Connection refused/
+	    || $error =~ m/connect: timeout/);
 }
