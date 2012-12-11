@@ -24,24 +24,31 @@ set -eu
 
 geoip=true
 mirrors=true
+peers=true
 
 while [ $# -gt 0 ]; do
     case "$1" in
 	--geoip-only)
 	    mirrors=false
+	    peers=false
 	;;
 	--mirrors-only)
 	    geoip=false
+	    peers=false
+	;;
+	--peers-only)
+	    mirrors=false
+	    geoip=false
 	;;
 	*)
-	    echo "usage: $(basename "$0") [--geoip-only|--mirrors-only]" >&2
+	    echo "usage: $(basename "$0") [--geoip-only|--mirrors-only|--peers-only]" >&2
 	    exit 1
 	;;
     esac
     shift
 done
 
-if ! $geoip && ! $mirrors; then
+if ! $geoip && ! $mirrors && ! $peers; then
     echo "nice try"
     exit 1
 fi
@@ -91,7 +98,18 @@ if $geoip; then
     cd - >/dev/null
 fi
 
+if $peers; then
+    if [ -z "$(find peers.lst.d/ -name '*.lst')" ]; then
+	peers=false
+    elif [ -f db ]
+	./build-peers-db.pl
+    fi
+fi
+
 if $mirrors; then
     ./update.pl -j 15 --db-output db.wip
+    if $peers; then
+	./build-peers-db.pl --mirrors-db db.wip
+    fi
     ./check.pl -j 20 --db-store db.wip --db-output db.in --check-everything --disable-sites ''
 fi
