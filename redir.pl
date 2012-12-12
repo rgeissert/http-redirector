@@ -213,6 +213,7 @@ if ($permanent_redirect) {
     $permanent_redirect = 0
 	unless ($url =~ m,^pool/, ||
 		$url =~ m,\.diff/.+\.(?:gz|bz2|xz|lzma)$, ||
+		$url =~ m,/installer-[^/]+/\d[^/]+/, ||
 		$mirror_type eq 'old');
 }
 
