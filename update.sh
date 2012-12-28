@@ -101,7 +101,7 @@ fi
 if $peers; then
     if [ -z "$(find peers.lst.d/ -name '*.lst')" ]; then
 	peers=false
-    elif [ -f db ]
+    elif [ -f db ]; then
 	./build-peers-db.pl
     fi
 fi
