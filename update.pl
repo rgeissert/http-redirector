@@ -282,6 +282,8 @@ sub process_entry($) {
     }
 
     if (defined ($entry->{'restricted-to'})) {
+	print STDERR "warning: skipping $entry->{'site'}, Restricted-To support is buggy\n";
+	return;
 	if ($entry->{'restricted-to'} =~ m/^(?:strict-country|subnet)$/) {
 	    print STDERR "warning: unsupported Restricted-To $entry->{'restricted-to'}\n";
 	    return;
