@@ -58,6 +58,7 @@ GetOptions('update-list!' => \$update_list,
 if ($update_list) {
     use LWP::UserAgent;
     my $ua = LWP::UserAgent->new;
+    $ua->timeout(20);
     $ua->protocols_allowed(['http', 'https']);
 
     my $res = $ua->mirror(
