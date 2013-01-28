@@ -417,30 +417,6 @@ sub run {
 	    if ($xtra_headers);
     }
 
-    sub find_arch($@) {
-	my $url = shift;
-
-	do {
-	    my ($default, $rx) = (shift, shift);
-	    if ($url =~ m/$rx/) {
-		my $arch = $1 || $default;
-		return $arch;
-	    }
-	} while (@_);
-	return '';
-    }
-
-    sub clean_url($) {
-	my $url = shift;
-	$url =~ s,//,/,g;
-	$url =~ s,^/,,;
-	$url =~ s,^\.\.?/,,g;
-	$url =~ s,(?<=/)\.\.?(?:/|$),,g;
-	$url = uri_escape($url);
-	$url =~ s,%2F,/,g;
-	return $url;
-    }
-
     sub consider_mirror($) {
 	my ($id) = @_;
 
@@ -525,12 +501,36 @@ sub run {
 	}
 	return 0;
     }
+}
 
-    sub mirror_is_in_continent($$$) {
-	my ($rdb, $id, $continent) = @_;
+sub find_arch($@) {
+    my $url = shift;
 
-	return (exists($rdb->{'continent'}{$continent}{$id}));
-    }
+    do {
+	my ($default, $rx) = (shift, shift);
+	if ($url =~ m/$rx/) {
+	    my $arch = $1 || $default;
+	    return $arch;
+	}
+    } while (@_);
+    return '';
+}
+
+sub clean_url($) {
+    my $url = shift;
+    $url =~ s,//,/,g;
+    $url =~ s,^/,,;
+    $url =~ s,^\.\.?/,,g;
+    $url =~ s,(?<=/)\.\.?(?:/|$),,g;
+    $url = uri_escape($url);
+    $url =~ s,%2F,/,g;
+    return $url;
+}
+
+sub mirror_is_in_continent($$$) {
+    my ($rdb, $id, $continent) = @_;
+
+    return (exists($rdb->{'continent'}{$continent}{$id}));
 }
 
 sub set_local_ip {
