@@ -54,6 +54,19 @@ our %nearby_country = (
     'NA' => [ qw(US CA) ],
 );
 
+# Even-numbered list: '[default]' => qr/regex/
+# Whenever regex matches but there's no value in the capture #1 then
+# the default value is used.
+my @ARCHITECTURES_REGEX = (
+    '' => qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
+    '' => qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
+    '' => qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
+    '' => qr'^indices/files(?:/components)?/arch-([^.]+).*$',
+    '' => qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
+    '' => qr'^dists/(?:[^/]+/){2,3}(source)/',
+    'source' => qr'^pool/(?:[^/]+/){3,4}.+\.(?:dsc|(?:diff|tar)\.(?:xz|gz|bz2))$',
+);
+
 our $metric = ''; # alt: taxicab (default) | euclidean
 our $stddev_set = 'iquartile'; # iquartile (default) | population
 our $random_sort = 1;
@@ -185,19 +198,6 @@ sub run {
 
     # Do not send Link headers on directory requests
     $add_links = 0 if ($add_links && $url =~ m,/$,);
-
-    # Even-numbered list: '[default]' => qr/regex/
-    # Whenever regex matches but there's no value in the capture #1 then
-    # the default value is used.
-    my @ARCHITECTURES_REGEX = (
-	'' => qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
-	'' => qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
-	'' => qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
-	'' => qr'^indices/files(?:/components)?/arch-([^.]+).*$',
-	'' => qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
-	'' => qr'^dists/(?:[^/]+/){2,3}(source)/',
-	'source' => qr'^pool/(?:[^/]+/){3,4}.+\.(?:dsc|(?:diff|tar)\.(?:xz|gz|bz2))$',
-    );
 
     @archs or @archs = find_arch($url, @ARCHITECTURES_REGEX);
     # @archs may only have more than one element iff $action eq 'list'
