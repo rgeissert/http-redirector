@@ -76,10 +76,14 @@ our %this_host = map { $_ => 1 } qw(); # this host's hostname
 our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
 our $subrequest_prefix = 'serve/';
 
+my $db;
+
 sub new {
     my ($class) = @_;
     my $self = {};
     bless($self, $class);
+
+    $db = retrieve($db_store);
 
     return $self;
 }
@@ -130,7 +134,6 @@ sub run {
 
     $action = 'demo' if ($req->header('X-Web-Demo'));
 
-    our $db = retrieve($db_store);
     # Make a shortcut
     my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
