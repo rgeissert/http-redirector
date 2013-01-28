@@ -123,7 +123,7 @@ sub run {
 
     ####
     my $IP = $req->address;
-    $IP = `wget -O- -q http://myip.dnsomatic.com/` if ($IP eq '127.0.0.1');
+    $IP = $self->get_local_ip($IP) if ($IP eq '127.0.0.1');
     ####
 
     our $ipv6 = ($IP =~ m/:/);
@@ -531,6 +531,37 @@ sub run {
 
 	return (exists($rdb->{'continent'}{$continent}{$id}));
     }
+}
+
+sub set_local_ip {
+    my $self = shift;
+    my $translation = shift;
+
+    if (ref $translation ne 'CODE') {
+	my $ip = $translation;
+	$translation = sub { return $ip; };
+    }
+
+    $self->{'local_ip'} = $translation;
+    return;
+}
+
+sub get_local_ip {
+    my $self = shift;
+    my $ip = shift;
+
+    if (defined($self->{'local_ip'})) {
+	return $self->{'local_ip'}($ip);
+    } else {
+	return $self->_query_remote_ip;
+    }
+}
+
+sub _query_remote_ip {
+    my $self = shift;
+    my $ip = `wget -O- -q http://myip.dnsomatic.com/`;
+    $self->set_local_ip($ip) if ($ip);
+    return $ip;
 }
 
 1;
