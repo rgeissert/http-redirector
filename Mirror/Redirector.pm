@@ -559,7 +559,14 @@ sub get_local_ip {
 
 sub _query_remote_ip {
     my $self = shift;
-    my $ip = `wget -O- -q http://myip.dnsomatic.com/`;
+    my $ip;
+
+    if (defined($ENV{'HARNESS_ACTIVE'})) {
+	$ip = '4.4.4.4';
+    } else {
+	$ip = `wget -O- -q http://myip.dnsomatic.com/`;
+    }
+
     $self->set_local_ip($ip) if ($ip);
     return $ip;
 }
