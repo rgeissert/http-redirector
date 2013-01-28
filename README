@@ -46,18 +46,27 @@ Getting started
 ===============
 
 Required packages:
-    libcgi-simple-perl
     libtimedate-perl
     libgeo-ip-perl
     libwww-perl
+    liburi-perl
+    libplack-perl
+    liblinux-inotify2-perl (for plackup -R)
     wget
 
 Run ./update.sh, it will download the geoip databases, the mirrors
 list, build the database used by the redirector, and check the mirrors
 for errors.
 
-Check the first lines of redir.pl for the invocation (or look at the
-example below.)
+Look at the example below for invocation and plackup(1p) and Plack's
+documentation for running the application under different server modes.
+
+If you just want to simulate a request (like it used to be possible
+with redir.pl), use local-request.pl. It sends a request to the
+application without actually starting the server.
+You can pass request parameters in the first argument to the script.
+To fake the IP address of the request, set the REMOTE_ADDR env var when
+calling it. No other CGI-like env var is recognised.
 
 Keeping everything in shape
 ===========================
