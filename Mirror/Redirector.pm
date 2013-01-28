@@ -38,7 +38,7 @@ sub clean_url($);
 sub consider_mirror($);
 sub url_for_mirror($);
 sub do_redirect($$);
-sub should_blackhole($);
+sub should_blackhole($$);
 sub mirror_is_in_continent($$$);
 
 our %nearby_continents = (
@@ -163,7 +163,7 @@ sub run {
 
     my $url = clean_url($req->param('url') || '');
 
-    if (should_blackhole($url)) {
+    if (should_blackhole($url, $mirror_type)) {
 	$res->status(404);
 	return $res->finalize;
     }
@@ -476,31 +476,6 @@ sub run {
 	return;
     }
 
-    sub should_blackhole($) {
-	my $url = shift;
-
-	if ($mirror_type eq 'archive') {
-	    return 1 if ($url =~ m,^dists/wheezy, && (
-		$url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
-		$url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
-		));
-	    return 1 if ($url =~ m,^dists/(?:squeeze|wheezy)-updates/(?:main|contrib|non-free)/i18n/,);
-	    return 1 if ($url =~ m,^dists/squeeze, && (
-		$url eq 'dists/squeeze/InRelease' ||
-		$url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
-		$url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$, ||
-		$url =~ m,/(?:main|contrib|non-free)/i18n/Translation-en_(?:US|GB),
-		));
-	    return 1 if ($url =~ m,^dists/lenny,);
-	} elsif ($mirror_type eq 'backports') {
-	    return 1 if ($url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
-		);
-	} elsif ($mirror_type eq 'security') {
-	    return 1 if ($url =~ m,^dists/[^/]+/updates/(?:main|contrib|non-free)/i18n/,
-		);
-	}
-	return 0;
-    }
 }
 
 sub find_arch($@) {
@@ -525,6 +500,33 @@ sub clean_url($) {
     $url = uri_escape($url);
     $url =~ s,%2F,/,g;
     return $url;
+}
+
+sub should_blackhole($$) {
+    my $url = shift;
+    my $mirror_type = shift;
+
+    if ($mirror_type eq 'archive') {
+	return 1 if ($url =~ m,^dists/wheezy, && (
+	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
+	    ));
+	return 1 if ($url =~ m,^dists/(?:squeeze|wheezy)-updates/(?:main|contrib|non-free)/i18n/,);
+	return 1 if ($url =~ m,^dists/squeeze, && (
+	    $url eq 'dists/squeeze/InRelease' ||
+	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$, ||
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation-en_(?:US|GB),
+	    ));
+	return 1 if ($url =~ m,^dists/lenny,);
+    } elsif ($mirror_type eq 'backports') {
+	return 1 if ($url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
+	    );
+    } elsif ($mirror_type eq 'security') {
+	return 1 if ($url =~ m,^dists/[^/]+/updates/(?:main|contrib|non-free)/i18n/,
+	    );
+    }
+    return 0;
 }
 
 sub mirror_is_in_continent($$$) {
