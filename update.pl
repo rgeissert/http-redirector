@@ -261,18 +261,6 @@ sub process_entry($) {
 	    print "info: $entry->{'site'} includes $include\n";
 	    print "\tbut it doesn't have its own entry, not cloning\n";
 	    $missing = 1;
-
-=foo
-	    # I don't know for sure if the included mirrors can be
-	    # accessed with $include as Host (instead of $entry->{'site'}
-	    my %new_site;
-	    while (my ($k, $v) = each %$entry) {
-		next if ($k eq 'includes');
-		$v = $include if ($k eq 'site');
-		$new_site{$k} = $v;
-	    }
-	    $q->enqueue(shared_clone(\%new_site));
-=cut
 	}
 	if (!$missing) {
 	    print "info: $entry->{'site'} has Includes, all with their own entry, skipping\n"
