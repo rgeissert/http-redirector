@@ -286,6 +286,8 @@ sub process_entry($) {
 
     my ($r, $as) = (undef, '');
 
+    $as = $entry->{'as'} if (defined($entry->{'as'}));
+
     my $attempts = 2;
     my @ips;
     while ($attempts--) {
@@ -314,7 +316,7 @@ sub process_entry($) {
 	}
 	if (!$as) {
 	    $as = $m_as;
-	} elsif ($as ne $m_as) {
+	} elsif (defined($m_as) && $as ne $m_as) {
 	    print STDERR "warning: ".$entry->{'site'}." resolves to multiple different".
 			" AS' ($as != $m_as)\n";
 	}
