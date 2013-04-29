@@ -426,7 +426,7 @@ sub check_mirror($) {
 	    delete $mirror->{$type.'-notinrelease'};
 	    delete $mirror->{$type.'-noti18n'};
 
-	    if (!$site_trace->fetch($mirror->{'site'})) {
+	    if (!$site_trace->fetch($mirror->{'trace-file'} || $mirror->{'site'})) {
 		my $error = $site_trace->fetch_error || 'parse error';
 		$ignore_master = 1;
 		$disable_reason = "bad site trace ($error)";

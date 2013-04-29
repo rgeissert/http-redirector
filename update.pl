@@ -466,6 +466,7 @@ sub process_entry($) {
 	lon
 	site
 	restricted-to
+	trace-file
     );
     for my $key (keys %{$entry}) {
 	next if ($key =~ m/-http$/);
