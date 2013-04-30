@@ -336,9 +336,13 @@ sub process_entry($) {
     # A2: Satellite providers
     # EU: Europe
     # AP: Asia/Pacific region
-    if ($country =~ m/^(?:A1|A2|EU|AP)$/) {
-	print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $entry->{'site'}\n";
-	print STDERR "\tusing listed country ($listed_country)";
+    if ($country =~ m/^(?:A1|A2|EU|AP)$/ || defined($entry->{'geoip-override'})) {
+	if (!defined($entry->{'geoip-override'})) {
+	    print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $entry->{'site'}\n";
+	    print STDERR "\tusing listed country ($listed_country)";
+	} else {
+	    print STDERR "warning: overriding country of $entry->{'site'}";
+	}
 	$country = $listed_country;
 
 	require Mirror::CountryCoords;
