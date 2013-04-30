@@ -303,6 +303,7 @@ sub process_entry($) {
     # However: we can't control what IP the client will connect to, and
     #	we can't guarantee that accessing the mirror with a different
     #	Host will actually work. Meh.
+    my %as_seen;
     for my $ip (@ips) {
 	my $m_record = $g_city->record_by_addr($ip);
 	# Split result, original format is: "AS123 Foo Bar corp"
@@ -318,7 +319,8 @@ sub process_entry($) {
 	    $as = $m_as;
 	} elsif (defined($m_as) && $as ne $m_as) {
 	    print STDERR "warning: ".$entry->{'site'}." resolves to multiple different".
-			" AS' ($as != $m_as)\n";
+			" AS' ($as != $m_as)\n" unless (exists($as_seen{$m_as}));
+	    $as_seen{$m_as} = 1;
 	}
     }
 
