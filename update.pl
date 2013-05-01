@@ -23,7 +23,6 @@
 use strict;
 use warnings;
 use Getopt::Long;
-use File::stat qw(stat);
 use Socket;
 
 use Mirror::AS;
