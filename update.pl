@@ -49,6 +49,7 @@ our $verbose = 0;
 sub parse_list($$);
 sub process_entry($);
 sub fancy_get_host($);
+sub bandwidth_to_mb($);
 
 GetOptions('update-list!' => \$update_list,
 	    'j|threads=i' => \$threads,
@@ -384,25 +385,13 @@ sub process_entry($) {
     }
 
     if (defined($entry->{'bandwidth'})) {
-	my $bw = 0;
-	if ($entry->{'bandwidth'} =~ m/([\d.]+)\s*([tgm])/i) {
-	    my ($quantity, $unit) = ($1, $2);
-	    $unit = lc $unit;
-	    while ($unit ne 'm') {
-		if ($unit eq 't') {
-		    $quantity *= 1000;
-		    $unit = 'g';
-		}
-		if ($unit eq 'g') {
-		    $quantity *= 1000;
-		    $unit = 'm';
-		}
-	    }
-	    $bw = $quantity;
-	} else {
-	    print STDERR "warning: unknown bandwidth format ($entry->{'bandwidth'}) for $entry->{'site'}\n";
+	eval {
+	    $entry->{'bandwidth'} = bandwidth_to_mb($entry->{'bandwidth'});
+	};
+	if ($@) {
+	    print STDERR "warning: $@ for $entry->{'site'}\n";
+	    delete $entry->{'bandwidth'};
 	}
-	$entry->{'bandwidth'} = $bw;
     }
 
     my $mirror_recorded = 0;
@@ -495,4 +484,28 @@ sub fancy_get_host($) {
     my @addresses = gethostbyname($name)
 	or return;
     return map { inet_ntoa($_) } @addresses[4..$#addresses];
+}
+
+sub bandwidth_to_mb($) {
+    my $bw_str = shift;
+    my $bw = 0;
+
+    if ($bw_str =~ m/([\d.]+)\s*([tgm])/i) {
+	my ($quantity, $unit) = ($1, $2);
+	$unit = lc $unit;
+	while ($unit ne 'm') {
+	    if ($unit eq 't') {
+		$quantity *= 1000;
+		$unit = 'g';
+	    }
+	    if ($unit eq 'g') {
+		$quantity *= 1000;
+		$unit = 'm';
+	    }
+	}
+	$bw = $quantity;
+    } else {
+	die "unknown bandwidth format ($bw_str)\n";
+    }
+    return $bw;
 }
