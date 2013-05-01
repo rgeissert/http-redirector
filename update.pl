@@ -347,7 +347,9 @@ sub process_entry($) {
 	    print STDERR "warning: overriding country of $entry->{'site'}";
 	}
 	$country = $listed_country;
-	$continent = $entry->{'continent'} if (defined($entry->{'continent'}));
+	$continent = $g_city->continent_code_by_country_code($country);
+
+	print STDERR ", fixing continent to '$continent'";
 
 	require Mirror::CountryCoords;
 	my $coords = Mirror::CountryCoords::country($country);
