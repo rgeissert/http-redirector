@@ -179,6 +179,7 @@ for my $type (keys %traces) {
 	    if (defined($global_master_stamp) &&
 		(($global_master_stamp - $stamp) > 12*3600 ||
 		 $type eq 'security' || $is_type_ref)) {
+		print "Overriding the master stamp of $type/$continent\n";
 		$master_stamps{$continent} = $global_master_stamp;
 	    } elsif (!defined($global_master_stamp)) {
 		$global_master_stamp = $stamp;
