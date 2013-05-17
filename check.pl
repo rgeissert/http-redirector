@@ -56,6 +56,7 @@ my $check_everything = 0;
 my $incoming_db = '';
 my $disable_sites = 'sites.disabled';
 my $threads = 4;
+my $verbose = 0;
 my @ids;
 
 GetOptions('check-architectures!' => \$check_archs,
@@ -68,7 +69,8 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'id|mirror-id=s' => \@ids,
 	    'incoming-db=s' => \$incoming_db,
 	    'store-traces!' => \$store_traces,
-	    'disable-sites=s' => \$disable_sites) or exit 1;
+	    'disable-sites=s' => \$disable_sites,
+	    'verbose!' => \$verbose) or exit 1;
 
 # Avoid picking up db.in when working on db.wip, for example
 $incoming_db ||= $db_store.'.in';
@@ -447,11 +449,13 @@ sub check_mirror($) {
 
 	    unless ($disable_reason) {
 		if (!$site_trace->features('inrelease')) {
-		    log_message($id, $type, "doesn't handle InRelease files correctly");
+		    log_message($id, $type, "doesn't handle InRelease files correctly")
+			if ($verbose);
 		    $mirror->{$type.'-notinrelease'} = undef;
 		}
 		if (!$site_trace->features('i18n')) {
-		    log_message($id, $type, "doesn't handle i18n files correctly");
+		    log_message($id, $type, "doesn't handle i18n files correctly")
+			if ($verbose);
 		    $mirror->{$type.'-noti18n'} = undef;
 		}
 		if ($site_trace->features('architectures')) {
