@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 28;
+use Test::More tests => 33;
 
 use Mirror::Trace;
 use LWP::UserAgent;
@@ -41,6 +41,18 @@ ok($trace->_parse_trace($trace_data), 'Parse trace data');
 ok($trace->uses_ftpsync, 'ftpync-generated trace');
 ok($trace->features('inrelease'), '20120521 handles inrelease files');
 ok($trace->features('i18n'), '20120521 handles i18n files');
+
+$trace_data = <<EOF;
+Mon Feb 27 09:13:54 UTC 2012
+Used ftpsync version: 20130501
+Running on host: my.host.tld
+EOF
+
+ok($trace->_parse_trace($trace_data), 'Parse trace data');
+ok($trace->uses_ftpsync, 'ftpync-generated trace');
+ok($trace->features('inrelease'), '20130501 handles inrelease files');
+ok($trace->features('i18n'), '20130501 handles i18n files');
+ok($trace->features('auip'), '20130501 performs AUIP check');
 
 $trace_data = <<EOF;
 Mon Feb 27 09:13:54 UTC 2012

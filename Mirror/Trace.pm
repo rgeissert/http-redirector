@@ -128,6 +128,7 @@ sub features {
 	my $version = $1;
 	return 1 if ($feature eq 'inrelease' && $version >= 80387);
 	return 1 if ($feature eq 'i18n' && $version >= 20120521);
+	return 1 if ($feature eq 'auip' && $version >= 20130501);
     }
     if ($self->{'software'} =~ m/^DMS sync dms-([0-9.\w-]+)$/) {
 	my $version = $1;
