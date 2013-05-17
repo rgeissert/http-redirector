@@ -85,7 +85,7 @@ foreach my $mirror_type (@mirror_types) {
     $db{$mirror_type} = shared_clone({
 	'country' => {}, 'arch' => {},
 	'AS' => {}, 'continent' => {},
-	'master' => ''
+	'master' => '', 'serial' => {}
     });
     $semaphore{$mirror_type} = Thread::Semaphore->new();
 }
