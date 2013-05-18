@@ -185,7 +185,7 @@ for my $type (keys %traces) {
 		next;
 	    }
 	    # Criteria: at least %archs_required can be served
-	    if (scalar(keys %archs_required)) {
+	    if ($type eq 'archive' && scalar(keys %archs_required)) {
 		disable_mirrors($type, "Required archs not present in its $continent subset", @per_continent);
 		next;
 	    }
