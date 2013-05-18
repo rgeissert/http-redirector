@@ -163,6 +163,8 @@ for my $type (keys %traces) {
 	for my $continent (keys %{$db->{$type}{'continent'}}) {
 	    my @per_continent;
 	    my $good_mirrors = 0;
+	    my %archs_required = map { $_ => 1 } qw(amd64 i386);
+
 	    for my $id (@{$traces{$type}{$stamp}}) {
 		next unless (exists($db->{$type}{'continent'}{$continent}{$id}));
 
@@ -170,10 +172,19 @@ for my $type (keys %traces) {
 
 		$good_mirrors++ if (mirror_is_good($mirror, $type));
 
+		for my $arch (keys %archs_required) {
+		    delete $archs_required{$arch}
+			if (exists($db->{$type}{'arch'}{$arch}{$id}) && !exists($mirror->{$type.'-'.$arch.'-disabled'}));
+		}
+
 		push @per_continent, $id;
 	    }
 
+	    # Criteria: at least one mirror
+	    # Criteria: at least one that is "good"
 	    next unless (scalar(@per_continent) && $good_mirrors);
+	    # Criteria: at least %archs_required can be served
+	    next if (scalar(keys %archs_required));
 
 	    if (!exists($master_stamps{$continent})) {
 		# Do not let subsets become too old
