@@ -277,7 +277,7 @@ sub test_arch($$$) {
     } elsif ($type eq 'backports') {
 	$format = 'dists/oldstable-backports/main/binary-%s/Release';
     } elsif ($type eq 'security') {
-	$format = 'dists/stable/updates/main/binary-%s/Release';
+	$format = 'dists/stable/updates/main/binary-%s/Packages.gz';
     } else {
 	# unknown/unsupported type, say we succeeded
 	return 1;
@@ -301,7 +301,7 @@ sub test_source($$) {
     } elsif ($type eq 'backports') {
 	$format = 'dists/oldstable-backports/main/source/Release';
     } elsif ($type eq 'security') {
-	$format = 'dists/stable/updates/main/source/Release';
+	$format = 'dists/stable/updates/main/source/Sources.gz';
     } else {
 	# unknown/unsupported type, say we succeeded
 	return 1;
