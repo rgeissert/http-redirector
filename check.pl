@@ -190,12 +190,16 @@ for my $type (keys %traces) {
 		    log_message($id, $type, "old master trace re $continent");
 		}
 	    } else {
-		if (exists($db->{$type}{'serial'}{$continent}) && $db->{$type}{'serial'}{$continent} > $stamp) {
-		    print "Regression detected in $continent/$type\n";
+		if (exists($db->{$type}{'serial'})) {
+		    $db->{$type}{'serial'}{$continent} = 0
+			unless (exists($db->{$type}{'serial'}{$continent}));
+
+		    print "Regression detected in $continent/$type\n"
+			if ($db->{$type}{'serial'}{$continent} > $stamp);
+
+		    $db->{$type}{'serial'}{$continent} = $stamp;
 		}
 		$master_stamps{$continent} = $stamp;
-		$db->{$type}{'serial'}{$continent} = $stamp
-		    if (exists($db->{$type}{'serial'}));
 		print "Master stamp for $continent/$type: $stamp\n";
 	    }
 	}
