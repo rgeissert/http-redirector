@@ -175,14 +175,16 @@ for my $type (keys %traces) {
 
 	    next unless (scalar(@per_continent) && $good_mirrors);
 
-	    # Do not let subsets become too old
-	    if (defined($global_master_stamp) &&
-		(($global_master_stamp - $stamp) > 12*3600 ||
-		 $type eq 'security' || $is_type_ref)) {
-		print "Overriding the master stamp of $type/$continent\n";
-		$master_stamps{$continent} = $global_master_stamp;
-	    } elsif (!defined($global_master_stamp)) {
-		$global_master_stamp = $stamp;
+	    if (!exists($master_stamps{$continent})) {
+		# Do not let subsets become too old
+		if (defined($global_master_stamp) &&
+		    (($global_master_stamp - $stamp) > 12*3600 ||
+		     $type eq 'security' || $is_type_ref)) {
+		    print "Overriding the master stamp of $type/$continent\n";
+		    $master_stamps{$continent} = $global_master_stamp;
+		} elsif (!defined($global_master_stamp)) {
+		    $global_master_stamp = $stamp;
+		}
 	    }
 
 	    if (exists($master_stamps{$continent})) {
