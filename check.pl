@@ -193,7 +193,7 @@ for my $type (keys %traces) {
 	    if (!exists($master_stamps{$continent})) {
 		# Do not let subsets become too old
 		if (defined($global_master_stamp) &&
-		    (($global_master_stamp - $stamp) > 12*3600 ||
+		    (($global_master_stamp - $stamp) > 13*3600 ||
 		     $type eq 'security' || $is_type_ref)) {
 		    print "Overriding the master stamp of $type/$continent (from $stamp to $global_master_stamp)\n";
 		    $master_stamps{$continent} = $global_master_stamp;
