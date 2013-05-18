@@ -194,7 +194,8 @@ for my $type (keys %traces) {
 		    print "Regression detected in $continent/$type\n";
 		}
 		$master_stamps{$continent} = $stamp;
-		$db->{$type}{'serial'}{$continent} = $stamp;
+		$db->{$type}{'serial'}{$continent} = $stamp
+		    if (exists($db->{$type}{'serial'}));
 		print "Master stamp for $continent/$type: $stamp\n";
 	    }
 	}
