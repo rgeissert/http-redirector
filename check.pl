@@ -45,6 +45,7 @@ sub mirror_is_good($$);
 sub archs_by_mirror($$);
 sub parse_disable_file($);
 sub fatal_connection_error($);
+sub disable_mirrors($$@);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -153,10 +154,7 @@ for my $type (keys %traces) {
 	my $is_type_ref = has_type_reference($type, @{$traces{$type}{$stamp}});
 
 	if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
-	    while (defined(my $id = pop @{$traces{$type}{$stamp}})) {
-		$db->{'all'}{$id}{$type.'-disabled'} = undef;
-		log_message($id, $type, "old or not popular master stamp '$stamp'");
-	    }
+	    disable_mirrors($type, "old or not popular master stamp '$stamp'", @{$traces{$type}{$stamp}});
 	    next;
 	}
 
@@ -182,9 +180,15 @@ for my $type (keys %traces) {
 
 	    # Criteria: at least one mirror
 	    # Criteria: at least one that is "good"
-	    next unless (scalar(@per_continent) && $good_mirrors);
+	    unless (scalar(@per_continent) && $good_mirrors) {
+		disable_mirrors($type, "Not enough good mirrors in its $continent subset", @per_continent);
+		next;
+	    }
 	    # Criteria: at least %archs_required can be served
-	    next if (scalar(keys %archs_required));
+	    if (scalar(keys %archs_required)) {
+		disable_mirrors($type, "Required archs not present in its $continent subset", @per_continent);
+		next;
+	    }
 
 	    if (!exists($master_stamps{$continent})) {
 		# Do not let subsets become too old
@@ -201,10 +205,7 @@ for my $type (keys %traces) {
 	    if (exists($master_stamps{$continent})) {
 		# if a master stamp has been recorded already it means
 		# there are more up to date mirrors
-		while (defined(my $id = pop @per_continent)) {
-		    $db->{'all'}{$id}{$type.'-disabled'} = undef;
-		    log_message($id, $type, "old master trace re $continent");
-		}
+		disable_mirrors($type, "old master trace re $continent", @per_continent);
 	    } else {
 		$master_stamps{$continent} = $stamp;
 		print "Master stamp for $continent/$type: $stamp\n";
@@ -648,4 +649,14 @@ sub fatal_connection_error($) {
     return 0 unless ($error =~ m/^500/);
     return ($error =~ m/Bad hostname/ || $error =~ m/Connection refused/
 	    || $error =~ m/connect: timeout/);
+}
+
+sub disable_mirrors($$@) {
+    my ($type, $reason) = (shift, shift);
+    my @mirrors = @_;
+
+    while (defined(my $id = pop @mirrors)) {
+	$db->{'all'}{$id}{$type.'-disabled'} = undef;
+	log_message($id, $type, $reason);
+    }
 }
