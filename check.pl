@@ -275,7 +275,7 @@ sub test_arch($$$) {
     if ($type eq 'archive') {
 	$format = 'indices/files/arch-%s.files';
     } elsif ($type eq 'backports') {
-	$format = 'dists/stable-backports/main/binary-%s/Release';
+	$format = 'dists/oldstable-backports/main/binary-%s/Release';
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/binary-%s/Release';
     } else {
@@ -299,7 +299,7 @@ sub test_source($$) {
     if ($type eq 'archive') {
 	$format = 'dists/sid/main/source/Release';
     } elsif ($type eq 'backports') {
-	$format = 'dists/stable-backports/main/source/Release';
+	$format = 'dists/oldstable-backports/main/source/Release';
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/source/Release';
     } else {
@@ -320,7 +320,7 @@ sub test_areas($$) {
     if ($type eq 'archive') {
 	$format = 'dists/sid/%s/';
     } elsif ($type eq 'backports') {
-	$format = 'dists/stable-backports/%s/';
+	$format = 'dists/oldstable-backports/%s/';
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/%s/';
     } else {
