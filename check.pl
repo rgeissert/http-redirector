@@ -28,6 +28,7 @@ use threads;
 use threads::shared;
 use Thread::Queue;
 use Storable qw(retrieve);
+use HTTP::Date qw();
 
 use lib '.';
 use Mirror::DB;
@@ -38,6 +39,7 @@ sub head_url($$);
 sub test_arch($$$);
 sub test_source($$);
 sub test_areas($$);
+sub test_stages($$$);
 sub create_agent();
 sub check_mirror($);
 sub log_message($$$);
@@ -53,6 +55,7 @@ my $store_traces = 0;
 my $check_archs = '';
 my $check_trace_archs = 1;
 my $check_areas = '';
+my $check_2stages = 1;
 my $check_everything = 0;
 my $incoming_db = '';
 my $disable_sites = 'sites.disabled';
@@ -62,6 +65,7 @@ my @ids;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'check-areas!' => \$check_areas,
+	    'check-2stages!' => \$check_2stages,
 	    'check-trace-architectures!' => \$check_trace_archs,
 	    'check-everything' => \$check_everything,
 	    'j|threads=i' => \$threads,
@@ -80,6 +84,7 @@ if ($check_everything) {
     $check_archs = 1 unless ($check_archs ne '');
     $check_areas = 1 unless ($check_areas ne '');
     $check_trace_archs = 1 unless ($check_trace_archs ne '');
+    $check_2stages = 1 unless ($check_2stages ne '');
 }
 
 $| = 1;
@@ -360,6 +365,32 @@ sub test_areas($$) {
     return 1;
 }
 
+sub test_stages($$$) {
+    my ($base_url, $type, $master_trace) = @_;
+    my $format;
+
+    if ($type eq 'archive') {
+	$format = 'dists/sid/Release';
+    } elsif ($type eq 'backports') {
+	$format = 'dists/oldstable-backports/Release';
+    } elsif ($type eq 'security') {
+	$format = 'dists/stable/updates/Release';
+    } else {
+	# unknown/unsupported type, say we succeeded
+	return 1;
+    }
+
+    my $url = $base_url . $format;
+    my $trace_date = HTTP::Date::time2str($master_trace->date);
+
+    # The last-modified date of $url should never be newer than the one
+    # in the trace file. Use if-unmodified-since so that a 412 code is
+    # returned on failure, and a 200 if successful (or if the server
+    # ignored the if-unmodified-since)
+    my $response = $ua->head($url, 'if-unmodified-since' => $trace_date);
+    return $response->is_success;
+}
+
 sub create_agent() {
     my $ua = LWP::UserAgent->new();
 
@@ -403,6 +434,8 @@ sub check_mirror($) {
 	next if (exists($mirror->{$type.'-archcheck-disabled'}) && !$check_archs);
 	next if (exists($mirror->{$type.'-areascheck-disabled'}) && !$check_areas);
 	next if (exists($mirror->{$type.'-file-disabled'}) && !$disable_sites);
+	# There's no way back for this one:
+	next if (exists($mirror->{$type.'-stages-disabled'}));
 
 	if ($disable_sites) {
 	    my $todisable = $sites_to_disable{$mirror->{'site'}};
@@ -537,6 +570,16 @@ sub check_mirror($) {
 	    if (exists($mirror->{$type.'-disabled'}) && !$disable) {
 		log_message($id, $type, "re-considering, good traces");
 		delete $mirror->{$type.'-disabled'};
+	    }
+	}
+
+	if ($check_2stages) {
+	    if (!test_stages($base_url, $type, $master_trace)) {
+		$mirror->{$type.'-disabled'} = undef;
+		$mirror->{$type.'-stages-disabled'} = undef;
+		$rtltr->record_failure;
+		log_message($id, $type, "doesn't perform 2stages sync");
+		next;
 	    }
 	}
 
