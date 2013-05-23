@@ -52,6 +52,8 @@ for my $id (sort keys %{$db->{'all'}}) {
 	$print_note_block = 1;
 	print "- Type: $type\n";
 	print "  Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
+	print "  State: ",(($mirror->{"$type-state"} eq "syncing")?"syncing":"synced"),"\n"
+	    if (defined($mirror->{"$type-state"}));
 	print "  Path: ",$mirror->{"$type-http"},"\n";
 	print_note "Bad master trace"
 	    if (exists($mirror->{$type.'-badmaster'}));
