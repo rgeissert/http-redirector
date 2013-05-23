@@ -48,7 +48,7 @@ for my $id (sort keys %{$db->{'all'}}) {
 	next unless ($k =~ m/^(.+)-http$/);
 	push @mirror_types, $1;
     }
-    for my $type (@mirror_types) {
+    for my $type (sort @mirror_types) {
 	$print_note_block = 1;
 	print "- Type: $type\n";
 	print "  Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
