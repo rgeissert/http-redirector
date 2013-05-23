@@ -57,6 +57,8 @@ for my $id (sort keys %{$db->{'all'}}) {
 	    if (exists($mirror->{$type.'-badmaster'}));
 	print_note "Bad site trace"
 	    if (exists($mirror->{$type.'-badsite'}));
+	print_note "Doesn't perform two-stages sync"
+	    if (exists($mirror->{$type.'-stages-disabled'}));
 	print_note "Missing all architectures, or source packages"
 	    if (exists($mirror->{$type.'-archcheck-disabled'}));
 	print_note "Missing archive areas (main, contrib, or non-free)"
