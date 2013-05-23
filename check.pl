@@ -388,7 +388,7 @@ sub test_stages($$$) {
     # returned on failure, and a 200 if successful (or if the server
     # ignored the if-unmodified-since)
     my $response = $ua->head($url, 'if-unmodified-since' => $trace_date);
-    return $response->is_success;
+    return ($response->is_success || $response->status_line =~ m/^500/);
 }
 
 sub create_agent() {
