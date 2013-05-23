@@ -431,9 +431,11 @@ sub check_mirror($) {
 	my $master_trace = Mirror::Trace->new($ua, $base_url);
 	my $disable = 0;
 
+	delete $mirror->{$type.'-badmaster'};
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    my $error = $master_trace->fetch_error || 'parse error';
 	    $mirror->{$type.'-disabled'} = undef;
+	    $mirror->{$type.'-badmaster'} = undef;
 	    log_message($id, $type, "bad master trace ($error)");
 	    $rtltr->record_failure;
 	    if (fatal_connection_error($error)) {
@@ -449,12 +451,15 @@ sub check_mirror($) {
 	    my $disable_reason;
 	    my $ignore_master = 0;
 
+	    delete $mirror->{$type.'-badsite'};
+	    delete $mirror->{$type.'-oldftpsync'};
 	    delete $mirror->{$type.'-notinrelease'};
 	    delete $mirror->{$type.'-noti18n'};
 
 	    if (!$site_trace->fetch($mirror->{'trace-file'} || $mirror->{'site'})) {
 		my $error = $site_trace->fetch_error || 'parse error';
 		$ignore_master = 1;
+		$mirror->{$type.'-badsite'} = undef;
 		$disable_reason = "bad site trace ($error)";
 		$rtltr->record_failure;
 		if (fatal_connection_error($error)) {
@@ -468,6 +473,7 @@ sub check_mirror($) {
 		log_message($id, $type, "doesn't use ftpsync");
 	    } elsif (!$site_trace->good_ftpsync) {
 		$disable_reason = 'old ftpsync';
+		$mirror->{$type.'-oldftpsync'} = undef;
 		$rtltr->record_failure;
 	    }
 
