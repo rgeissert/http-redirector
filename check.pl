@@ -48,6 +48,7 @@ sub archs_by_mirror($$);
 sub parse_disable_file($);
 sub fatal_connection_error($);
 sub disable_mirrors($$@);
+sub mirror_provides_arch($$$);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -183,7 +184,7 @@ for my $type (keys %traces) {
 
 		for my $arch (keys %archs_required) {
 		    delete $archs_required{$arch}
-			if (exists($db->{$type}{'arch'}{$arch}{$id}) && !exists($mirror->{$type.'-'.$arch.'-disabled'}));
+			if (mirror_provides_arch($id, $type, $arch));
 		}
 
 		push @per_continent, $id;
@@ -724,4 +725,16 @@ sub disable_mirrors($$@) {
 	$db->{'all'}{$id}{$type.'-disabled'} = undef;
 	log_message($id, $type, $reason);
     }
+}
+
+sub mirror_provides_arch($$$) {
+    my ($id, $type, $arch) = @_;
+
+    my $mirror = $db->{'all'}{$id};
+
+    if (exists($db->{$type}{'arch'}{$arch}) && exists($db->{$type}{'arch'}{$arch}{$id})
+	&& !exists($mirror->{$type.'-'.$arch.'-disabled'})) {
+	return 1;
+    }
+    return 0;
 }
