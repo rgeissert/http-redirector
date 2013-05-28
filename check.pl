@@ -120,8 +120,10 @@ $db = shared_clone(retrieve($db_store))
 
 print "{db:",($incoming_db||$db_store),"}\n";
 
+my $process_stamps = 0;
 unless (scalar(@ids)) {
     @ids = keys %{$db->{'all'}};
+    $process_stamps = 1;
 } elsif ($incoming_db) {
     die("error: passed --id but there's an incoming db: $incoming_db\n");
 }
@@ -150,7 +152,7 @@ for my $thr (threads->list()) {
 for my $type (keys %traces) {
     my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
 
-    next if (scalar(@stamps) <= 2);
+    next unless ($process_stamps);
 
     my %master_stamps;
     my $global_master_stamp;
