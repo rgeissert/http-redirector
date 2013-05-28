@@ -120,7 +120,7 @@ $db = shared_clone(retrieve($db_store))
 
 print "{db:",($incoming_db||$db_store),"}\n";
 
-my $process_stamps = 0;
+our $process_stamps = 0;
 unless (scalar(@ids)) {
     @ids = keys %{$db->{'all'}};
     $process_stamps = 1;
@@ -577,7 +577,8 @@ sub check_mirror($) {
 
 	    if (exists($mirror->{$type.'-disabled'}) && !$disable) {
 		log_message($id, $type, "re-considering, good traces");
-		delete $mirror->{$type.'-disabled'};
+		delete $mirror->{$type.'-disabled'}
+		    if ($process_stamps);
 	    }
 	}
 
