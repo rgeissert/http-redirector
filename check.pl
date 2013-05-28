@@ -184,7 +184,7 @@ for my $type (keys %traces) {
 
 		for my $arch (keys %archs_required) {
 		    delete $archs_required{$arch}
-			if (mirror_provides_arch($id, $type, $arch));
+			if (mirror_provides_arch($id, $type, $arch) || mirror_provides_arch($id, $type, 'any'));
 		}
 
 		push @per_continent, $id;
