@@ -80,6 +80,10 @@ GetOptions('check-architectures!' => \$check_archs,
 # Avoid picking up db.in when working on db.wip, for example
 $incoming_db ||= $db_store.'.in';
 
+my %max_age = (
+    'default' => 13*3600,
+);
+
 if ($check_everything) {
     $check_archs = 1 unless ($check_archs ne '');
     $check_areas = 1 unless ($check_areas ne '');
@@ -200,7 +204,7 @@ for my $type (keys %traces) {
 	    if (!exists($master_stamps{$continent})) {
 		# Do not let subsets become too old
 		if (defined($global_master_stamp) &&
-		    (($global_master_stamp - $stamp) > 13*3600 ||
+		    (($global_master_stamp - $stamp) > ($max_age{$type} || $max_age{'default'}) ||
 		     $type eq 'security' || $is_type_ref)) {
 		    print "Overriding the master stamp of $type/$continent (from $stamp to $global_master_stamp)\n";
 		    $master_stamps{$continent} = $global_master_stamp;
