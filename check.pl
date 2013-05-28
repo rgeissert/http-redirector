@@ -484,6 +484,9 @@ sub check_mirror($) {
 	    my $disable_reason;
 	    my $ignore_master = 0;
 
+	    my $stored_site_date = $mirror->{$type.'-site'} || 0;
+	    my $stored_master_date = $mirror->{$type.'-master'} || 0;
+
 	    delete $mirror->{$type.'-badsite'};
 	    delete $mirror->{$type.'-oldftpsync'};
 	    delete $mirror->{$type.'-notinrelease'};
@@ -510,7 +513,21 @@ sub check_mirror($) {
 		$rtltr->record_failure;
 	    }
 
+
 	    unless ($disable_reason) {
+		# Similar to the site->date < $master->date check above
+		# but stricter. Only accept a master bump if the site
+		# is also updated.
+		if ($master_trace->date > $stored_master_date &&
+		    $site_trace->date == $stored_site_date) {
+		    $ignore_master = 1;
+		    $disable_reason = 'new master but no new site';
+		} else {
+		    # only update them when in an accepted state:
+		    $mirror->{$type.'-site'} = $site_trace->date;
+		    $mirror->{$type.'-master'} = $master_trace->date;
+		}
+
 		if (!$site_trace->features('inrelease')) {
 		    log_message($id, $type, "doesn't handle InRelease files correctly")
 			if ($verbose);
