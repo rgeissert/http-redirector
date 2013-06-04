@@ -315,7 +315,8 @@ print_xtra('Closest-Distance', $hosts{$host});
 for my $h (@sorted_hosts) {
     # NOTE: this might need some additional work, as we should probably
     # guarantee a certain amount of alt hosts to choose from
-    if (($hosts{$h} - $hosts{$host}) <= $dev) {
+    if (($hosts{$h} - $hosts{$host}) <= $dev &&
+	(scalar(@close_hosts) < 4 || $hosts{$h} == $hosts{$close_hosts[-1]})) {
 	push @close_hosts, $h;
     } else {
 	# the list is sorted, if we didn't accept this one won't accept
