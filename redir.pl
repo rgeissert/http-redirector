@@ -507,6 +507,10 @@ sub should_blackhole($) {
     my $url = shift;
 
     if ($mirror_type eq 'archive') {
+	return 1 if ($url =~ m,^dists/jessie, && (
+	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma)$, ||
+	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|gz)$,
+	    ));
 	return 1 if ($url =~ m,^dists/wheezy, && (
 	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
 	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
