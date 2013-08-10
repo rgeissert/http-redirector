@@ -33,7 +33,6 @@ GetOptions('progress!' => \$print_progress,
 	    'distance=i' => \$max_distance,
 	    'output-file=s' => \$output_file) or exit 1;
 
-my %as_routes;
 my $count = -1;
 
 $count = 0 if ($print_progress);
