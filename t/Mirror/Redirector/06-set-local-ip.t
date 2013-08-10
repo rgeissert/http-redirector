@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 13;
+use Test::More tests => 9;
 use Plack::Test;
 use HTTP::Request::Common;
 
@@ -31,15 +31,14 @@ is($app->get_local_ip('127.0.0.1'), '8.8.4.4', '127.0.0.1 is now translated to 8
 # Now using a user-defined function
 # This is mainly for use in tests and locally-run instances (where one
 # can modify the application), as M::Redirector only calls get_local_ip
-# on 127.0.0.1
+# on 127.0.0.1. It can, for example, be used to respect x-forwarded-for
 $app->set_local_ip(sub {
-    my $ip = shift;
-    return '8.8.8.8' if ($ip eq '127.0.0.1');
-    return '8.8.4.4';
+    my $req = shift;
+    if ($req->header('x-forwarded-for')) {
+	return $req->header('x-forwarded-for');
+    }
+    return '8.8.8.8';
 });
-
-is($app->get_local_ip('127.0.0.1'), '8.8.8.8', '127.0.0.1 is translated to 8.8.8.8');
-is($app->get_local_ip('127.0.0.2'), '8.8.4.4', 'Any other IP translated to 8.8.4.4');
 
 test_psgi app => sub { $app->run(@_) }, client => sub {
     my $cb  = shift;
@@ -48,20 +47,9 @@ test_psgi app => sub { $app->run(@_) }, client => sub {
     is($res->header('X-IP'), '8.8.8.8', 'The local IP was translated to 8.8.8.8');
 };
 
-
-# Now invert the return values
-$app->set_local_ip(sub {
-    my $ip = shift;
-    return '8.8.4.4' if ($ip eq '127.0.0.1');
-    return '8.8.8.8';
-});
-
-is($app->get_local_ip('127.0.0.1'), '8.8.4.4', '127.0.0.1 is translated to 8.8.4.4');
-is($app->get_local_ip('127.0.0.2'), '8.8.8.8', 'Any other IP translated to 8.8.8.8');
-
 test_psgi app => sub { $app->run(@_) }, client => sub {
     my $cb  = shift;
-    my $res = $cb->(HEAD '/', x_web_demo => 'yeah');
+    my $res = $cb->(HEAD '/', x_web_demo => 'yeah', x_forwarded_for => '8.8.4.4');
     is($res->code, 200, 'The request was successful');
     is($res->header('X-IP'), '8.8.4.4', 'The local IP was translated to 8.8.4.4');
 };

@@ -168,7 +168,7 @@ sub run {
 
     ####
     my $IP = $req->address;
-    $IP = $self->get_local_ip($IP) if ($IP eq '127.0.0.1');
+    $IP = $self->get_local_ip($req) if ($IP eq '127.0.0.1');
     ####
 
     our $ipv6 = ($IP =~ m/:/);
@@ -572,10 +572,10 @@ sub set_local_ip {
 
 sub get_local_ip {
     my $self = shift;
-    my $ip = shift;
+    my $req = shift;
 
     if (defined($self->{'local_ip'})) {
-	return $self->{'local_ip'}($ip);
+	return $self->{'local_ip'}($req);
     } else {
 	return $self->_query_remote_ip;
     }
