@@ -368,6 +368,7 @@ sub run {
 	# RFC6249-like link rels
 	# A client strictly adhering to the RFC would ignore these since we
 	# don't provide a digest, and we wont.
+	my @link_headers;
 	for my $host (@close_hosts) {
 	    my $depth = 0;
 	    my $priority = $hosts{$host};
@@ -384,8 +385,9 @@ sub run {
 		$depth = $1 =~ tr[/][/];
 	    }
 
-	    $res->header('Link' => "<".url_for_mirror($host).$url.">; rel=duplicate; pri=$priority; depth=$depth");
+	    push @link_headers, "<".url_for_mirror($host).$url.">; rel=duplicate; pri=$priority; depth=$depth";
 	}
+	$res->header('Link' => join(', ', @link_headers));
     }
 
     $res->body(\@output);
