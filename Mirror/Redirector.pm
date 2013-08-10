@@ -77,6 +77,7 @@ our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 
 our $subrequest_prefix = 'serve/';
 
 my $db;
+my ($gdb4, $asdb4, $gdb6, $asdb6);
 
 sub new {
     my ($class) = @_;
@@ -86,6 +87,34 @@ sub new {
     $db = retrieve($db_store);
 
     return $self;
+}
+
+sub get_ipdb {
+    my ($ip, $ipv6) = @_;
+    my $geo_rec;
+
+    if (!$ipv6) {
+	$gdb4 ||= Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
+	$geo_rec = $gdb4->record_by_addr($ip);
+    } else {
+	$gdb6 ||= Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE);
+	$geo_rec = $gdb6->record_by_addr_v6($ip);
+    }
+    return $geo_rec;
+}
+
+sub get_asdb {
+    my ($ip, $ipv6) = @_;
+    my $as;
+
+    if (!$ipv6) {
+	$asdb4 ||= Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
+	($as) = split /\s+/, ($asdb4->org_by_addr($ip) || ' ');
+    } else {
+	my $asdb6 ||= Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE);
+	($as) = split /\s+/, ($asdb6->org_by_addr_v6($ip) || ' ');
+    }
+    return $as;
 }
 
 sub run {
@@ -159,23 +188,11 @@ sub run {
 	}
     }
 
-    my ($g_city, $g_as);
     my ($geo_rec, $as);
     our ($lat, $lon);
 
-    if (!$ipv6) {
-	$g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE);
-	$g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE);
-
-	$geo_rec = $g_city->record_by_addr($IP);
-	($as) = split /\s+/, ($g_as->org_by_addr($IP) || ' ');
-    } else {
-	$g_city = Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE);
-	$g_as = Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE);
-
-	$geo_rec = $g_city->record_by_addr_v6($IP);
-	($as) = split /\s+/, ($g_as->org_by_addr_v6($IP) || ' ');
-    }
+    $geo_rec = get_ipdb($IP, $ipv6);
+    $as = get_asdb($IP, $ipv6);
 
     my $url = clean_url($req->param('url') || '');
 
