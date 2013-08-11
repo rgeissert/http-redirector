@@ -31,10 +31,6 @@ and greatest revision) at http://http.debian.net/
 There's some more documentation there. It should be imported into the
 repository, however.
 
-Note: contrary to the examples below, the live instance uses mod_perl
-for performance reasons. However, it requires some additional work,
-including addressing things such as http://bugs.debian.org/680321
-
 TODO
 ====
 
