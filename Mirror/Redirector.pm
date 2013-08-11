@@ -140,11 +140,11 @@ sub run {
     our @archs = ();
     my $action = 'redir';
 
-    unless ($request_method eq 'HEAD') {
+    if ($req->param('action') && $req->param('action') eq 'demo') {
+	$action = 'demo';
+    } else {
 	$xtra_headers = 0;
 	$add_links = 0;
-    } else {
-	$res->header('Vary' => 'x-web-demo');
     }
 
     $mirror_type = $req->param('mirror') || 'archive';
@@ -160,8 +160,6 @@ sub run {
 	    return $res->finalize;
 	}
     }
-
-    $action = 'demo' if ($req->header('X-Web-Demo'));
 
     # Make a shortcut
     my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");

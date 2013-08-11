@@ -105,9 +105,9 @@ For example, if you run the application on port 5000 you can:
    ProxyPass /redir http://127.0.0.1:5000/
 
    RewriteEngine On
-   RewriteRule ^/?debian-(security|backports)/(.*) /redir/?mirror=$1&url=$2 [PT]
-   RewriteRule ^/?debian-archive/(.*) /redir/?mirror=old&url=$1 [PT]
-   RewriteRule ^/?debian/(.*) /redir/?mirror=archive&url=$1 [PT]
+   RewriteRule ^/?(?:(demo)/)?debian-(security|backports)/(.*) /redir/?mirror=$2&url=$3&action=$1 [PT]
+   RewriteRule ^/?(?:(demo)/)?debian-archive/(.*) /redir/?mirror=old&url=$2&action=$1 [PT]
+   RewriteRule ^/?(?:(demo)/)?debian/(.*) /redir/?mirror=archive&url=$2&action=$1 [PT]
 
    # mirror:// method support:
    RewriteRule ^/?debian-(security|backports)\.list(?:$|\?(.+)) /redir/?mirror=$1.list$2 [QSA,PT]

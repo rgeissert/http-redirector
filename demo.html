@@ -21,14 +21,13 @@ function createRequest() {
 	alert("Could not create ajax object. Are you running IE?");
     return request;
 }
-function sendAjaxHEAD() {
+function sendAjaxGET() {
     var req = createRequest();
     var url = document.getElementById('mirror_selector').value;
     if (!req)
 	return false;
     document.getElementById('mirror_path').textContent = url;
-    req.open("HEAD", url, true);
-    req.setRequestHeader('X-Web-Demo', 'yep');
+    req.open("GET", '/demo'+url, true);
     req.onreadystatechange = ajaxResponse;
     document.getElementById('loading').innerHTML = 'Loading...';
     req.send();
@@ -67,7 +66,7 @@ function ajaxResponse() {
 </script>
 <noscript>Sorry, the demo is javascript based. You can see, more or
 less, what this demo shows by running:
-<pre>HEAD http://thishost.tld/debian/</pre>
+<pre>GET -e http://thishost.tld/demo/debian/</pre>
 </noscript>
 <div>
     <p>
@@ -92,8 +91,8 @@ less, what this demo shows by running:
     <div id="population"></div>
     <div id="type"></div>
 </div>
-<button type="button" onclick="return sendAjaxHEAD();">Retry</button> |
-<select id="mirror_selector" onchange="return sendAjaxHEAD();">
+<button type="button" onclick="return sendAjaxGET();">Retry</button> |
+<select id="mirror_selector" onchange="return sendAjaxGET();">
 <option value="/debian/" selected="selected">/debian/</option>
 <option value="/debian-backports/">/debian-backports/</option>
 <option value="/debian-security/">/debian-security/</option>

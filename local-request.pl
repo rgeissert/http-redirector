@@ -17,6 +17,6 @@ $app->set_local_ip($ENV{'REMOTE_ADDR'})
 
 test_psgi app => sub { $app->run(@_) }, client => sub {
     my $cb  = shift;
-    my $res = $cb->(HEAD "/?$params");
+    my $res = $cb->(GET "/?action=demo&$params");
     print $res->as_string;
 };

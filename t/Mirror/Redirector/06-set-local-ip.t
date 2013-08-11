@@ -19,7 +19,7 @@ is($app->get_local_ip('127.0.0.1'), '8.8.8.8', '127.0.0.1 is now translated to 8
 
 test_psgi app => sub { $app->run(@_) }, client => sub {
     my $cb  = shift;
-    my $res = $cb->(HEAD '/', x_web_demo => 'yeah');
+    my $res = $cb->(GET '/?action=demo');
     is($res->code, 200, 'The request was successful');
     is($res->header('X-IP'), '8.8.8.8', 'The local IP was translated to 8.8.8.8');
 };
@@ -42,14 +42,14 @@ $app->set_local_ip(sub {
 
 test_psgi app => sub { $app->run(@_) }, client => sub {
     my $cb  = shift;
-    my $res = $cb->(HEAD '/', x_web_demo => 'yeah');
+    my $res = $cb->(GET '/?action=demo');
     is($res->code, 200, 'The request was successful');
     is($res->header('X-IP'), '8.8.8.8', 'The local IP was translated to 8.8.8.8');
 };
 
 test_psgi app => sub { $app->run(@_) }, client => sub {
     my $cb  = shift;
-    my $res = $cb->(HEAD '/', x_web_demo => 'yeah', x_forwarded_for => '8.8.4.4');
+    my $res = $cb->(GET '/?action=demo', x_forwarded_for => '8.8.4.4');
     is($res->code, 200, 'The request was successful');
     is($res->header('X-IP'), '8.8.4.4', 'The local IP was translated to 8.8.4.4');
 };

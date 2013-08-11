@@ -35,7 +35,7 @@ test_psgi app => sub { $app->run(@_) }, client => sub {
     while (@requests) {
 	my ($url_sent, $url_expected) = (shift @requests, shift @requests);
 
-	$res = $cb->(HEAD "/?url=$url_sent", x_web_demo => 'yeah');
+	$res = $cb->(GET "/?action=demo&url=$url_sent");
 	is($res->code, 200, 'The request was successful');
 	is($res->header('X-URL'), $url_expected, 'The url parameter is correctly escaped');
     }
