@@ -260,6 +260,8 @@ sub run {
     print_xtra('Arch', join(', ', @archs));
     print_xtra('Country', $geo_rec->country_code);
     print_xtra('Continent', $continent);
+    print_xtra('City', $geo_rec->city);
+    print_xtra('Region', $geo_rec->region || '');
 
     our %hosts = ();
     my $match_type = '';
