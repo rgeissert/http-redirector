@@ -98,18 +98,21 @@ cleaned up automatically.
 Real life testing
 =================
 
-If using apache, assuming you have the redir script in a /cgi alias
-with +execcgi, you can:
+If using apache, you will want to run the redirector locally and make
+apache forward the requests (therefore acting as a reverse proxy).
+For example, if you run the application on port 5000 you can:
+
+   ProxyPass /redir http://127.0.0.1:5000/
 
    RewriteEngine On
-   RewriteRule ^/?debian-(security|backports)/(.*) /cgi/redir.pl?mirror=$1&url=$2 [PT]
-   RewriteRule ^/?debian-archive/(.*) /cgi/redir.pl?mirror=old&url=$1 [PT]
-   RewriteRule ^/?debian/(.*) /cgi/redir.pl?mirror=archive&url=$1 [PT]
+   RewriteRule ^/?debian-(security|backports)/(.*) /redir/?mirror=$1&url=$2 [PT]
+   RewriteRule ^/?debian-archive/(.*) /redir/?mirror=old&url=$1 [PT]
+   RewriteRule ^/?debian/(.*) /redir/?mirror=archive&url=$1 [PT]
 
    # mirror:// method support:
-   RewriteRule ^/?debian-(security|backports)\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=$1.list$2 [QSA,PT]
-   RewriteRule ^/?debian-archive\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=old.list$1 [QSA,PT]
-   RewriteRule ^/?debian\.list(?:$|\?(.+)) /cgi/redir.pl?mirror=archive.list$1 [QSA,PT]
+   RewriteRule ^/?debian-(security|backports)\.list(?:$|\?(.+)) /redir/?mirror=$1.list$2 [QSA,PT]
+   RewriteRule ^/?debian-archive\.list(?:$|\?(.+)) /redir/?mirror=old.list$1 [QSA,PT]
+   RewriteRule ^/?debian\.list(?:$|\?(.+)) /redir/?mirror=archive.list$1 [QSA,PT]
 
 You can for example make it listen on 127.0.1.10, setup a vhost, and
 use the following on your sources.list:
@@ -193,7 +196,7 @@ A sample configuration for apache follows:
     # Exclude /debian/serve/ from mod_rewrite, mod_alias will handle it
     RewriteRule ^/?debian/serve/.*$ $0 [PT,L]
     # Send all file requests through the redirector
-    RewriteRule ^/?debian/(.*[^/]$) /cgi-bin/redir.pl?mirror=archive&url=$1 [NS,PT]
+    RewriteRule ^/?debian/(.*[^/]$) /redir/?mirror=archive&url=$1 [NS,PT]
     # Directory listing requests will pass-through and be handled by
     # apache itself
 
