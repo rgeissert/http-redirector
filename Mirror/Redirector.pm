@@ -404,7 +404,16 @@ sub run {
 
 	    push @link_headers, "<".url_for_mirror($host).$url.">; rel=duplicate; pri=$priority; depth=$depth";
 	}
-	$res->header('Link' => join(', ', @link_headers));
+	# Pre-wheezy versions of APT break on header lines of >= 360
+	# bytes, so ensure we don't exceed that limit. This can be
+	# safely removed if/when those versions are not/no longer
+	# supported
+	my $link_header = join(', ', @link_headers);
+	while (length($link_header) > 355) {
+	    pop @link_headers;
+	    $link_header = join(', ', @link_headers);
+	}
+	$res->header('Link' => $link_header);
     }
 
     $res->body(\@output);
