@@ -76,7 +76,7 @@ our %this_host = map { $_ => 1 } qw(); # this host's hostname
 our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
 our $subrequest_prefix = 'serve/';
 
-my $db;
+my ($db, $peers_db);
 my ($gdb4, $asdb4, $gdb6, $asdb6);
 
 sub new {
@@ -275,7 +275,7 @@ sub run {
 
     # match by AS peer
     if (!$match_type && $as && $peers_db_store && !$ipv6 && -f $peers_db_store) {
-	my $peers_db = retrieve($peers_db_store);
+	$peers_db ||= retrieve($peers_db_store);
 
 	foreach my $match (keys %{$peers_db->{$as}}) {
 	    next unless (exists($db->{'all'}{$match}{$mirror_type.'-http'}));
