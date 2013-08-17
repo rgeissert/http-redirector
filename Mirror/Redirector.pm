@@ -274,7 +274,7 @@ sub run {
     }
 
     # match by AS peer
-    if (!$match_type && $as && $peers_db_store && !$ipv6 && -f $peers_db_store) {
+    if (!$match_type && $as && !$ipv6 && (defined($peers_db) || ($peers_db_store && -f $peers_db_store))) {
 	$peers_db ||= retrieve($peers_db_store);
 
 	foreach my $match (keys %{$peers_db->{$as}}) {
