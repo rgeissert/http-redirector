@@ -449,9 +449,7 @@ sub check_mirror($) {
 	    my $disabled = exists($mirror->{$type.'-file-disabled'});
 
 	    if (exists($todisable->{$type}) || exists($todisable->{'any'})) {
-		log_message($id, $type, "blacklisted")
-		    unless ($disabled);
-		$mirror->{$type.'-disabled'} = undef;
+		disable_mirrors($type, $disabled? '' : "blacklisted", $id);
 		$mirror->{$type.'-file-disabled'} = undef;
 		next;
 	    } else {
@@ -736,7 +734,7 @@ sub disable_mirrors($$@) {
 
     while (defined(my $id = pop @mirrors)) {
 	$db->{'all'}{$id}{$type.'-disabled'} = undef;
-	log_message($id, $type, $reason);
+	log_message($id, $type, $reason) if ($reason);
     }
 }
 
