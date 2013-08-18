@@ -28,6 +28,7 @@ use Storable qw(retrieve);
 use Mirror::Math;
 use Mirror::AS;
 use Mirror::Redirection::Permanent;
+use Mirror::Redirection::Blackhole;
 use URI::Escape qw(uri_escape);
 
 use Plack::Request;
@@ -39,7 +40,6 @@ sub clean_url($);
 sub consider_mirror($);
 sub url_for_mirror($);
 sub do_redirect($$);
-sub should_blackhole($$);
 sub mirror_is_in_continent($$$);
 
 our %nearby_continents = (
@@ -528,33 +528,6 @@ sub clean_url($) {
     $url = uri_escape($url);
     $url =~ s,%2F,/,g;
     return $url;
-}
-
-sub should_blackhole($$) {
-    my $url = shift;
-    my $mirror_type = shift;
-
-    if ($mirror_type eq 'archive') {
-	return 1 if ($url =~ m,^dists/wheezy, && (
-	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
-	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
-	    ));
-	return 1 if ($url =~ m,^dists/(?:squeeze|wheezy)-updates/(?:main|contrib|non-free)/i18n/,);
-	return 1 if ($url =~ m,^dists/squeeze, && (
-	    $url eq 'dists/squeeze/InRelease' ||
-	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
-	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$, ||
-	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation-en_(?:US|GB),
-	    ));
-	return 1 if ($url =~ m,^dists/lenny,);
-    } elsif ($mirror_type eq 'backports') {
-	return 1 if ($url =~ m,^dists/squeeze-backports/(?:main|contrib|non-free)/i18n/,
-	    );
-    } elsif ($mirror_type eq 'security') {
-	return 1 if ($url =~ m,^dists/[^/]+/updates/(?:main|contrib|non-free)/i18n/,
-	    );
-    }
-    return 0;
 }
 
 sub mirror_is_in_continent($$$) {
