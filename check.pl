@@ -474,9 +474,8 @@ sub check_mirror($) {
 	delete $mirror->{$type.'-badmaster'};
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    my $error = $master_trace->fetch_error || 'parse error';
-	    $mirror->{$type.'-disabled'} = undef;
+	    disable_mirrors($type, "bad master trace ($error)", $id);
 	    $mirror->{$type.'-badmaster'} = undef;
-	    log_message($id, $type, "bad master trace ($error)");
 	    $rtltr->record_failure;
 	    if (fatal_connection_error($error)) {
 		$fatal_error = 1;
@@ -594,8 +593,7 @@ sub check_mirror($) {
 	    }
 
 	    if ($disable_reason) {
-		$mirror->{$type.'-disabled'} = undef;
-		log_message($id, $type, $disable_reason);
+		disable_mirrors($type, $disable_reason, $id);
 		next unless ($check_archs || $check_areas);
 		$disable = 1;
 	    }
@@ -609,10 +607,9 @@ sub check_mirror($) {
 
 	if ($check_2stages) {
 	    if (!test_stages($base_url, $type, $master_trace)) {
-		$mirror->{$type.'-disabled'} = undef;
+		disable_mirrors($type, "doesn't perform 2stages sync", $id);
 		$mirror->{$type.'-stages-disabled'} = undef;
 		$rtltr->record_failure;
-		log_message($id, $type, "doesn't perform 2stages sync");
 		next;
 	    }
 	}
@@ -621,10 +618,9 @@ sub check_mirror($) {
 	    delete $mirror->{$type.'-disabled'} unless ($disable);
 	    delete $mirror->{$type.'-areascheck-disabled'};
 	    if (!test_areas($base_url, $type)) {
-		$mirror->{$type.'-disabled'} = undef;
+		disable_mirrors($type, "missing areas", $id);
 		$mirror->{$type.'-areascheck-disabled'} = undef;
 		$rtltr->record_failure;
-		log_message($id, $type, "missing areas");
 		next unless ($check_archs);
 		$disable = 1;
 	    }
@@ -653,18 +649,16 @@ sub check_mirror($) {
 	    }
 
 	    if ($all_failed) {
-		$mirror->{$type.'-disabled'} = undef;
+		disable_mirrors($type, "all archs failed", $id);
 		$mirror->{$type.'-archcheck-disabled'} = undef;
 		$rtltr->record_failure;
-		log_message($id, $type, "all archs failed");
 		next;
 	    }
 
 	    if (!exists($db->{$type}{'arch'}{'source'}) && !test_source($base_url, $type)) {
-		$mirror->{$type.'-disabled'} = undef;
+		disable_mirrors($type, "no sources", $id);
 		$mirror->{$type.'-archcheck-disabled'} = undef;
 		$rtltr->record_failure;
-		log_message($id, $type, "no sources");
 		next;
 	    }
 	}
@@ -677,8 +671,7 @@ sub check_mirror($) {
     # It might be possible for the mirror to recover at a later time, however.
     if ($fatal_error) {
 	for my $type (@mirror_types) {
-	    log_message($id, $type, "disabling due to fatal error");
-	    $mirror->{$type.'-disabled'} = undef;
+	    disable_mirrors($type, "disabling due to fatal error", $id);
 
 	    $mirror->{$type.'-tracearchcheck-disabled'} = undef
 		if ($check_trace_archs);
