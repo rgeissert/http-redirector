@@ -71,6 +71,8 @@ for my $id (sort keys %{$db->{'all'}}) {
 	    if (exists($mirror->{$type.'-noti18n'}));
 	print_note "Too old ftpsync"
 	    if (exists($mirror->{$type.'-oldftpsync'}));
+	print_note "Site trace older than master, possibly syncing"
+	    if (exists($mirror->{$type.'-oldsite'}));
 	for my $key (keys %{$mirror}) {
 	    next unless ($key =~ m/^\Q$type-\E/);
 	    if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {

@@ -496,6 +496,7 @@ sub check_mirror($) {
 
 	    delete $mirror->{$type.'-badsite'};
 	    delete $mirror->{$type.'-oldftpsync'};
+	    delete $mirror->{$type.'-oldsite'};
 	    delete $mirror->{$type.'-notinrelease'};
 	    delete $mirror->{$type.'-noti18n'};
 
@@ -512,6 +513,7 @@ sub check_mirror($) {
 	    } elsif ($site_trace->date < $master_trace->date) {
 		$ignore_master = 1;
 		$disable_reason = 'old site trace';
+		$mirror->{$type.'-oldsite'} = undef;
 	    } elsif (!$site_trace->uses_ftpsync) {
 		log_message($id, $type, "doesn't use ftpsync");
 	    } elsif (!$site_trace->good_ftpsync) {
@@ -529,6 +531,7 @@ sub check_mirror($) {
 		    $site_trace->date == $stored_site_date) {
 		    $ignore_master = 1;
 		    $disable_reason = 'new master but no new site';
+		    $mirror->{$type.'-oldsite'} = undef;
 		} else {
 		    # only update them when in an accepted state:
 		    $mirror->{$type.'-site'} = $site_trace->date;
