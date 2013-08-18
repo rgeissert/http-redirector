@@ -27,6 +27,7 @@ use Geo::IP;
 use Storable qw(retrieve);
 use Mirror::Math;
 use Mirror::AS;
+use Mirror::Redirection::Permanent;
 use URI::Escape qw(uri_escape);
 
 use Plack::Request;
@@ -242,11 +243,7 @@ sub run {
     }
 
     if ($permanent_redirect) {
-	$permanent_redirect = 0
-	    unless ($url =~ m,^pool/, ||
-		    $url =~ m,\.diff/.+\.(?:gz|bz2|xz|lzma)$, ||
-		    $url =~ m,/installer-[^/]+/\d[^/]+/, ||
-		    $mirror_type eq 'old');
+	$permanent_redirect = is_permanent($url, $mirror_type);
     }
 
     Mirror::Math::set_metric($metric);
