@@ -48,6 +48,7 @@ Required packages:
     liburi-perl
     libplack-perl
     liblinux-inotify2-perl (for plackup -R)
+    starman (if using that server for the application)
     wget
 
 Run ./update.sh, it will download the geoip databases, the mirrors
