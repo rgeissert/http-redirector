@@ -84,19 +84,12 @@ sub ceil($) {
 sub iquartile(@) {
     my @elems = @_;
     my $count = scalar(@elems);
-    my ($lower, $upper) = ($count/4, 3*$count/4);
+    my ($lower, $upper) = ($count*0.25, $count*0.75);
 
     $lower = ceil($lower);
     $upper = ceil($upper);
 
-    for (my $i = $count-$upper; $i > 0; $i--) {
-	pop @elems;
-    }
-    for (my $i = $lower-1; $i > 0; $i--) {
-	shift @elems;
-    }
-
-    return @elems;
+    return @elems[($lower-1)..($upper-1)];
 }
 
 1;
