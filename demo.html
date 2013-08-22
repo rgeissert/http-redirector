@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <title>Demonstration - Debian mirrors HTTP redirector</title>
@@ -21,14 +21,13 @@ function createRequest() {
 	alert("Could not create ajax object. Are you running IE?");
     return request;
 }
-function sendAjaxHEAD() {
+function sendAjaxGET() {
     var req = createRequest();
     var url = document.getElementById('mirror_selector').value;
     if (!req)
 	return false;
     document.getElementById('mirror_path').textContent = url;
-    req.open("HEAD", url, true);
-    req.setRequestHeader('X-Web-Demo', 'yep');
+    req.open("GET", '/demo'+url, true);
     req.onreadystatechange = ajaxResponse;
     document.getElementById('loading').innerHTML = 'Loading...';
     req.send();
@@ -45,6 +44,8 @@ function ajaxResponse() {
 	    as = this.getResponseHeader("X-AS"),
 	    continent = this.getResponseHeader("X-Continent"),
 	    country = this.getResponseHeader("X-Country"),
+	    region = this.getResponseHeader("X-Region"),
+	    city = this.getResponseHeader("X-City"),
 	    links = this.getResponseHeader("Link"),
 	    type = this.getResponseHeader("X-Match-Type"),
 	    popu = this.getResponseHeader("X-Population");
@@ -52,6 +53,8 @@ function ajaxResponse() {
 	document.getElementById('as').textContent = 'AS: '+as;
 	document.getElementById('country').textContent = 'Country: '+country;
 	document.getElementById('continent').textContent = 'Continent: '+continent;
+	document.getElementById('region').textContent = 'Region: '+region;
+	document.getElementById('city').textContent = 'City: '+city;
 
 	links = links.replace(/; rel=duplicate; pri=[0-9]+; depth=[0-9]+/g,'');
 	links = links.replace(/(\u003C|\u003E)/g, '');
@@ -67,7 +70,7 @@ function ajaxResponse() {
 </script>
 <noscript>Sorry, the demo is javascript based. You can see what this
 demo shows by running (or other paths):
-<pre>HEAD -H 'x-web-demo: yes' http://thishost.tld/debian/</pre>
+<pre>GET -e http://thishost.tld/demo/debian/</pre>
 </noscript>
 <div>
     <p>
@@ -81,6 +84,8 @@ demo shows by running (or other paths):
     <div id="as"></div>
     <div id="continent"></div>
     <div id="country"></div>
+    <div id="region"></div>
+    <div id="city"></div>
     <p>
 	Had you requested a file to <span id="mirror_path">/debian/</span>,
 	you would have been sent to one of the following mirrors:
@@ -92,8 +97,8 @@ demo shows by running (or other paths):
     <div id="population"></div>
     <div id="type"></div>
 </div>
-<button type="button" onclick="return sendAjaxHEAD();">Retry</button> |
-<select id="mirror_selector" onchange="return sendAjaxHEAD();">
+<button type="button" onclick="return sendAjaxGET();">Retry</button> |
+<select id="mirror_selector" onchange="return sendAjaxGET();">
 <option value="/debian/" selected="selected">/debian/</option>
 <option value="/debian-backports/">/debian-backports/</option>
 <option value="/debian-security/">/debian-security/</option>
