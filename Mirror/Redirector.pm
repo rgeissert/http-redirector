@@ -528,6 +528,7 @@ sub clean_url($) {
     $url =~ s,(?<=/)\.\.?(?:/|$),,g;
     $url = uri_escape($url);
     $url =~ s,%2F,/,g;
+    $url =~ s,%20,+,g;
     return $url;
 }
 

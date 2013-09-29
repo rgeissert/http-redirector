@@ -22,6 +22,7 @@ my @requests = (
     'project/trace/%2C' => 'project/trace/%2C',
     'project/%0D%0AAnother-header:foo' => 'project/%0D%0AAnother-header%3Afoo',
     '../foo' => 'foo',
+    'xorg-server_1.10.4-1~bpo60+1.dsc' => 'xorg-server_1.10.4-1~bpo60+1.dsc',
 );
 
 plan tests => scalar(@requests);
