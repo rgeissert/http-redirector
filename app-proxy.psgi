@@ -11,7 +11,7 @@ $app->set_local_ip(sub {
     my $req = shift;
     my $ip = '8.8.8.8';
     if ($req->header('x-forwarded-for')) {
-	($ip) = split(/\s*,\s*/, $req->header('x-forwarded-for'));
+	$ip = (split(/\s*,\s*/, $req->header('x-forwarded-for')))[-1];
     }
     return $ip;
 });
