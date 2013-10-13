@@ -3,6 +3,7 @@ package Mirror::Math;
 use strict;
 use warnings;
 
+use POSIX qw(ceil);
 use vars qw($METRIC);
 
 BEGIN {
@@ -71,14 +72,6 @@ sub stddev {
 
     $stddev = sqrt($var);
     return $stddev;
-}
-
-sub ceil($) {
-    my $n = shift;
-    my $i  = int($n);
-
-    return $n if ($i == $n);
-    return $i+1;
 }
 
 sub iquartile(@) {
