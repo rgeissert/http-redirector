@@ -29,13 +29,13 @@ use Mirror::Math;
 use Mirror::AS;
 use Mirror::Redirection::Permanent;
 use Mirror::Redirection::Blackhole;
+use Mirror::Request;
 use URI::Escape qw(uri_escape);
 
 use Plack::Request;
 
 sub fullfils_request($$);
 sub print_xtra($$);
-sub find_arch($@);
 sub clean_url($);
 sub consider_mirror($);
 sub url_for_mirror($);
@@ -53,19 +53,6 @@ our %nearby_continents = (
 
 our %nearby_country = (
     'NA' => [ qw(US CA) ],
-);
-
-# Even-numbered list: '[default]' => qr/regex/
-# Whenever regex matches but there's no value in the capture #1 then
-# the default value is used.
-my @ARCHITECTURES_REGEX = (
-    '' => qr'^dists/(?:[^/]+/){2,3}binary-([^/]+)/',
-    '' => qr'^pool/(?:[^/]+/){3,4}.+_([^.]+)\.u?deb$',
-    '' => qr'^dists/(?:[^/]+/){1,2}Contents-(?:udeb-(?!nf))?(?!udeb)([^.]+)\.(?:gz$|diff/)',
-    '' => qr'^indices/files(?:/components)?/arch-([^.]+).*$',
-    '' => qr'^dists/(?:[^/]+/){2}installer-([^/]+)/',
-    '' => qr'^dists/(?:[^/]+/){2,3}(source)/',
-    'source' => qr'^pool/(?:[^/]+/){3,4}.+\.(?:dsc|(?:diff|tar)\.(?:xz|gz|bz2))$',
 );
 
 our $metric = ''; # alt: taxicab (default) | euclidean
@@ -218,7 +205,7 @@ sub run {
     # Do not send Link headers on directory requests
     $add_links = 0 if ($add_links && $url =~ m,/$,);
 
-    @archs or @archs = find_arch($url, @ARCHITECTURES_REGEX);
+    @archs or @archs = Mirror::Request::get_arch($url);
     # @archs may only have more than one element iff $action eq 'list'
     # 'all' is not part of the archs that may be passed when running under
     # $action eq 'list', so it should be safe to assume the size of the
@@ -505,19 +492,6 @@ sub run {
 	return;
     }
 
-}
-
-sub find_arch($@) {
-    my $url = shift;
-
-    do {
-	my ($default, $rx) = (shift, shift);
-	if ($url =~ m/$rx/) {
-	    my $arch = $1 || $default;
-	    return $arch;
-	}
-    } while (@_);
-    return '';
 }
 
 sub clean_url($) {
