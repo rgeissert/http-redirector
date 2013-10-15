@@ -42,6 +42,7 @@ Getting started
 ===============
 
 Required packages:
+    libanyevent-perl
     libtimedate-perl
     libgeo-ip-perl
     libwww-perl
