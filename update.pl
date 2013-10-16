@@ -46,6 +46,7 @@ our $verbose = 0;
 sub get_lists($);
 sub parse_list($$);
 sub process_entry($@);
+sub process_entry6($@);
 sub query_dns_for_entry($);
 sub bandwidth_to_mb($);
 
@@ -109,6 +110,15 @@ for my $entry (@data) {
 	AnyEvent::DNS::a $entry->{'site'}, sub {
 	    process_entry($entry, @_);
 	    $cv->send if (--$remaining_entries == 0);
+	};
+	if (exists($entry->{'ipv6'})) {
+	    # delete it and only re-add it if we get a AAAA record
+	    delete $entry->{'ipv6'};
+	    $remaining_entries++;
+	    AnyEvent::DNS::aaaa $entry->{'site'}, sub {
+		process_entry6($entry, @_);
+		$cv->send if (--$remaining_entries == 0);
+	    };
 	}
     } else {
 	$cv->send if (--$remaining_entries == 0);
@@ -278,6 +288,19 @@ sub query_dns_for_entry($) {
     }
 
     return 1;
+}
+
+sub process_entry6($@) {
+    my $entry = shift;
+    my @ips = @_;
+
+    if (!@ips || scalar(@ips) == 0) {
+	print STDERR "warning: host lookup for $entry->{'site'}'s AAAA rr failed\n";
+	return;
+    }
+
+    # This actually enables the mirror for IPv6:
+    $entry->{'ipv6'} = undef;
 }
 
 sub process_entry($@) {
