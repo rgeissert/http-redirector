@@ -67,6 +67,8 @@ for my $id (sort keys %{$db->{'all'}}) {
 	    if (exists($mirror->{$type.'-archcheck-disabled'}));
 	print_note "Missing archive areas (main, contrib, or non-free)"
 	    if (exists($mirror->{$type.'-areascheck-disabled'}));
+	print_note "Blocklisted"
+	    if (exists($mirror->{$type.'-file-disabled'}));
 	print_note "Not reliable for serving InRelease files"
 	    if (exists($mirror->{$type.'-notinrelease'}));
 	print_note "Not reliable for serving i18n/ files"
