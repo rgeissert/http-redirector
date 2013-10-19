@@ -48,6 +48,7 @@ sub archs_by_mirror($$);
 sub parse_disable_file($);
 sub fatal_connection_error($);
 sub disable_mirrors($$@);
+sub mark_bad_subset($$@);
 sub mirror_provides_arch($$$);
 
 my $db_store = 'db';
@@ -166,7 +167,7 @@ for my $type (keys %traces) {
 	my $is_type_ref = has_type_reference($type, @{$traces{$type}{$stamp}});
 
 	if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
-	    disable_mirrors($type, "old or not popular master stamp '$stamp'", @{$traces{$type}{$stamp}});
+	    mark_bad_subset($type, "old or not popular master stamp '$stamp'", @{$traces{$type}{$stamp}});
 	    next;
 	}
 
@@ -193,12 +194,12 @@ for my $type (keys %traces) {
 	    # Criteria: at least one mirror
 	    # Criteria: at least one that is "good"
 	    unless (scalar(@per_continent) && $good_mirrors) {
-		disable_mirrors($type, "Not enough good mirrors in its $continent subset", @per_continent);
+		mark_bad_subset($type, "Not enough good mirrors in its $continent subset", @per_continent);
 		next;
 	    }
 	    # Criteria: at least %archs_required can be served
 	    if ($type eq 'archive' && scalar(keys %archs_required)) {
-		disable_mirrors($type, "Required archs not present in its $continent subset", @per_continent);
+		mark_bad_subset($type, "Required archs not present in its $continent subset", @per_continent);
 		next;
 	    }
 
@@ -217,7 +218,7 @@ for my $type (keys %traces) {
 	    if (exists($master_stamps{$continent})) {
 		# if a master stamp has been recorded already it means
 		# there are more up to date mirrors
-		disable_mirrors($type, "old master trace re $continent", @per_continent);
+		mark_bad_subset($type, "old master trace re $continent", @per_continent);
 	    } else {
 		if (exists($db->{$type}{'serial'})) {
 		    $db->{$type}{'serial'}{$continent} = 0
@@ -470,6 +471,7 @@ sub check_mirror($) {
 	my $disable = 0;
 
 	delete $mirror->{$type.'-badmaster'};
+	delete $mirror->{$type.'-badsubset'};
 	if (!$master_trace->fetch($db->{$type}{'master'})) {
 	    my $error = $master_trace->fetch_error || 'parse error';
 	    disable_mirrors($type, "bad master trace ($error)", $id);
@@ -735,6 +737,16 @@ sub disable_mirrors($$@) {
     while (defined(my $id = pop @mirrors)) {
 	$db->{'all'}{$id}{$type.'-disabled'} = undef;
 	log_message($id, $type, $reason) if ($reason);
+    }
+}
+
+sub mark_bad_subset($$@) {
+    my ($type, $reason) = (shift, shift);
+    my @mirrors = @_;
+
+    disable_mirrors($type, $reason, @mirrors);
+    while (defined(my $id = pop @mirrors)) {
+	$db->{'all'}{$id}{$type.'-badsubset'} = undef;
     }
 }
 
