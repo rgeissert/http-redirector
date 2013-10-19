@@ -107,7 +107,7 @@ if $peers; then
 fi
 
 if $mirrors; then
-    ./update.pl -j 15 --db-output db.wip
+    ./update.pl --db-output db.wip
     if $peers; then
 	./build-peers-db.pl --mirrors-db db.wip
     fi
