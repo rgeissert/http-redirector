@@ -77,6 +77,10 @@ for my $id (sort keys %{$db->{'all'}}) {
 	    if (exists($mirror->{$type.'-oldftpsync'}));
 	print_note "Site trace older than master, possibly syncing"
 	    if (exists($mirror->{$type.'-oldsite'}));
+	print_note "Doesn't seem to support Range requests"
+	    if (!exists($mirror->{$type.'-ranges'}));
+	print_note "Doesn't seem to support Keep-Alive connections"
+	    if (!exists($mirror->{$type.'-keep-alive'}));
 	for my $key (keys %{$mirror}) {
 	    next unless ($key =~ m/^\Q$type-\E/);
 	    if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
