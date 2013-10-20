@@ -34,7 +34,7 @@ use threads::shared;
 use Thread::Semaphore;
 use Thread::Queue;
 
-my $current_list = 'Mirrors.masterlist';
+my $input_dir = 'mirrors.lst.d';
 my $db_store = 'db';
 my $db_output = $db_store;
 my @mirror_types = qw(www volatile archive old nonus
@@ -45,12 +45,14 @@ my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile cdimage);
 my ($update_list, $threads) = (1, 4);
 our $verbose = 0;
 
+sub get_lists($);
 sub parse_list($$);
 sub process_entry($);
 sub fancy_get_host($);
 sub bandwidth_to_mb($);
 
 GetOptions('update-list!' => \$update_list,
+	    'list-directory=s' => \$input_dir,
 	    'j|threads=i' => \$threads,
 	    'db-output=s' => \$db_output,
 	    'verbose' => \$verbose) or exit 1;
@@ -63,16 +65,23 @@ if ($update_list) {
 
     my $res = $ua->mirror(
 	'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co',
-	'Mirrors.masterlist.new');
+	"$input_dir/Mirrors.masterlist.new");
     if ($res->is_error) {
 	die("error: failed to fetch Mirrors.masterlist: ",$res->status_line,"\n");
     }
-    rename('Mirrors.masterlist.new', $current_list)
+    rename("$input_dir/Mirrors.masterlist.new", "$input_dir/Mirrors.masterlist")
 	or die ("mv Mirrors.masterlist{.new,} failed: $?");
 }
 
 my %all_sites;
-my @data = parse_list($current_list, \%all_sites);
+my @data;
+my @input_files;
+
+@input_files = get_lists($input_dir);
+
+for my $list (sort @input_files) {
+    @data = (@data, parse_list($list, \%all_sites));
+}
 
 my %db :shared;
 my %semaphore;
@@ -509,4 +518,17 @@ sub bandwidth_to_mb($) {
 	die "unknown bandwidth format ($bw_str)\n";
     }
     return $bw;
+}
+
+sub get_lists($) {
+    my $input_dir = shift;
+    my @lists;
+    my $dh;
+
+    opendir($dh, $input_dir)
+	or die("error: could not open '$input_dir' directory: $!\n");
+    @lists = grep { m/\.masterlist$/ && s,^,$input_dir/, } readdir($dh);
+    closedir($dh);
+
+    return @lists;
 }
