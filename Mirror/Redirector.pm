@@ -41,6 +41,7 @@ sub consider_mirror($);
 sub url_for_mirror($);
 sub do_redirect($$);
 sub mirror_is_in_continent($$$);
+sub mirror_supports_ranges($$$);
 
 our %nearby_continents = (
     'AF' => [ qw(EU NA AS SA OC) ],
@@ -347,7 +348,7 @@ sub run {
 	my @favorable_hosts;
 	for my $id (@close_hosts) {
 	    push @favorable_hosts, $id
-		if (exists($db->{'all'}{$id}{$mirror_type.'-ranges'}));
+		if (mirror_supports_ranges($db, $id, $mirror_type));
 	}
 	if (scalar(@favorable_hosts)) {
 	    @close_hosts = @favorable_hosts;
@@ -523,6 +524,12 @@ sub mirror_is_in_continent($$$) {
     my ($rdb, $id, $continent) = @_;
 
     return (exists($rdb->{'continent'}{$continent}{$id}));
+}
+
+sub mirror_supports_ranges($$$) {
+    my ($db, $id, $type) = @_;
+
+    return (exists($db->{'all'}{$id}{$type.'-ranges'}));
 }
 
 sub set_local_ip {
