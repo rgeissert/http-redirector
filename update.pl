@@ -368,6 +368,15 @@ sub process_entry($) {
 	} else {
 	    print STDERR ", but country coordinates could not be found\n";
 	}
+
+	# If provided, fix the latitude and longitude
+	if (defined($entry->{'lat'})) {
+	    $lat = $entry->{'lat'};
+	}
+	if (defined($entry->{'lon'})) {
+	    $lon = $entry->{'lon'};
+	}
+
     } elsif ($listed_country ne $country) {
 	print STDERR "warning: listed country for $entry->{'site'} doesn't match GeoIP db\n";
 	print STDERR "\t$listed_country (listed) vs $country (db), ";
