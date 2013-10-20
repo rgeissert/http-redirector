@@ -1,6 +1,6 @@
 db
 db.peers-*
-Mirrors.masterlist*
+mirrors.lst.d/*.masterlist*
 geoip
 tmon.out
 nytprof*
