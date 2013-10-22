@@ -83,20 +83,24 @@ for my $list (sort @input_files) {
 }
 
 my $cv = AE::cv;
-my %db;
+my %full_db = ('ipv4' => {}, 'ipv6' => {});
+my $db = $full_db{'ipv4'};
 my $i = 0;
 
 foreach my $mirror_type (@mirror_types) {
     next if ($exclude_mirror_types{$mirror_type});
 
-    $db{$mirror_type} = {
+    $db->{$mirror_type} = {
 	'country' => {}, 'arch' => {},
 	'AS' => {}, 'continent' => {},
 	'master' => '', 'serial' => {}
     };
+    $full_db{$mirror_type} = $db->{$mirror_type};
 }
-$db{'all'} = {};
-$db{'id'} = time;
+$db->{'all'} = {};
+$full_db{'all'} = $db->{'all'};
+
+$full_db{'id'} = time;
 
 my ($g_city, $g_as);
 $g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE)
@@ -127,11 +131,11 @@ for my $entry (@data) {
 
 $cv->recv;
 
-if (!exists($db{'archive'}{'arch'}{'i386'}) || scalar(keys %{$db{'archive'}{'arch'}{'i386'}}) < 10) {
+if (!exists($db->{'archive'}{'arch'}{'i386'}) || scalar(keys %{$db->{'archive'}{'arch'}{'i386'}}) < 10) {
     print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
     Mirror::DB::set($db_output);
-    Mirror::DB::store(\%db);
+    Mirror::DB::store(\%full_db);
 }
 
 exit;
@@ -216,7 +220,7 @@ sub query_dns_for_entry($) {
 	    next unless (exists($entry->{$type.'-rsync'}));
 	    next if ($exclude_mirror_types{$type});
 
-	    $db{$type}{'master'} = $entry->{'site'};
+	    $db->{$type}{'master'} = $entry->{'site'};
 	}
 	return 0;
     }
@@ -439,33 +443,33 @@ sub process_entry($@) {
 
 	# Now store the results
 	unless ($mirror_recorded) {
-	    $db{'all'}{$id} = $entry;
+	    $db->{'all'}{$id} = $entry;
 	    $mirror_recorded = 1;
 	}
 
 	# Create skeleton, if missing:
-	$db{$type}{'AS'}{$as} = []
-	    unless (exists ($db{$type}{'AS'}{$as}));
-	push @{$db{$type}{'AS'}{$as}}, $id;
+	$db->{$type}{'AS'}{$as} = []
+	    unless (exists ($db->{$type}{'AS'}{$as}));
+	push @{$db->{$type}{'AS'}{$as}}, $id;
 
 	unless ($entry->{'restricted-to'} eq 'AS') {
-	    $db{$type}{'country'}{$country} = {}
-		unless (exists ($db{$type}{'country'}{$country}));
-	    $db{$type}{'country'}{$country}{$id} = undef;
+	    $db->{$type}{'country'}{$country} = {}
+		unless (exists ($db->{$type}{'country'}{$country}));
+	    $db->{$type}{'country'}{$country}{$id} = undef;
 
 	    unless ($entry->{'restricted-to'} eq 'country') {
-		$db{$type}{'continent'}{$continent} = {}
-		    unless (exists ($db{$type}{'continent'}{$continent}));
-		$db{$type}{'continent'}{$continent}{$id} = undef;
+		$db->{$type}{'continent'}{$continent} = {}
+		    unless (exists ($db->{$type}{'continent'}{$continent}));
+		$db->{$type}{'continent'}{$continent}{$id} = undef;
 	    }
 	}
 
 	foreach my $arch (keys %archs) {
 	    # more skeletons...
-	    $db{$type}{'arch'}{$arch} = {}
-		unless (exists ($db{$type}{'arch'}{$arch}));
+	    $db->{$type}{'arch'}{$arch} = {}
+		unless (exists ($db->{$type}{'arch'}{$arch}));
 
-	    $db{$type}{'arch'}{$arch}{$id} = undef;
+	    $db->{$type}{'arch'}{$arch}{$id} = undef;
 	}
 	# end: now store the results
     }
