@@ -35,6 +35,25 @@ GetOptions('db-store=s' => \$db_store);
 
 my $db = retrieve($db_store);
 
+my %tags_bad = (
+	"badmaster"		=> "Bad master trace",
+	"badsite"		=> "Bad site trace",
+	"badsubset"		=> "In a too old, new, or incomplete subset",
+	"stages-disabled"	=> "Doesn't perform two-stages sync",
+	"archcheck-disabled"	=> "Missing all architectures, or source packages",
+	"areascheck-disabled"	=> "Missing archive areas (main, contrib, or non-free)",
+	"file-disabled"		=> "Blocklisted",
+	"notinrelease"		=> "Not reliable for serving InRelease files",
+	"noti18n"		=> "Not reliable for serving i18n/ files",
+	"oldftpsync"		=> "Too old ftpsync",
+	"oldsite"		=> "Site trace older than master, possibly syncing",
+);
+
+my %tags_good = (
+	"ranges"		=> "Doesn't seem to support Range requests",
+	"keep-alive"		=> "Doesn't seem to support Keep-Alive connections",
+);
+
 print "Mirrors db report\n";
 print "=================\n";
 
@@ -55,32 +74,17 @@ for my $id (sort keys %{$db->{'all'}}) {
 	print "  State: ",(($mirror->{"$type-state"} eq "syncing")?"syncing":"synced"),"\n"
 	    if (defined($mirror->{"$type-state"}));
 	print "  Path: ",$mirror->{"$type-http"},"\n";
-	print_note "Bad master trace"
-	    if (exists($mirror->{$type.'-badmaster'}));
-	print_note "Bad site trace"
-	    if (exists($mirror->{$type.'-badsite'}));
-	print_note "In a too old, new, or incomplete subset"
-	    if (exists($mirror->{$type.'-badsubset'}));
-	print_note "Doesn't perform two-stages sync"
-	    if (exists($mirror->{$type.'-stages-disabled'}));
-	print_note "Missing all architectures, or source packages"
-	    if (exists($mirror->{$type.'-archcheck-disabled'}));
-	print_note "Missing archive areas (main, contrib, or non-free)"
-	    if (exists($mirror->{$type.'-areascheck-disabled'}));
-	print_note "Blocklisted"
-	    if (exists($mirror->{$type.'-file-disabled'}));
-	print_note "Not reliable for serving InRelease files"
-	    if (exists($mirror->{$type.'-notinrelease'}));
-	print_note "Not reliable for serving i18n/ files"
-	    if (exists($mirror->{$type.'-noti18n'}));
-	print_note "Too old ftpsync"
-	    if (exists($mirror->{$type.'-oldftpsync'}));
-	print_note "Site trace older than master, possibly syncing"
-	    if (exists($mirror->{$type.'-oldsite'}));
-	print_note "Doesn't seem to support Range requests"
-	    if (!exists($mirror->{$type.'-ranges'}));
-	print_note "Doesn't seem to support Keep-Alive connections"
-	    if (!exists($mirror->{$type.'-keep-alive'}));
+
+	foreach my $k (sort keys (%tags_bad)) {
+		print_note $tags_bad{$k}
+			if (exists($mirror->{$type.'-'.$k}));
+	}
+
+	foreach my $k (sort keys (%tags_good)) {
+		print_note $tags_good{$k}
+			if (!exists($mirror->{$type.'-'.$k}));
+	}
+
 	for my $key (keys %{$mirror}) {
 	    next unless ($key =~ m/^\Q$type-\E/);
 	    if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
