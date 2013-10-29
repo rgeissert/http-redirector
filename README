@@ -247,14 +247,6 @@ different continent, but that's done to work around another issue and
 the behaviour is not guaranteed to persist after the other issue is
 properly addressed.
 
-Assumptions
-===========
-
-The current IPv6 support is based on the following assumptions on the
-mirror's version 6 connectivity:
-* The IPv4 and IPv6 addresses belong to the same server
-* The IPv4 and IPv6 addresses are on the same AS
-
 Understanding the db
 ====================
 

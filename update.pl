@@ -25,6 +25,7 @@ use warnings;
 use Getopt::Long;
 use Socket;
 use Geo::IP;
+use Storable qw(dclone);
 
 use Mirror::AS;
 use Mirror::DB;
@@ -45,8 +46,9 @@ our $verbose = 0;
 
 sub get_lists($);
 sub parse_list($$);
-sub process_entry($@);
+sub process_entry4($@);
 sub process_entry6($@);
+sub process_entry_common($$$$@);
 sub query_dns_for_entry($);
 sub bandwidth_to_mb($);
 
@@ -84,43 +86,57 @@ for my $list (sort @input_files) {
 
 my $cv = AE::cv;
 my %full_db = ('ipv4' => {}, 'ipv6' => {});
-my $db = $full_db{'ipv4'};
+my $db4 = $full_db{'ipv4'};
+my $db6 = $full_db{'ipv6'};
 my $i = 0;
 
 foreach my $mirror_type (@mirror_types) {
     next if ($exclude_mirror_types{$mirror_type});
 
-    $db->{$mirror_type} = {
+    $db4->{$mirror_type} = {
 	'country' => {}, 'arch' => {},
 	'AS' => {}, 'continent' => {},
 	'master' => '', 'serial' => {}
     };
-    $full_db{$mirror_type} = $db->{$mirror_type};
+    $full_db{$mirror_type} = $db4->{$mirror_type};
+    $db6->{$mirror_type} = {
+	'country' => {}, 'arch' => {},
+	'AS' => {}, 'continent' => {},
+	'master' => '', 'serial' => {}
+    };
 }
-$db->{'all'} = {};
-$full_db{'all'} = $db->{'all'};
+$db4->{'all'} = {};
+$db6->{'all'} = {};
+$full_db{'all'} = $db4->{'all'};
 
 $full_db{'id'} = time;
 
-my ($g_city, $g_as);
-$g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE)
+my ($g_city4, $g_as4, $g_city6, $g_as6);
+$g_city4 = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE)
     or die;
-$g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE)
+$g_as4 = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE)
+    or die;
+$g_city6 = Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE)
+    or die;
+$g_as6 = Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE)
     or die;
 
 my $remaining_entries = scalar(@data);
 for my $entry (@data) {
     if (query_dns_for_entry($entry)) {
-	AnyEvent::DNS::a $entry->{'site'}, sub {
-	    process_entry($entry, @_);
-	    $cv->send if (--$remaining_entries == 0);
-	};
+	if (exists($entry->{'ipv4'})) {
+	    delete $entry->{'ipv4'};
+	    AnyEvent::DNS::a $entry->{'site'}, sub {
+		process_entry4(dclone($entry), @_);
+		$cv->send if (--$remaining_entries == 0);
+	    };
+	}
 	if (exists($entry->{'ipv6'})) {
-	    # delete it and only re-add it if we get a AAAA record
+	    # we now only use it as a flag here
 	    delete $entry->{'ipv6'};
 	    $remaining_entries++;
 	    AnyEvent::DNS::aaaa $entry->{'site'}, sub {
-		process_entry6($entry, @_);
+		process_entry6(dclone($entry), @_);
 		$cv->send if (--$remaining_entries == 0);
 	    };
 	}
@@ -131,7 +147,7 @@ for my $entry (@data) {
 
 $cv->recv;
 
-if (!exists($db->{'archive'}{'arch'}{'i386'}) || scalar(keys %{$db->{'archive'}{'arch'}{'i386'}}) < 10) {
+if (!exists($db4->{'archive'}{'arch'}{'i386'}) || scalar(keys %{$db4->{'archive'}{'arch'}{'i386'}}) < 10) {
     print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
     Mirror::DB::set($db_output);
@@ -220,7 +236,8 @@ sub query_dns_for_entry($) {
 	    next unless (exists($entry->{$type.'-rsync'}));
 	    next if ($exclude_mirror_types{$type});
 
-	    $db->{$type}{'master'} = $entry->{'site'};
+	    $db4->{$type}{'master'} = $entry->{'site'};
+	    $db6->{$type}{'master'} = $entry->{'site'};
 	}
 	return 0;
     }
@@ -245,10 +262,12 @@ sub query_dns_for_entry($) {
 	return 0;
     }
 
+    # By default consider all mirrors to have v4 connectivity
+    $entry->{'ipv4'} = undef;
     if (defined ($entry->{'ipv6'})) {
 	if ($entry->{'ipv6'} eq 'only') {
-	    print STDERR "warning: unsupported IPv6-only $entry->{'site'}\n";
-	    return 0;
+	    $entry->{'ipv6'} = undef;
+	    delete $entry->{'ipv4'};
 	} elsif ($entry->{'ipv6'} eq 'yes') {
 	    $entry->{'ipv6'} = undef;
 	} elsif ($entry->{'ipv6'} eq 'no') {
@@ -298,17 +317,27 @@ sub process_entry6($@) {
     my $entry = shift;
     my @ips = @_;
 
-    if (!@ips || scalar(@ips) == 0) {
-	print STDERR "warning: host lookup for $entry->{'site'}'s AAAA rr failed\n";
-	return;
-    }
-
-    # This actually enables the mirror for IPv6:
-    $entry->{'ipv6'} = undef;
+    return process_entry_common($db6, $entry,
+	    sub { return $g_as6->org_by_addr_v6(shift)},
+	    sub { return $g_city6->record_by_addr_v6(shift)},
+	    @_);
 }
 
-sub process_entry($@) {
+sub process_entry4($@) {
     my $entry = shift;
+    my @ips = @_;
+
+    return process_entry_common($db4, $entry,
+	    sub { return $g_as4->org_by_addr(shift)},
+	    sub { return $g_city4->record_by_addr(shift)},
+	    @_);
+}
+
+sub process_entry_common($$$$@) {
+    my $db = shift;
+    my $entry = shift;
+    my $as_of_ip = shift;
+    my $grec_of_ip = shift;
     my @ips = @_;
 
     if (!@ips || scalar(@ips) == 0) {
@@ -324,9 +353,9 @@ sub process_entry($@) {
     #	Host will actually work. Meh.
     my %as_seen;
     for my $ip (@ips) {
-	my $m_record = $g_city->record_by_addr($ip);
+	my $m_record = &$grec_of_ip($ip);
 	# Split result, original format is: "AS123 Foo Bar corp"
-	my ($m_as) = split /\s+/, ($g_as->org_by_addr($ip) || '');
+	my ($m_as) = split /\s+/, (&$as_of_ip($ip) || '');
 
 	if (!defined($r)) {
 	    $r = $m_record;
@@ -365,7 +394,7 @@ sub process_entry($@) {
 	    print STDERR "warning: overriding country of $entry->{'site'}";
 	}
 	$country = $listed_country;
-	$continent = $g_city->continent_code_by_country_code($country);
+	$continent = $g_city4->continent_code_by_country_code($country);
 
 	print STDERR ", fixing continent to '$continent'";
 
@@ -477,7 +506,6 @@ sub process_entry($@) {
     # remove any remaining fields we don't use
     my %wanted_fields = map { $_ => 1 } qw(
 	bandwidth
-	ipv6
 	lat
 	lon
 	site
