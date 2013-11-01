@@ -204,7 +204,7 @@ sub parse_list($$) {
 sub process_entry($) {
     my $entry = shift;
 
-    $entry->{'type'} = lc $entry->{'type'} || 'unknown';
+    $entry->{'type'} = lc ($entry->{'type'} || 'unknown');
 
     return if ($entry->{'type'} =~ m/^(?:unknown|geodns)$/ && $entry->{'site'} ne 'security.debian.org');
 
