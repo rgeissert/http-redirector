@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Mirror::CountryCoords;
+use Mirror::Fake::Geoip::Record;
 
 use vars qw(%fake_records);
 
@@ -69,14 +70,13 @@ sub get_record {
     }
 
     my $ltln = Mirror::CountryCoords::country($chosen_country);
-    $fake_records{$type} = {
-	country => $chosen_country,
-	continent => $chosen_continent,
-	lat => $ltln->{'lat'},
-	lon => $ltln->{'lon'},
-	city => '',
-	region => '',
-    };
+    my $rec = Mirror::Fake::Geoip::Record->new(
+	country_code => $chosen_country,
+	continent_code => $chosen_continent,
+	latitude => $ltln->{'lat'},
+	longitude => $ltln->{'lon'},
+    );
+    $fake_records{$type} = $rec;
     return $fake_records{$type};
 }
 

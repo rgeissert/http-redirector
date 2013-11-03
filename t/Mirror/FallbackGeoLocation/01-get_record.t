@@ -22,4 +22,4 @@ can_ok('Mirror::FallbackGeoLocation', 'get_record');
 ok(Mirror::FallbackGeoLocation::get_record($db, 'archive'), 'Can get a record');
 my $rec = Mirror::FallbackGeoLocation::get_record($db, 'archive');
 
-is(join (', ', sort keys %$rec), 'city, continent, country, lat, lon, region');
+can_ok($rec, qw(city continent_code country_code latitude longitude region));

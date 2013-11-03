@@ -25,6 +25,6 @@ ok($rec1 = Mirror::FallbackGeoLocation::get_record($db, 'archive'), 'Can get a r
 $db = undef;
 
 my $rec2 = Mirror::FallbackGeoLocation::get_record($db, 'archive');
-is(join (', ', sort keys %$rec2), 'city, continent, country, lat, lon, region');
+can_ok($rec2, qw(city continent_code country_code latitude longitude region));
 
 is_deeply($rec1, $rec2, 'The two records should be equal');
