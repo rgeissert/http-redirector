@@ -189,6 +189,11 @@ sub run {
     }
 
     if (!defined($geo_rec)) {
+	require Mirror::FallbackGeoLocation;
+	$geo_rec = Mirror::FallbackGeoLocation::get_record($db, $mirror_type);
+    }
+    # this should be a no-op now:
+    if (!defined($geo_rec)) {
 	# request can be handled locally. So, do it
 	if ($action eq 'redir' && scalar(keys %this_host)) {
 	    do_redirect('', $url);
