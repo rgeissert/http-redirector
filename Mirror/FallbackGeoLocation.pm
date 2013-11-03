@@ -75,6 +75,8 @@ sub get_record {
 	continent_code => $chosen_continent,
 	latitude => $ltln->{'lat'},
 	longitude => $ltln->{'lon'},
+	city => 'fallback',
+	region => 'fallback',
     );
     $fake_records{$type} = $rec;
     return $fake_records{$type};
