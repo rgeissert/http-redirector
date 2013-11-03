@@ -619,25 +619,27 @@ sub check_mirror($) {
 		    if ($process_stamps);
 	    }
 
-	    my %httpd_features = ('keep-alive' => 0, 'ranges' => 0);
-	    if ($response->header('Connection')) {
-		$httpd_features{'keep-alive'} = ($response->header('Connection') eq 'keep-alive');
-	    } else {
-		$httpd_features{'keep-alive'} = ($response->protocol eq 'HTTP/1.1');
-	    }
-	    if ($response->header('Accept-Ranges')) {
-		$httpd_features{'ranges'} = ($response->header('Accept-Ranges') eq 'bytes');
-	    }
-
-	    while (my ($k, $v) = each %httpd_features) {
-		next if (exists($mirror->{$type.'-'.$k}) eq $v);
-
-		if (exists($mirror->{$type.'-'.$k})) {
-		    log_message($id, $type, "No more http/$k");
-		    delete $mirror->{$type.'-'.$k};
+	    if ($response) {
+		my %httpd_features = ('keep-alive' => 0, 'ranges' => 0);
+		if ($response->header('Connection')) {
+		    $httpd_features{'keep-alive'} = ($response->header('Connection') eq 'keep-alive');
 		} else {
-		    log_message($id, $type, "http/$k support seen");
-		    $mirror->{$type.'-'.$k} = undef;
+		    $httpd_features{'keep-alive'} = ($response->protocol eq 'HTTP/1.1');
+		}
+		if ($response->header('Accept-Ranges')) {
+		    $httpd_features{'ranges'} = ($response->header('Accept-Ranges') eq 'bytes');
+		}
+
+		while (my ($k, $v) = each %httpd_features) {
+		    next if (exists($mirror->{$type.'-'.$k}) eq $v);
+
+		    if (exists($mirror->{$type.'-'.$k})) {
+			log_message($id, $type, "No more http/$k");
+			delete $mirror->{$type.'-'.$k};
+		    } else {
+			log_message($id, $type, "http/$k support seen");
+			$mirror->{$type.'-'.$k} = undef;
+		    }
 		}
 	    }
 	}
