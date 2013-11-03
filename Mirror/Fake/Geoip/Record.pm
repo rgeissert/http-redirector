@@ -48,4 +48,14 @@ sub continent_code {
     return $self->{'data'}->{'continent_code'};
 }
 
+sub city {
+    my $self = shift;
+    return $self->{'data'}->{'city'} || '';
+}
+
+sub region {
+    my $self = shift;
+    return $self->{'data'}->{'region'} || '';
+}
+
 1;

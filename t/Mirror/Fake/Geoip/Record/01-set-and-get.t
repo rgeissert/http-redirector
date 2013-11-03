@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 use Mirror::Fake::Geoip::Record;
 
@@ -23,3 +23,5 @@ is($geoip_rec->latitude, '52.5', 'Can get the lat back');
 is($geoip_rec->longitude, '5.75', 'Can get the lon back');
 is($geoip_rec->country_code, 'NL', 'Can get the country back');
 is($geoip_rec->continent_code, 'EU', 'Can get the continent back');
+is($geoip_rec->city, '', 'city is empty');
+is($geoip_rec->region, '', 'region is empty');
