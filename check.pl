@@ -312,6 +312,8 @@ sub test_arch($$$) {
 	$format = 'indices/files/arch-%s.files';
     } elsif ($type eq 'backports') {
 	$format = 'dists/oldstable-backports/main/binary-%s/Release';
+    } elsif ($type eq 'ports') {
+	$format = 'dists/sid/main/binary-%s/Release';
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/binary-%s/Packages.gz';
     } else {
@@ -336,6 +338,9 @@ sub test_source($$) {
 	$format = 'dists/sid/main/source/Release';
     } elsif ($type eq 'backports') {
 	$format = 'dists/oldstable-backports/main/source/Release';
+    } elsif ($type eq 'ports') {
+	# no sources for ports
+	return 1;
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/source/Sources.gz';
     } else {
@@ -357,6 +362,10 @@ sub test_areas($$) {
 	$format = 'dists/sid/%s/';
     } elsif ($type eq 'backports') {
 	$format = 'dists/oldstable-backports/%s/';
+    } elsif ($type eq 'ports') {
+	# only main for ports
+	@areas = qw(main);
+	$format = 'dists/sid/%s/';
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/%s/';
     } else {
@@ -381,6 +390,8 @@ sub test_stages($$$) {
 	$format = 'dists/sid/Release';
     } elsif ($type eq 'backports') {
 	$format = 'dists/oldstable-backports/Release';
+    } elsif ($type eq 'ports') {
+	$format = 'dists/sid/Release';
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/Release';
     } else {
