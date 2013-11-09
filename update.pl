@@ -48,7 +48,7 @@ sub get_lists($);
 sub parse_list($$);
 sub process_entry4($@);
 sub process_entry6($@);
-sub process_entry_common($$$$@);
+sub process_entry_common($$$$$@);
 sub query_dns_for_entry($);
 sub bandwidth_to_mb($);
 
@@ -316,8 +316,9 @@ sub query_dns_for_entry($) {
 sub process_entry6($@) {
     my $entry = shift;
     my @ips = @_;
+    my $name = $entry->{'site'}.'/ipv6';
 
-    return process_entry_common($db6, $entry,
+    return process_entry_common($db6, $name, $entry,
 	    sub { return $g_as6->org_by_addr_v6(shift)},
 	    sub { return $g_city6->record_by_addr_v6(shift)},
 	    @_);
@@ -326,22 +327,24 @@ sub process_entry6($@) {
 sub process_entry4($@) {
     my $entry = shift;
     my @ips = @_;
+    my $name = $entry->{'site'}.'/ipv4';
 
-    return process_entry_common($db4, $entry,
+    return process_entry_common($db4, $name, $entry,
 	    sub { return $g_as4->org_by_addr(shift)},
 	    sub { return $g_city4->record_by_addr(shift)},
 	    @_);
 }
 
-sub process_entry_common($$$$@) {
+sub process_entry_common($$$$$@) {
     my $db = shift;
+    my $name = shift;
     my $entry = shift;
     my $as_of_ip = shift;
     my $grec_of_ip = shift;
     my @ips = @_;
 
     if (!@ips || scalar(@ips) == 0) {
-	print STDERR "warning: host lookup for $entry->{'site'} failed\n";
+	print STDERR "warning: host lookup for $name failed\n";
 	return;
     }
 
@@ -360,20 +363,20 @@ sub process_entry_common($$$$@) {
 	if (!defined($r)) {
 	    $r = $m_record;
 	} elsif ($r->city ne $m_record->city) {
-	    print STDERR "warning: ".$entry->{'site'}." resolves to IPs in different".
+	    print STDERR "warning: ".$name." resolves to IPs in different".
 			" cities (".$r->city." != ".$m_record->city.")\n";
 	}
 	if (!$as) {
 	    $as = $m_as;
 	} elsif (defined($m_as) && $as ne $m_as) {
-	    print STDERR "warning: ".$entry->{'site'}." resolves to multiple different".
+	    print STDERR "warning: ".$name." resolves to multiple different".
 			" AS' ($as != $m_as)\n" unless (exists($as_seen{$m_as}));
 	    $as_seen{$m_as} = 1;
 	}
     }
 
     if (!defined($r) || !$as) {
-	print STDERR "warning: GeoIP/AS db lookup failed for $entry->{'site'}\n";
+	print STDERR "warning: GeoIP/AS db lookup failed for $name\n";
 	return;
     }
     my $country = $r->country_code || 'A1';
@@ -388,10 +391,10 @@ sub process_entry_common($$$$@) {
     # AP: Asia/Pacific region
     if ($country =~ m/^(?:A1|A2|EU|AP)$/ || defined($entry->{'geoip-override'})) {
 	if (!defined($entry->{'geoip-override'})) {
-	    print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $entry->{'site'}\n";
+	    print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $name\n";
 	    print STDERR "\tusing listed country ($listed_country)";
 	} else {
-	    print STDERR "warning: overriding country of $entry->{'site'}";
+	    print STDERR "warning: overriding country of $name";
 	}
 	$country = $listed_country;
 	$continent = $g_city4->continent_code_by_country_code($country);
@@ -417,7 +420,7 @@ sub process_entry_common($$$$@) {
 	}
 
     } elsif ($listed_country ne $country) {
-	print STDERR "warning: listed country for $entry->{'site'} doesn't match GeoIP db\n";
+	print STDERR "warning: listed country for $name doesn't match GeoIP db\n";
 	print STDERR "\t$listed_country (listed) vs $country (db), ";
 	print STDERR "using geoip db's entry\n";
     }
@@ -443,7 +446,7 @@ sub process_entry_common($$$$@) {
 	    $entry->{'bandwidth'} = bandwidth_to_mb($entry->{'bandwidth'});
 	};
 	if ($@) {
-	    print STDERR "warning: $@ for $entry->{'site'}\n";
+	    print STDERR "warning: $@ for $name\n";
 	    delete $entry->{'bandwidth'};
 	}
     }
@@ -459,7 +462,7 @@ sub process_entry_common($$$$@) {
 	next unless (defined($entry->{$type.'-http'}));
 
 	if (!defined($entry->{$type.'-architecture'}) && $type eq 'archive') {
-	    print STDERR "warning: no $type-architecture list for $entry->{'site'}\n";
+	    print STDERR "warning: no $type-architecture list for $name\n";
 	    next;
 	}
 
