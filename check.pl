@@ -24,9 +24,6 @@ use strict;
 use warnings;
 
 use Getopt::Long;
-use threads;
-use threads::shared;
-use Thread::Queue;
 use Storable qw(retrieve);
 use HTTP::Date qw();
 
@@ -35,13 +32,16 @@ use Mirror::DB;
 use Mirror::Trace;
 use Mirror::RateLimiter;
 
-sub head_url($$);
-sub test_arch($$$);
-sub test_source($$);
-sub test_areas($$);
-sub test_stages($$$);
-sub create_agent();
-sub check_mirror($);
+use AnyEvent;
+use AnyEvent::HTTP;
+
+sub head_url($$$);
+sub test_arch($$$$);
+sub test_source($$$);
+sub test_areas($$$);
+sub test_stages($$$$);
+sub check_mirror($$);
+sub check_mirror_post_master($$$$$);
 sub log_message($$$);
 sub mirror_is_good($$);
 sub archs_by_mirror($$);
@@ -50,6 +50,9 @@ sub fatal_connection_error($);
 sub disable_mirrors($$@);
 sub mark_bad_subset($$@);
 sub mirror_provides_arch($$$);
+sub mirror_types_to_check($);
+sub store_not_too_much($$);
+sub disabled_this_session($$);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -61,7 +64,7 @@ my $check_2stages = 1;
 my $check_everything = 0;
 my $incoming_db = '';
 my $disable_sites = 'sites.disabled';
-my $threads = 4;
+my $threads = -1;
 my $verbose = 0;
 my @ids;
 
@@ -95,15 +98,21 @@ if ($check_everything) {
 
 $| = 1;
 
-our %traces :shared;
-our $ua;
-my $q = Thread::Queue->new();
-our $db :shared = undef;
-our %sites_to_disable :shared;
+our %traces;
+our %just_disabled;
+
+$AnyEvent::HTTP::MAX_RECURSE = 0;
+$AnyEvent::HTTP::TIMEOUT = 10;
+$AnyEvent::HTTP::MAX_PER_HOST = 1;
+$AnyEvent::HTTP::USERAGENT = "MirrorChecker/0.2 ";
+
+our $cv = AnyEvent::condvar;
+our $db = undef;
+our %sites_to_disable;
 
 if (-f $disable_sites) {
     eval {
-    %sites_to_disable = %{shared_clone(parse_disable_file($disable_sites))};
+    %sites_to_disable = %{parse_disable_file($disable_sites)};
     };
     # If there was an exception take it as if we hadn't been requested to
     # process the file
@@ -115,13 +124,13 @@ if (-f $disable_sites) {
 
 if ($incoming_db) {
     # The db might be gone or not exist at all
-    eval { $db = shared_clone(retrieve($incoming_db)); };
+    eval { $db = retrieve($incoming_db); };
     if ($@) {
 	$db = undef;
 	$incoming_db = '';
     }
 }
-$db = shared_clone(retrieve($db_store))
+$db = retrieve($db_store)
     unless (defined($db));
 
 print "{db:",($incoming_db||$db_store),"}\n";
@@ -134,26 +143,14 @@ unless (scalar(@ids)) {
     die("error: passed --id but there's an incoming db: $incoming_db\n");
 }
 
-$q->enqueue(@ids);
-
-while ($threads--) {
-    threads->create(
-	    sub {
-		use LWP::UserAgent;
-		use LWP::ConnCache;
-
-		$ua = create_agent();
-
-		while (defined(my $id = $q->dequeue_nb())) {
-		    check_mirror($id);
-		}
-	    }
-	);
+$cv->begin;
+for my $id (@ids) {
+    for my $type (mirror_types_to_check($id)) {
+	check_mirror($id, $type);
+    }
 }
-
-for my $thr (threads->list()) {
-    $thr->join();
-}
+$cv->end;
+$cv->recv;
 
 for my $type (keys %traces) {
     my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
@@ -292,21 +289,29 @@ sub has_type_reference {
     return 0;
 }
 
-sub head_url($$) {
-    my ($url, $allow_html) = @_;
+sub head_url($$$) {
+    my ($url, $allow_html, $cb) = @_;
 
-    my $response = $ua->head($url);
-    my $content_type = $response->header('Content-Type') || '';
+    $cv->begin;
+    http_head $url, sub {
+	my ($data, $headers) = @_;
+	my $content_type = $headers->{'content-type'} || '';
 
-    return 0 if (!$response->is_success);
-    return ($content_type ne 'text/html' || $allow_html);
+	if ($headers->{'Status'} == 200 && (
+	    $content_type ne 'text/html' || $allow_html)) {
+	    &$cb(1);
+	} else {
+	    &$cb(0);
+	}
+	$cv->end;
+    };
 }
 
-sub test_arch($$$) {
-    my ($base_url, $type, $arch) = @_;
+sub test_arch($$$$) {
+    my ($base_url, $type, $arch, $cb) = @_;
     my $format;
 
-    return test_source($base_url, $type) if ($arch eq 'source');
+    return test_source($base_url, $type, $cb) if ($arch eq 'source');
 
     if ($type eq 'archive') {
 	$format = 'indices/files/arch-%s.files';
@@ -317,8 +322,8 @@ sub test_arch($$$) {
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/binary-%s/Packages.gz';
     } else {
-	# unknown/unsupported type, say we succeeded
-	return 1;
+	# unknown/unsupported type
+	return;
     }
 
     # FIXME: we should really check more than just the standard
@@ -327,11 +332,11 @@ sub test_arch($$$) {
     my $url = $base_url;
     $url .= sprintf($format, $arch);
 
-    return head_url($url, 0);
+    head_url($url, 0, $cb);
 }
 
-sub test_source($$) {
-    my ($base_url, $type) = @_;
+sub test_source($$$) {
+    my ($base_url, $type, $cb) = @_;
     my $format;
 
     if ($type eq 'archive') {
@@ -344,17 +349,17 @@ sub test_source($$) {
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/source/Sources.gz';
     } else {
-	# unknown/unsupported type, say we succeeded
-	return 1;
+	# unknown/unsupported type
+	return;
     }
 
     my $url = $base_url . $format;
 
-    return head_url($url, 0);
+    head_url($url, 0, $cb);
 }
 
-sub test_areas($$) {
-    my ($base_url, $type) = @_;
+sub test_areas($$$) {
+    my ($base_url, $type, $cb) = @_;
     my $format;
     my @areas = qw(main contrib non-free);
 
@@ -369,21 +374,38 @@ sub test_areas($$) {
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/%s/';
     } else {
-	# unknown/unsupported type, say we succeeded
-	return 1;
+	# unknown/unsupported type
+	return;
     }
 
+    my $remaining_areas = scalar(@areas);
     for my $area (@areas) {
 	my $url = $base_url;
 	$url .= sprintf($format, $area);
 
-	return 0  unless(head_url($url, 1));
+	$cv->begin;
+	head_url($url, 1, sub {
+	    my $success = shift;
+
+	    # Used to only call the cb once
+	    if ($remaining_areas < 0) {
+		$cv->end;
+		return;
+	    }
+	    if (!$success) {
+		&$cb(0);
+		$remaining_areas = -1;
+	    }
+	    if (--$remaining_areas == 0) {
+		&$cb(1);
+	    }
+	    $cv->end;
+	});
     }
-    return 1;
 }
 
-sub test_stages($$$) {
-    my ($base_url, $type, $master_trace) = @_;
+sub test_stages($$$$) {
+    my ($base_url, $type, $master_trace, $cb) = @_;
     my $format;
 
     if ($type eq 'archive') {
@@ -402,24 +424,19 @@ sub test_stages($$$) {
     my $url = $base_url . $format;
     my $trace_date = HTTP::Date::time2str($master_trace->date);
 
-    # The last-modified date of $url should never be newer than the one
-    # in the trace file. Use if-unmodified-since so that a 412 code is
-    # returned on failure, and a 200 if successful (or if the server
-    # ignored the if-unmodified-since)
-    my $response = $ua->head($url, 'if-unmodified-since' => $trace_date);
-    return ($response->is_success || $response->status_line =~ m/^500/);
-}
-
-sub create_agent() {
-    my $ua = LWP::UserAgent->new();
-
-    $ua->timeout(10);
-    $ua->agent("MirrorChecker/0.1 ");
-    $ua->conn_cache(LWP::ConnCache->new());
-    $ua->max_redirect(0);
-    $ua->max_size(1024);
-
-    return $ua;
+    $cv->begin;
+    http_head $url,
+	headers => ('if-unmodified-since' => $trace_date),
+	sub {
+	    my ($data, $headers) = @_;
+	    # The last-modified date of $url should never be newer than the one
+	    # in the trace file. Use if-unmodified-since so that a 412 code is
+	    # returned on failure, and a 200 if successful (or if the server
+	    # ignored the if-unmodified-since)
+	    &$cb($headers->{'Status'} == 200 || $headers->{'Status'} == 500);
+	    $cv->end;
+	}
+    ;
 }
 
 sub archs_by_mirror($$) {
@@ -436,12 +453,11 @@ sub archs_by_mirror($$) {
     return @archs;
 }
 
-sub check_mirror($) {
+sub mirror_types_to_check($) {
     my $id = shift;
     my $mirror = $db->{'all'}{$id};
     my @mirror_types;
-
-    my $fatal_error = 0;
+    my @types_to_check;
 
     for my $k (keys %$mirror) {
 	next unless ($k =~ m/^(.+)-http$/);
@@ -470,256 +486,262 @@ sub check_mirror($) {
 		delete $mirror->{$type.'-file-disabled'};
 	    }
 	}
+	push @types_to_check, $type;
+    }
 
-	$mirror->{$type.'-rtltr'} = undef
-	    unless (exists($mirror->{$type.'-rtltr'}));
-	my $rtltr = Mirror::RateLimiter->load(\$mirror->{$type.'-rtltr'});
+    return @types_to_check;
+}
 
-	next if ($rtltr->should_skip);
+sub check_mirror($$) {
+    my $id = shift;
+    my $type = shift;
 
-	my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
-	my $master_trace = Mirror::Trace->new($ua, $base_url);
-	my $disable = 0;
+    my $mtrace_content = '';
+    my $mirror = $db->{'all'}{$id};
+    my $master_trace;
+    my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
 
-	delete $mirror->{$type.'-badmaster'};
-	delete $mirror->{$type.'-badsubset'};
-	if (!$master_trace->fetch($db->{$type}{'master'})) {
-	    my $error = $master_trace->fetch_error || 'parse error';
-	    disable_mirrors($type, "bad master trace ($error)", $id);
-	    $mirror->{$type.'-badmaster'} = undef;
-	    $rtltr->record_failure;
-	    if (fatal_connection_error($error)) {
-		$fatal_error = 1;
-		last;
-	    }
-	    next unless ($check_archs || $check_areas);
-	    $disable = 1;
-	}
+    $mirror->{$type.'-rtltr'} = undef
+	unless (exists($mirror->{$type.'-rtltr'}));
+    my $rtltr = Mirror::RateLimiter->load(\$mirror->{$type.'-rtltr'});
 
-	if (!$disable) {
-	    my $response;
-	    $ua->set_my_handler('response_header', sub {$response = $_[0];}, owner => 'features_check');
+    return if ($rtltr->should_skip);
+    $master_trace = Mirror::Trace->new($base_url);
 
-	    my $site_trace = Mirror::Trace->new($ua, $base_url);
-	    my $disable_reason;
-	    my $ignore_master = 0;
+    delete $mirror->{$type.'-badmaster'};
+    delete $mirror->{$type.'-badsubset'};
 
-	    my $stored_site_date = $mirror->{$type.'-site'} || 0;
-	    my $stored_master_date = $mirror->{$type.'-master'} || 0;
-
-	    delete $mirror->{$type.'-badsite'};
-	    delete $mirror->{$type.'-oldftpsync'};
-	    delete $mirror->{$type.'-oldsite'};
-	    delete $mirror->{$type.'-notinrelease'};
-	    delete $mirror->{$type.'-noti18n'};
-
-	    if (!$site_trace->fetch($mirror->{'trace-file'} || $mirror->{'site'})) {
-		my $error = $site_trace->fetch_error || 'parse error';
-		$ignore_master = 1;
-		$mirror->{$type.'-badsite'} = undef;
-		$disable_reason = "bad site trace ($error)";
+    $cv->begin;
+    http_get $master_trace->get_url($db->{$type}{'master'}),
+	on_body => sub {store_not_too_much(shift, \$mtrace_content)},
+	sub {
+	    my ($empty, $headers) = @_;
+	    if ($headers->{'Status'} != 200 || !$master_trace->from_string($mtrace_content)) {
+		my $error = ($headers->{'Status'} != 200)? $headers->{'Reason'} : 'parse error';
+		disable_mirrors($type, "bad master trace ($error)", $id);
+		$mirror->{$type.'-badmaster'} = undef;
 		$rtltr->record_failure;
-		if (fatal_connection_error($error)) {
-		    $fatal_error = 1;
-		    last;
-		}
-	    } elsif ($site_trace->date < $master_trace->date) {
-		$ignore_master = 1;
-		$disable_reason = 'old site trace';
-		$mirror->{$type.'-oldsite'} = undef;
-	    } elsif (!$site_trace->uses_ftpsync) {
-		log_message($id, $type, "doesn't use ftpsync");
-	    } elsif (!$site_trace->good_ftpsync) {
-		$disable_reason = 'old ftpsync';
-		$mirror->{$type.'-oldftpsync'} = undef;
-		$rtltr->record_failure;
-	    }
-	    $ua->set_my_handler('response_header', undef, owner => 'features_check');
+		#if (fatal_connection_error($error)) { abort remaining connections }
+	    } else {
+		my $site_trace = Mirror::Trace->new($base_url);
+		my $strace_content = '';
 
+		delete $mirror->{$type.'-badsite'};
+		delete $mirror->{$type.'-oldftpsync'};
+		delete $mirror->{$type.'-oldsite'};
+		delete $mirror->{$type.'-notinrelease'};
+		delete $mirror->{$type.'-noti18n'};
 
-	    unless ($disable_reason) {
-		# Similar to the site->date < $master->date check above
-		# but stricter. Only accept a master bump if the site
-		# is also updated.
-		if ($master_trace->date > $stored_master_date &&
-		    $site_trace->date == $stored_site_date) {
-		    $ignore_master = 1;
-		    $disable_reason = 'new master but no new site';
-		    $mirror->{$type.'-oldsite'} = undef;
-		} else {
-		    # only update them when in an accepted state:
-		    $mirror->{$type.'-site'} = $site_trace->date;
-		    $mirror->{$type.'-master'} = $master_trace->date;
-		}
-
-		if (!$site_trace->features('inrelease')) {
-		    log_message($id, $type, "doesn't handle InRelease files correctly")
-			if ($verbose);
-		    $mirror->{$type.'-notinrelease'} = undef;
-		}
-		if (!$site_trace->features('i18n')) {
-		    log_message($id, $type, "doesn't handle i18n files correctly")
-			if ($verbose);
-		    $mirror->{$type.'-noti18n'} = undef;
-		}
-		if ($site_trace->features('architectures')) {
-		    if ($check_trace_archs) {
-			delete $mirror->{$type.'-tracearchcheck-disabled'};
-
-			my @archs = archs_by_mirror($id, $type);
-			for my $arch (@archs) {
-			    if ($arch eq 'any' && $site_trace->arch('GUESSED')) {
-				# not much can be done about it
-				next;
-			    }
-			    if (!$site_trace->arch($arch)) {
-				# Whenever disabling an arch because it
-				# isn't listed in the site's trace file,
-				# always require this check to be performed
-				# before re-enabling the arch
-				$mirror->{$type.'-'.$arch.'-trace-disabled'} = undef;
-				$mirror->{$type.'-'.$arch.'-disabled'} = undef;
-				log_message($id, $type, "missing $arch (det. from trace file)");
-			    } elsif (exists($mirror->{$type.'-'.$arch.'-trace-disabled'})) {
-				log_message($id, $type, "re-enabling $arch (det. from trace file)");
-				delete $mirror->{$type.'-'.$arch.'-disabled'};
-				delete $mirror->{$type.'-'.$arch.'-trace-disabled'};
-			    }
-			}
-
-			if (!exists($db->{$type}{'arch'}{'source'}) && !$site_trace->arch('source')) {
+		$cv->begin;
+		http_get $site_trace->get_url($mirror->{'trace-file'} || $mirror->{'site'}),
+		    on_body => sub {store_not_too_much(shift, \$strace_content)},
+		    sub {
+			my ($empty, $headers) = @_;
+			if ($headers->{'Status'} != 200 || !$site_trace->from_string($strace_content)) {
+			    my $error = ($headers->{'Status'} != 200)? $headers->{'Reason'} : 'parse error';
+			    $mirror->{$type.'-badsite'} = undef;
+			    disable_mirrors($type, "bad site trace ($error)", $id);
 			    $rtltr->record_failure;
-			    $mirror->{$type.'-tracearchcheck-disabled'} = undef;
-			    $disable_reason = "no sources (det. from trace file)";
+			    #if (fatal_connection_error($error)) { abort remaining connections }
+			} else {
+			    my %httpd_features = ('keep-alive' => 0, 'ranges' => 0);
+			    if ($headers->{'connection'}) {
+				$httpd_features{'keep-alive'} = ($headers->{'connection'} eq 'keep-alive');
+			    } else {
+				$httpd_features{'keep-alive'} = ($headers->{'HTTPVersion'} eq '1.1');
+			    }
+			    if ($headers->{'accept-ranges'}) {
+				$httpd_features{'ranges'} = ($headers->{'accept-ranges'} eq 'bytes');
+			    }
+
+			    while (my ($k, $v) = each %httpd_features) {
+				next if (exists($mirror->{$type.'-'.$k}) eq $v);
+
+				if (exists($mirror->{$type.'-'.$k})) {
+				    log_message($id, $type, "No more http/$k");
+				    delete $mirror->{$type.'-'.$k};
+				} else {
+				    log_message($id, $type, "http/$k support seen");
+				    $mirror->{$type.'-'.$k} = undef;
+				}
+			    }
+			    check_mirror_post_master($id, $type, $rtltr, $master_trace, $site_trace);
 			}
+			$cv->end;
 		    }
-		} else {
-		    log_message($id, $type, "doesn't list architectures");
+		;
+
+		if ($check_2stages) {
+		    test_stages($base_url, $type, $master_trace, sub {
+			my $success = shift;
+			if (!$success) {
+			    disable_mirrors($type, "doesn't perform 2stages sync", $id);
+			    $mirror->{$type.'-stages-disabled'} = undef;
+			    $rtltr->record_failure;
+			}
+		    });
 		}
 	    }
-
-	    if (!$ignore_master) {
-		lock(%traces);
-		$traces{$type} = shared_clone({})
-		    unless (exists($traces{$type}));
-		$traces{$type}{$master_trace->date} = shared_clone([])
-		    unless (exists($traces{$type}{$master_trace->date}));
-		push @{$traces{$type}{$master_trace->date}}, shared_clone($id);
-	    }
-
-	    if ($disable_reason) {
-		disable_mirrors($type, $disable_reason, $id);
-		next unless ($check_archs || $check_areas);
-		$disable = 1;
-	    }
-
-	    if (exists($mirror->{$type.'-disabled'}) && !$disable) {
-		log_message($id, $type, "re-considering, good traces");
-		delete $mirror->{$type.'-disabled'}
-		    if ($process_stamps);
-	    }
-
-	    if ($response) {
-		my %httpd_features = ('keep-alive' => 0, 'ranges' => 0);
-		if ($response->header('Connection')) {
-		    $httpd_features{'keep-alive'} = ($response->header('Connection') eq 'keep-alive');
-		} else {
-		    $httpd_features{'keep-alive'} = ($response->protocol eq 'HTTP/1.1');
-		}
-		if ($response->header('Accept-Ranges')) {
-		    $httpd_features{'ranges'} = ($response->header('Accept-Ranges') eq 'bytes');
-		}
-
-		while (my ($k, $v) = each %httpd_features) {
-		    next if (exists($mirror->{$type.'-'.$k}) eq $v);
-
-		    if (exists($mirror->{$type.'-'.$k})) {
-			log_message($id, $type, "No more http/$k");
-			delete $mirror->{$type.'-'.$k};
-		    } else {
-			log_message($id, $type, "http/$k support seen");
-			$mirror->{$type.'-'.$k} = undef;
-		    }
-		}
-	    }
+	    $cv->end;
 	}
+    ;
 
-	if ($check_2stages) {
-	    if (!test_stages($base_url, $type, $master_trace)) {
-		disable_mirrors($type, "doesn't perform 2stages sync", $id);
-		$mirror->{$type.'-stages-disabled'} = undef;
-		$rtltr->record_failure;
-		next;
-	    }
-	}
-
-	if ($check_areas) {
-	    delete $mirror->{$type.'-disabled'} unless ($disable);
-	    delete $mirror->{$type.'-areascheck-disabled'};
-	    if (!test_areas($base_url, $type)) {
+    if ($check_areas) {
+	delete $mirror->{$type.'-areascheck-disabled'};
+	test_areas($base_url, $type, sub {
+	    my $success = shift;
+	    if (!$success) {
 		disable_mirrors($type, "missing areas", $id);
 		$mirror->{$type.'-areascheck-disabled'} = undef;
 		$rtltr->record_failure;
-		next unless ($check_archs);
-		$disable = 1;
+	    }
+	});
+    }
+}
+
+sub check_mirror_post_master($$$$$) {
+    my $id = shift;
+    my $type = shift;
+    my $rtltr = shift;
+    my $mirror = $db->{'all'}{$id};
+    my $base_url = 'http://'.$mirror->{'site'}.$mirror->{$type.'-http'};
+
+    {
+	my $master_trace = shift;
+	my $site_trace = shift;
+	my $disable_reason;
+	my $ignore_master = 0;
+
+	my $stored_site_date = $mirror->{$type.'-site'} || 0;
+	my $stored_master_date = $mirror->{$type.'-master'} || 0;
+
+	if ($site_trace->date < $master_trace->date) {
+	    $ignore_master = 1;
+	    $disable_reason = 'old site trace';
+	    $mirror->{$type.'-oldsite'} = undef;
+	} elsif (!$site_trace->uses_ftpsync) {
+	    log_message($id, $type, "doesn't use ftpsync");
+	} elsif (!$site_trace->good_ftpsync) {
+	    $disable_reason = 'old ftpsync';
+	    $mirror->{$type.'-oldftpsync'} = undef;
+	    $rtltr->record_failure;
+	}
+
+
+	unless ($disable_reason) {
+	    # Similar to the site->date < $master->date check above
+	    # but stricter. Only accept a master bump if the site
+	    # is also updated.
+	    if ($master_trace->date > $stored_master_date &&
+		$site_trace->date == $stored_site_date) {
+		$ignore_master = 1;
+		$disable_reason = 'new master but no new site';
+		$mirror->{$type.'-oldsite'} = undef;
+	    } else {
+		# only update them when in an accepted state:
+		$mirror->{$type.'-site'} = $site_trace->date;
+		$mirror->{$type.'-master'} = $master_trace->date;
+	    }
+
+	    if (!$site_trace->features('inrelease')) {
+		log_message($id, $type, "doesn't handle InRelease files correctly")
+		    if ($verbose);
+		$mirror->{$type.'-notinrelease'} = undef;
+	    }
+	    if (!$site_trace->features('i18n')) {
+		log_message($id, $type, "doesn't handle i18n files correctly")
+		    if ($verbose);
+		$mirror->{$type.'-noti18n'} = undef;
+	    }
+	    if ($site_trace->features('architectures')) {
+		if ($check_trace_archs) {
+		    delete $mirror->{$type.'-tracearchcheck-disabled'};
+
+		    my @archs = archs_by_mirror($id, $type);
+		    for my $arch (@archs) {
+			if ($arch eq 'any' && $site_trace->arch('GUESSED')) {
+			    # not much can be done about it
+			    next;
+			}
+			if (!$site_trace->arch($arch)) {
+			    # Whenever disabling an arch because it
+			    # isn't listed in the site's trace file,
+			    # always require this check to be performed
+			    # before re-enabling the arch
+			    $mirror->{$type.'-'.$arch.'-trace-disabled'} = undef;
+			    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
+			    log_message($id, $type, "missing $arch (det. from trace file)");
+			} elsif (exists($mirror->{$type.'-'.$arch.'-trace-disabled'})) {
+			    log_message($id, $type, "re-enabling $arch (det. from trace file)");
+			    delete $mirror->{$type.'-'.$arch.'-disabled'};
+			    delete $mirror->{$type.'-'.$arch.'-trace-disabled'};
+			}
+		    }
+
+		    if (!exists($db->{$type}{'arch'}{'source'}) && !$site_trace->arch('source')) {
+			$rtltr->record_failure;
+			$mirror->{$type.'-tracearchcheck-disabled'} = undef;
+			$disable_reason = "no sources (det. from trace file)";
+		    }
+		}
+	    } else {
+		log_message($id, $type, "doesn't list architectures");
 	    }
 	}
 
-	if ($check_archs) {
-	    delete $mirror->{$type.'-disabled'} unless ($disable);
-	    delete $mirror->{$type.'-archcheck-disabled'};
+	if (!$ignore_master) {
+	    $traces{$type} = {}
+		unless (exists($traces{$type}));
+	    $traces{$type}{$master_trace->date} = []
+		unless (exists($traces{$type}{$master_trace->date}));
+	    push @{$traces{$type}{$master_trace->date}}, $id;
+	}
 
-	    my @archs = archs_by_mirror($id, $type);
-	    my $all_failed = 1;
-	    for my $arch (@archs) {
-		# Don't even check it if it was disabled because the
-		# trace file says it is not included
-		next if (exists($mirror->{$type.'-'.$arch.'-trace-disabled'}));
+	if ($disable_reason) {
+	    disable_mirrors($type, $disable_reason, $id);
+	} elsif (exists($mirror->{$type.'-disabled'}) && !disabled_this_session($type, $id)) {
+	    log_message($id, $type, "re-considering, good traces");
+	    delete $mirror->{$type.'-disabled'}
+		if ($process_stamps);
+	}
+    }
 
-		if (!test_arch($base_url, $type, $arch)) {
+    if ($check_archs) {
+	my $sticky_archcheck_flag = 0;
+	if (!exists($db->{$type}{'arch'}{'source'})) {
+	    test_source($base_url, $type, sub {
+		my $success = shift;
+		if (!$success) {
+		    disable_mirrors($type, "no sources", $id);
+		    $mirror->{$type.'-archcheck-disabled'} = undef;
+		    # Prevent any other callback (below) from dropping
+		    # the flag
+		    $sticky_archcheck_flag = 1;
+		}
+	    });
+	}
+
+	my @archs = archs_by_mirror($id, $type);
+	# By default assume that all architectures are missing
+	$mirror->{$type.'-archcheck-disabled'} = undef;
+	for my $arch (@archs) {
+	    # Don't even check it if it was disabled because the
+	    # trace file says it is not included
+	    next if (exists($mirror->{$type.'-'.$arch.'-trace-disabled'}));
+
+	    test_arch($base_url, $type, $arch, sub {
+		my $success = shift;
+		if (!$success) {
 		    $mirror->{$type.'-'.$arch.'-disabled'} = undef;
 		    log_message($id, $type, "missing $arch");
 		} else {
 		    log_message($id, $type, "re-enabling $arch")
 			if (exists($mirror->{$type.'-'.$arch.'-disabled'}));
 		    delete $mirror->{$type.'-'.$arch.'-disabled'};
-		    $all_failed = 0;
+		    delete $mirror->{$type.'-archcheck-disabled'}
+			unless ($sticky_archcheck_flag);
 		}
-	    }
-
-	    if ($all_failed) {
-		disable_mirrors($type, "all archs failed", $id);
-		$mirror->{$type.'-archcheck-disabled'} = undef;
-		$rtltr->record_failure;
-		next;
-	    }
-
-	    if (!exists($db->{$type}{'arch'}{'source'}) && !test_source($base_url, $type)) {
-		disable_mirrors($type, "no sources", $id);
-		$mirror->{$type.'-archcheck-disabled'} = undef;
-		$rtltr->record_failure;
-		next;
-	    }
-	}
-    }
-
-    # The mirror couldn't be checked due to what's considered a "fatal error"
-    # i.e. some kind of error from which it is unlikely to recover any time soon
-    # As such, some checks might have been skipped. So mark it as
-    # disabled by any check that would have otherwise been run.
-    # It might be possible for the mirror to recover at a later time, however.
-    if ($fatal_error) {
-	for my $type (@mirror_types) {
-	    disable_mirrors($type, "disabling due to fatal error", $id);
-
-	    $mirror->{$type.'-tracearchcheck-disabled'} = undef
-		if ($check_trace_archs);
-	    $mirror->{$type.'-archcheck-disabled'} = undef
-		if ($check_archs);
-	    $mirror->{$type.'-areascheck-disabled'} = undef
-		if ($check_areas);
-	    $mirror->{$type.'-file-disabled'} = undef
-		if ($disable_sites);
+	    });
 	}
     }
 }
@@ -764,9 +786,8 @@ sub parse_disable_file($) {
 sub fatal_connection_error($) {
     my $error = shift;
 
-    return 0 unless ($error =~ m/^500/);
-    return ($error =~ m/Bad hostname/ || $error =~ m/Connection refused/
-	    || $error =~ m/connect: timeout/);
+    # 598: 'user aborted request via "on_header" or "on_body".'
+    return ($error =~ m/^59/ && $error != 598);
 }
 
 sub disable_mirrors($$@) {
@@ -775,6 +796,7 @@ sub disable_mirrors($$@) {
 
     while (defined(my $id = pop @mirrors)) {
 	$db->{'all'}{$id}{$type.'-disabled'} = undef;
+	$just_disabled{"$id:$type"} = 1;
 	log_message($id, $type, $reason) if ($reason);
     }
 }
@@ -799,4 +821,21 @@ sub mirror_provides_arch($$$) {
 	return 1;
     }
     return 0;
+}
+
+sub store_not_too_much($$) {
+    my ($data, $store) = @_;
+
+    $$store .= $data;
+    if (length($$store) > 1024) {
+	$$store = undef;
+	# abort the connection
+	return 0;
+    }
+    return 1;
+}
+
+sub disabled_this_session($$) {
+    my ($type, $id) = @_;
+    return exists($just_disabled{"$id:$type"});
 }
