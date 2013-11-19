@@ -51,7 +51,7 @@ sub disable_mirrors($$@);
 sub mark_bad_subset($$@);
 sub mirror_provides_arch($$$);
 sub mirror_types_to_check($);
-sub store_not_too_much($$);
+sub store_not_too_much($$$);
 sub disabled_this_session($$);
 
 my $db_store = 'db';
@@ -513,7 +513,7 @@ sub check_mirror($$) {
 
     $cv->begin;
     http_get $master_trace->get_url($db->{$type}{'master'}),
-	on_body => sub {store_not_too_much(shift, \$mtrace_content)},
+	on_body => sub {store_not_too_much(shift, \$mtrace_content, shift->{'Status'})},
 	sub {
 	    my ($empty, $headers) = @_;
 	    if ($headers->{'Status'} != 200 || !$master_trace->from_string($mtrace_content)) {
@@ -534,7 +534,7 @@ sub check_mirror($$) {
 
 		$cv->begin;
 		http_get $site_trace->get_url($mirror->{'trace-file'} || $mirror->{'site'}),
-		    on_body => sub {store_not_too_much(shift, \$strace_content)},
+		    on_body => sub {store_not_too_much(shift, \$strace_content, shift->{'Status'})},
 		    sub {
 			my ($empty, $headers) = @_;
 			if ($headers->{'Status'} != 200 || !$site_trace->from_string($strace_content)) {
@@ -823,8 +823,20 @@ sub mirror_provides_arch($$$) {
     return 0;
 }
 
-sub store_not_too_much($$) {
-    my ($data, $store) = @_;
+sub store_not_too_much($$$) {
+    my ($data, $store, $status) = @_;
+
+    if ($status != 200) {
+	$$store = 0
+	    if ($$store eq '');
+	$$store += length($data);
+
+	if ($$store > 1024*2) {
+	    $$store = undef;
+	    return 0;
+	}
+	return 1;
+    }
 
     $$store .= $data;
     if (length($$store) > 1024) {
