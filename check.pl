@@ -67,6 +67,7 @@ my $disable_sites = 'sites.disabled';
 my $threads = -1;
 my $verbose = 0;
 my @ids;
+my $ipv = 4;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'check-areas!' => \$check_areas,
@@ -80,6 +81,7 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'incoming-db=s' => \$incoming_db,
 	    'store-traces!' => \$store_traces,
 	    'disable-sites=s' => \$disable_sites,
+	    'ipv=i' => \$ipv,
 	    'verbose!' => \$verbose) or exit 1;
 
 # Avoid picking up db.in when working on db.wip, for example
@@ -96,6 +98,10 @@ if ($check_everything) {
     $check_2stages = 1 unless ($check_2stages ne '');
 }
 
+if ($ipv != 4 && $ipv != 6) {
+    die("error: unknown IP family '$ipv'\n");
+}
+
 $| = 1;
 
 our %traces;
@@ -107,7 +113,8 @@ $AnyEvent::HTTP::MAX_PER_HOST = 1;
 $AnyEvent::HTTP::USERAGENT = "MirrorChecker/0.2 ";
 
 our $cv = AnyEvent::condvar;
-our $db = undef;
+our $db;
+my $full_db = undef;
 our %sites_to_disable;
 
 if (-f $disable_sites) {
@@ -124,14 +131,25 @@ if (-f $disable_sites) {
 
 if ($incoming_db) {
     # The db might be gone or not exist at all
-    eval { $db = retrieve($incoming_db); };
+    eval { $full_db = retrieve($incoming_db); };
     if ($@) {
-	$db = undef;
+	$full_db = undef;
 	$incoming_db = '';
     }
 }
-$db = retrieve($db_store)
-    unless (defined($db));
+$full_db = retrieve($db_store)
+    unless (defined($full_db));
+
+# Modify AE's PROTOCOL to force one or the other family
+if ($ipv == 4) {
+    $db = $full_db->{'ipv4'};
+    $AnyEvent::PROTOCOL{ipv4} = 1;
+    $AnyEvent::PROTOCOL{ipv6} = 0;
+} elsif ($ipv == 6) {
+    $db = $full_db->{'ipv6'};
+    $AnyEvent::PROTOCOL{ipv4} = 0;
+    $AnyEvent::PROTOCOL{ipv6} = 1;
+}
 
 print "{db:",($incoming_db||$db_store),"}\n";
 
@@ -251,7 +269,7 @@ for my $type (keys %traces) {
 }
 
 Mirror::DB::set($db_output);
-Mirror::DB::store($db);
+Mirror::DB::store($full_db);
 
 # If we used an 'incoming' db, delete it after storing it as the normal
 # db. If any other process picked the incoming db too, well, they will
