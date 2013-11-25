@@ -53,7 +53,6 @@ sub mirror_provides_arch($$$);
 
 my $db_store = 'db';
 my $db_output = $db_store;
-my $store_traces = 0;
 my $check_archs = '';
 my $check_trace_archs = 1;
 my $check_areas = '';
@@ -75,7 +74,6 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'db-output=s' => \$db_output,
 	    'id|mirror-id=s' => \@ids,
 	    'incoming-db=s' => \$incoming_db,
-	    'store-traces!' => \$store_traces,
 	    'disable-sites=s' => \$disable_sites,
 	    'verbose!' => \$verbose) or exit 1;
 
@@ -263,11 +261,6 @@ Mirror::DB::store($db);
 # or finished before use otherwise
 if ($incoming_db) {
     unlink($incoming_db);
-}
-
-if ($store_traces) {
-    Mirror::DB::set('traces.db');
-    Mirror::DB::store(\%traces);
 }
 
 sub mirror_is_good($$) {
