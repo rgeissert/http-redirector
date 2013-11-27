@@ -66,7 +66,7 @@ my $disable_sites = 'sites.disabled';
 my $threads = -1;
 my $verbose = 0;
 my @ids;
-my $ipv = 4;
+my @ipv_to_check;
 
 GetOptions('check-architectures!' => \$check_archs,
 	    'check-areas!' => \$check_areas,
@@ -79,11 +79,12 @@ GetOptions('check-architectures!' => \$check_archs,
 	    'id|mirror-id=s' => \@ids,
 	    'incoming-db=s' => \$incoming_db,
 	    'disable-sites=s' => \$disable_sites,
-	    'ipv=i' => \$ipv,
+	    'ipv=i' => \@ipv_to_check,
 	    'verbose!' => \$verbose) or exit 1;
 
 # Avoid picking up db.in when working on db.wip, for example
 $incoming_db ||= $db_store.'.in';
+scalar(@ipv_to_check) or @ipv_to_check = qw(4 6);
 
 my %max_age = (
     'default' => 13*3600,
@@ -96,21 +97,13 @@ if ($check_everything) {
     $check_2stages = 1 unless ($check_2stages ne '');
 }
 
-if ($ipv != 4 && $ipv != 6) {
-    die("error: unknown IP family '$ipv'\n");
-}
-
 $| = 1;
-
-our %traces;
-our %just_disabled;
 
 $AnyEvent::HTTP::MAX_RECURSE = 0;
 $AnyEvent::HTTP::TIMEOUT = 10;
 $AnyEvent::HTTP::MAX_PER_HOST = 1;
 $AnyEvent::HTTP::USERAGENT = "MirrorChecker/0.2 ";
 
-our $cv = AnyEvent::condvar;
 our $db;
 my $full_db = undef;
 our %sites_to_disable;
@@ -138,129 +131,145 @@ if ($incoming_db) {
 $full_db = retrieve($db_store)
     unless (defined($full_db));
 
-# Modify AE's PROTOCOL to force one or the other family
-if ($ipv == 4) {
-    $db = $full_db->{'ipv4'};
-    $AnyEvent::PROTOCOL{ipv4} = 1;
-    $AnyEvent::PROTOCOL{ipv6} = 0;
-} elsif ($ipv == 6) {
-    $db = $full_db->{'ipv6'};
-    $AnyEvent::PROTOCOL{ipv4} = 0;
-    $AnyEvent::PROTOCOL{ipv6} = 1;
-}
-
 print "{db:",($incoming_db||$db_store),"}\n";
 
-our $process_stamps = 0;
-unless (scalar(@ids)) {
-    @ids = keys %{$db->{'all'}};
-    $process_stamps = 1;
-} elsif ($incoming_db) {
+if (scalar(@ids) && $incoming_db) {
     die("error: passed --id but there's an incoming db: $incoming_db\n");
 }
 
-$cv->begin;
-for my $id (@ids) {
-    for my $type (mirror_types_to_check($id)) {
-	check_mirror($id, $type);
-    }
-}
-$cv->end;
-$cv->recv;
+our $cv;
+our %traces;
+our %just_disabled;
+our $process_stamps;
 
-for my $type (keys %traces) {
-    my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
+for my $ipv (@ipv_to_check) {
+    undef %traces;
+    undef %just_disabled;
+    $process_stamps = 0;
+    $cv = AnyEvent::condvar;
 
-    next unless ($process_stamps);
-
-    my %master_stamps;
-    my $global_master_stamp;
-
-    for my $stamp (@stamps) {
-	my $is_type_ref = has_type_reference($type, @{$traces{$type}{$stamp}});
-
-	if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
-	    mark_bad_subset($type, "old or not popular master stamp '$stamp'", @{$traces{$type}{$stamp}});
-	    next;
-	}
-
-	for my $continent (keys %{$db->{$type}{'continent'}}) {
-	    my @per_continent;
-	    my $good_mirrors = 0;
-	    my %archs_required = map { $_ => 1 } qw(amd64 i386);
-
-	    for my $id (@{$traces{$type}{$stamp}}) {
-		next unless (exists($db->{$type}{'continent'}{$continent}{$id}));
-
-		my $mirror = $db->{'all'}{$id};
-
-		$good_mirrors++ if (mirror_is_good($mirror, $type));
-
-		for my $arch (keys %archs_required) {
-		    delete $archs_required{$arch}
-			if (mirror_provides_arch($id, $type, $arch) || mirror_provides_arch($id, $type, 'any'));
-		}
-
-		push @per_continent, $id;
-	    }
-
-	    # Criteria: at least one mirror
-	    # Criteria: at least one that is "good"
-	    unless (scalar(@per_continent) && $good_mirrors) {
-		mark_bad_subset($type, "Not enough good mirrors in its $continent subset", @per_continent);
-		next;
-	    }
-	    # Criteria: at least %archs_required can be served
-	    if ($type eq 'archive' && scalar(keys %archs_required)) {
-		mark_bad_subset($type, "Required archs not present in its $continent subset", @per_continent);
-		next;
-	    }
-
-	    if (!exists($master_stamps{$continent})) {
-		# Do not let subsets become too old
-		if (defined($global_master_stamp) &&
-		    (($global_master_stamp - $stamp) > ($max_age{$type} || $max_age{'default'}) ||
-		     $type eq 'security' || $is_type_ref)) {
-		    print "Overriding the master stamp of $type/$continent (from $stamp to $global_master_stamp)\n";
-		    $master_stamps{$continent} = $global_master_stamp;
-		} elsif (!defined($global_master_stamp)) {
-		    $global_master_stamp = $stamp;
-		}
-	    }
-
-	    if (exists($master_stamps{$continent})) {
-		# if a master stamp has been recorded already it means
-		# there are more up to date mirrors
-		mark_bad_subset($type, "old master trace re $continent", @per_continent);
-	    } else {
-		if (exists($db->{$type}{'serial'})) {
-		    $db->{$type}{'serial'}{$continent} = 0
-			unless (exists($db->{$type}{'serial'}{$continent}));
-
-		    print "Regression detected in $continent/$type\n"
-			if ($db->{$type}{'serial'}{$continent} > $stamp);
-
-		    $db->{$type}{'serial'}{$continent} = $stamp;
-		}
-		$master_stamps{$continent} = $stamp;
-		print "Master stamp for $continent/$type: $stamp\n";
-	    }
-	}
+    # Modify AE's PROTOCOL to force one or the other family
+    if ($ipv == 4) {
+	$db = $full_db->{'ipv4'};
+	$AnyEvent::PROTOCOL{ipv4} = 1;
+	$AnyEvent::PROTOCOL{ipv6} = 0;
+    } elsif ($ipv == 6) {
+	$db = $full_db->{'ipv6'};
+	$AnyEvent::PROTOCOL{ipv4} = 0;
+	$AnyEvent::PROTOCOL{ipv6} = 1;
+    } else {
+	die("error: unknown IP family '$ipv'\n");
     }
 
-    my @continents_by_stamp = sort {$master_stamps{$a} <=> $master_stamps{$b}}
-				keys %master_stamps;
+    my @ids_to_process = @ids;
+    unless (scalar(@ids_to_process)) {
+	@ids_to_process = keys %{$db->{'all'}};
+	$process_stamps = 1;
+    }
 
-    if (scalar(@continents_by_stamp)) {
-	my $recent_stamp = $master_stamps{$continents_by_stamp[-1]};
+    $cv->begin;
+    for my $id (@ids_to_process) {
+	for my $type (mirror_types_to_check($id)) {
+	    check_mirror($id, $type);
+	}
+    }
+    $cv->end;
+    $cv->recv;
 
-	while (my $continent = pop @continents_by_stamp) {
-	    my $diff = ($recent_stamp - $master_stamps{$continent})/3600;
+    for my $type (keys %traces) {
+	my @stamps = sort { $b <=> $a } keys %{$traces{$type}};
 
-	    if ($diff == 0) {
-		print "Subset $continent/$type is up to date\n";
-	    } else {
-		print "Subset $continent/$type is $diff hour(s) behind\n";
+	next unless ($process_stamps);
+
+	my %master_stamps;
+	my $global_master_stamp;
+
+	for my $stamp (@stamps) {
+	    my $is_type_ref = has_type_reference($type, @{$traces{$type}{$stamp}});
+
+	    if (scalar(@{$traces{$type}{$stamp}}) <= 2 && !$is_type_ref) {
+		mark_bad_subset($type, "old or not popular master stamp '$stamp'", @{$traces{$type}{$stamp}});
+		next;
+	    }
+
+	    for my $continent (keys %{$db->{$type}{'continent'}}) {
+		my @per_continent;
+		my $good_mirrors = 0;
+		my %archs_required = map { $_ => 1 } qw(amd64 i386);
+
+		for my $id (@{$traces{$type}{$stamp}}) {
+		    next unless (exists($db->{$type}{'continent'}{$continent}{$id}));
+
+		    my $mirror = $db->{'all'}{$id};
+
+		    $good_mirrors++ if (mirror_is_good($mirror, $type));
+
+		    for my $arch (keys %archs_required) {
+			delete $archs_required{$arch}
+			    if (mirror_provides_arch($id, $type, $arch) || mirror_provides_arch($id, $type, 'any'));
+		    }
+
+		    push @per_continent, $id;
+		}
+
+		# Criteria: at least one mirror
+		# Criteria: at least one that is "good"
+		unless (scalar(@per_continent) && $good_mirrors) {
+		    mark_bad_subset($type, "Not enough good mirrors in its $continent subset", @per_continent);
+		    next;
+		}
+		# Criteria: at least %archs_required can be served
+		if ($type eq 'archive' && scalar(keys %archs_required)) {
+		    mark_bad_subset($type, "Required archs not present in its $continent subset", @per_continent);
+		    next;
+		}
+
+		if (!exists($master_stamps{$continent})) {
+		    # Do not let subsets become too old
+		    if (defined($global_master_stamp) &&
+			(($global_master_stamp - $stamp) > ($max_age{$type} || $max_age{'default'}) ||
+			 $type eq 'security' || $is_type_ref)) {
+			print "Overriding the master stamp of $type/$continent (from $stamp to $global_master_stamp)\n";
+			$master_stamps{$continent} = $global_master_stamp;
+		    } elsif (!defined($global_master_stamp)) {
+			$global_master_stamp = $stamp;
+		    }
+		}
+
+		if (exists($master_stamps{$continent})) {
+		    # if a master stamp has been recorded already it means
+		    # there are more up to date mirrors
+		    mark_bad_subset($type, "old master trace re $continent", @per_continent);
+		} else {
+		    if (exists($db->{$type}{'serial'})) {
+			$db->{$type}{'serial'}{$continent} = 0
+			    unless (exists($db->{$type}{'serial'}{$continent}));
+
+			print "Regression detected in $continent/$type\n"
+			    if ($db->{$type}{'serial'}{$continent} > $stamp);
+
+			$db->{$type}{'serial'}{$continent} = $stamp;
+		    }
+		    $master_stamps{$continent} = $stamp;
+		    print "Master stamp for $continent/$type: $stamp\n";
+		}
+	    }
+	}
+
+	my @continents_by_stamp = sort {$master_stamps{$a} <=> $master_stamps{$b}}
+				    keys %master_stamps;
+
+	if (scalar(@continents_by_stamp)) {
+	    my $recent_stamp = $master_stamps{$continents_by_stamp[-1]};
+
+	    while (my $continent = pop @continents_by_stamp) {
+		my $diff = ($recent_stamp - $master_stamps{$continent})/3600;
+
+		if ($diff == 0) {
+		    print "Subset $continent/$type is up to date\n";
+		} else {
+		    print "Subset $continent/$type is $diff hour(s) behind\n";
+		}
 	    }
 	}
     }
