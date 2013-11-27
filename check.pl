@@ -137,6 +137,8 @@ if (scalar(@ids) && $incoming_db) {
     die("error: passed --id but there's an incoming db: $incoming_db\n");
 }
 
+Mirror::DB::set($db_output);
+
 our $cv;
 our %traces;
 our %just_disabled;
@@ -273,10 +275,10 @@ for my $ipv (@ipv_to_check) {
 	    }
 	}
     }
+
+    Mirror::DB::store($full_db);
 }
 
-Mirror::DB::set($db_output);
-Mirror::DB::store($full_db);
 
 # If we used an 'incoming' db, delete it after storing it as the normal
 # db. If any other process picked the incoming db too, well, they will
