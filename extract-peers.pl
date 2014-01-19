@@ -68,14 +68,19 @@ while (<>) {
 	my $distance = 0;
 
 	my @path = @parts;
-	while (my $peer = pop @path) {
+	while (my @peers = pop @path) {
 	    last unless ($distance < $max_distance);
-	    next if ($dest eq $peer);
 	    $distance++;
 
-	    my $output = "$dest $peer $distance $ipv";
+	    if ($peers[0] =~ s/^\{// && $peers[0] =~ s/\}$//) {
+		@peers = split (/,/, $peers[0]);
+	    }
+	    while (my $peer = pop @peers) {
+		next if ($dest eq $peer);
+		my $output = "$dest $peer $distance $ipv";
 
-	    print $out "$output\n" if (not seen($output));
+		print $out "$output\n" if (not seen($output));
+	    }
 	}
     }
 
