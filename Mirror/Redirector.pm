@@ -54,6 +54,7 @@ our %nearby_continents = (
 
 our %nearby_country = (
     'NA' => [ qw(US CA) ],
+    'OC' => [ qw(AU NZ) ],
 );
 
 our $metric = ''; # alt: taxicab (default) | euclidean
