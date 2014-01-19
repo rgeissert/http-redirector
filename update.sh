@@ -128,9 +128,10 @@ if $bgp; then
 
     cd - >/dev/null
 
-    echo "Going to extract peers, resume with the following command:"
+    echo "Going to extract peers, resume with the following commands:"
     command="
     ./extract-peers.pl --progress < 'bgp/$zdpout'
+    sort -u peers.lst.d/routing-table.lst | LC_ALL=C sort -n | sponge peers.lst.d/routing-table.lst
 "
     echo "$command"
     eval "$command"
