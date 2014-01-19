@@ -25,6 +25,7 @@ set -eu
 geoip=true
 mirrors=true
 peers=true
+bgp=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -40,15 +41,21 @@ while [ $# -gt 0 ]; do
 	    mirrors=false
 	    geoip=false
 	;;
+	--bgp-only)
+	    mirrors=false
+	    geoip=false
+	    peers=false
+	    bgp=true
+	;;
 	*)
-	    echo "usage: $(basename "$0") [--geoip-only|--mirrors-only|--peers-only]" >&2
+	    echo "usage: $(basename "$0") [--geoip-only|--mirrors-only|--peers-only|--bgp-only]" >&2
 	    exit 1
 	;;
     esac
     shift
 done
 
-if ! $geoip && ! $mirrors && ! $peers; then
+if ! $geoip && ! $mirrors && ! $peers && ! $bgp; then
     echo "nice try"
     exit 1
 fi
@@ -96,6 +103,37 @@ if $geoip; then
 	touch -r $db $decomp_db
     done
     cd - >/dev/null
+fi
+
+if $bgp; then
+    mkdir -p bgp
+    echo "Using bgp/ as cwd"
+    cd bgp
+
+    zdp=zebra-dump-parser/zebra-dump-parser.pl
+    [ -x $zdp ] || {
+	echo "error: couldn't find an executable zdp at $zdp" >&2
+	exit 1
+    }
+    if [ -n "$(sed -rn '/^my\s+\$ignore_v6_routes\s*=\s*1/p' $zdp)" ]; then
+	echo "warning: ipv6 routes are ignored by zdp, trying to fix it" >&2
+	sed -ri '/^my\s+\$ignore_v6_routes\s*=\s*1/{s/=\s*1/= 0/}' $zdp
+    fi
+
+    wget -N http://data.ris.ripe.net/rrc00/latest-bview.gz
+    zdpout="zdp-stdout-$(date -d "$(stat -c%y latest-bview.gz)" +%F)"
+
+    echo "warning: expanding bgp dump to $zdpout, can take some 400MB" >&2
+    zcat latest-bview.gz | $zdp > "$zdpout"
+
+    cd - >/dev/null
+
+    echo "Going to extract peers, resume with the following command:"
+    command="
+    ./extract-peers.pl --progress < 'bgp/$zdpout'
+"
+    echo "$command"
+    eval "$command"
 fi
 
 if $peers; then
