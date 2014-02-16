@@ -5,9 +5,8 @@ use warnings;
 use Test::More tests => 2;
 
 use Mirror::Trace;
-use LWP::UserAgent;
 
-my $trace = Mirror::Trace->new(LWP::UserAgent->new(), 'http://0.0.0.0/');
+my $trace = Mirror::Trace->new('http://0.0.0.0/');
 
 my $trace_data = <<EOF;
 Mon Feb 27 16:13:04 UTC 2012
@@ -16,5 +15,5 @@ Running on host: franck.debian.org
 Archive serial: 2012022703
 EOF
 
-ok($trace->_parse_trace($trace_data), 'Parse trace data');
+ok($trace->from_string($trace_data), 'Parse trace data');
 is($trace->date, 1330359184, 'Parsed date is correct');

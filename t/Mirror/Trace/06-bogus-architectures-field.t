@@ -5,9 +5,8 @@ use warnings;
 use Test::More tests => 3;
 
 use Mirror::Trace;
-use LWP::UserAgent;
 
-my $trace = Mirror::Trace->new(LWP::UserAgent->new(), 'http://0.0.0.0/');
+my $trace = Mirror::Trace->new('http://0.0.0.0/');
 
 TODO: {
 
@@ -21,7 +20,7 @@ Architectures: FULL i386
 Upstream-mirror: my.upstream.tld
 EOF
 
-ok(!$trace->_parse_trace($trace_data), 'FULL mirror but lists an arch');
+ok(!$trace->from_string($trace_data), 'FULL mirror but lists an arch');
 
 $trace_data = <<EOF;
 Mon Feb 27 09:13:54 UTC 2012
@@ -31,7 +30,7 @@ Architectures: GUESSED:{foo} bar
 Upstream-mirror: my.upstream.tld
 EOF
 
-ok(!$trace->_parse_trace($trace_data), 'GUESSED archs lists with an especific arch');
+ok(!$trace->from_string($trace_data), 'GUESSED archs lists with an especific arch');
 
 $trace_data = <<EOF;
 Mon Feb 27 09:13:54 UTC 2012
@@ -41,5 +40,5 @@ Architectures: COMMON{foo}
 Upstream-mirror: my.upstream.tld
 EOF
 
-ok(!$trace->_parse_trace($trace_data), 'Missing : after archs token');
+ok(!$trace->from_string($trace_data), 'Missing : after archs token');
 }

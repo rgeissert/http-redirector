@@ -24,15 +24,14 @@ use strict;
 use warnings;
 use Getopt::Long;
 use Socket;
+use Geo::IP;
+use Storable qw(dclone);
 
 use Mirror::AS;
 use Mirror::DB;
 
-# DNS lookups are slow
-use threads;
-use threads::shared;
-use Thread::Semaphore;
-use Thread::Queue;
+use AE;
+use AnyEvent::DNS;
 
 my $input_dir = 'mirrors.lst.d';
 my $db_store = 'db';
@@ -42,13 +41,15 @@ my @mirror_types = qw(www volatile archive old nonus
 my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile cdimage);
 
 # Options:
-my ($update_list, $threads) = (1, 4);
+my ($update_list, $threads) = (1, -1);
 our $verbose = 0;
 
 sub get_lists($);
 sub parse_list($$);
-sub process_entry($);
-sub fancy_get_host($);
+sub process_entry4($@);
+sub process_entry6($@);
+sub process_entry_common($$$$$@);
+sub query_dns_for_entry($);
 sub bandwidth_to_mb($);
 
 GetOptions('update-list!' => \$update_list,
@@ -83,61 +84,74 @@ for my $list (sort @input_files) {
     @data = (@data, parse_list($list, \%all_sites));
 }
 
-my %db :shared;
-my %semaphore;
-my $q = Thread::Queue->new(@data);
-my $i :shared = 0;
+my $cv = AE::cv;
+my %full_db = ('ipv4' => {}, 'ipv6' => {});
+my $db4 = $full_db{'ipv4'};
+my $db6 = $full_db{'ipv6'};
+my $i = 0;
 
 foreach my $mirror_type (@mirror_types) {
     next if ($exclude_mirror_types{$mirror_type});
 
-    $db{$mirror_type} = shared_clone({
+    $db4->{$mirror_type} = {
 	'country' => {}, 'arch' => {},
 	'AS' => {}, 'continent' => {},
 	'master' => '', 'serial' => {}
-    });
-    $semaphore{$mirror_type} = Thread::Semaphore->new();
+    };
+    $full_db{$mirror_type} = $db4->{$mirror_type};
+    $db6->{$mirror_type} = {
+	'country' => {}, 'arch' => {},
+	'AS' => {}, 'continent' => {},
+	'master' => '', 'serial' => {}
+    };
 }
-$db{'all'} = shared_clone({});
-$db{'id'} = time;
-$semaphore{'main'} = Thread::Semaphore->new();
+$db4->{'all'} = {};
+$db6->{'all'} = {};
+$full_db{'all'} = $db4->{'all'};
 
-my ($g_city, $g_as);
+$full_db{'id'} = time;
 
-while ($threads--) {
-    threads->create(
-	    sub {
-		# Geo::IP (at least the XS version) is not thread-safe
-		# it appears as if it tried to close the db handle as
-		# many times as threads. Workaround it by importing it
-		# on each individual thread.
-		# (even in this case, *_by_name fail; don't know why)
-		use Geo::IP;
-		$g_city = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE)
-		    or die;
-		$g_as = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE)
-		    or die;
+my ($g_city4, $g_as4, $g_city6, $g_as6);
+$g_city4 = Geo::IP->open('geoip/GeoLiteCity.dat', GEOIP_MMAP_CACHE)
+    or die;
+$g_as4 = Geo::IP->open('geoip/GeoIPASNum.dat', GEOIP_MMAP_CACHE)
+    or die;
+$g_city6 = Geo::IP->open('geoip/GeoLiteCityv6.dat', GEOIP_MMAP_CACHE)
+    or die;
+$g_as6 = Geo::IP->open('geoip/GeoIPASNumv6.dat', GEOIP_MMAP_CACHE)
+    or die;
 
-		# we wait until all threads are done processing the queue
-		# and since the queue is filled and no new items are added
-		# later, it is safe to use dequeue_nb to check if it
-		# should exit
-		while (my $entry = $q->dequeue_nb()) {
-		    process_entry($entry);
-		}
-	    }
-	);
+my $remaining_entries = scalar(@data);
+for my $entry (@data) {
+    if (query_dns_for_entry($entry)) {
+	if (exists($entry->{'ipv4'})) {
+	    delete $entry->{'ipv4'};
+	    AnyEvent::DNS::a $entry->{'site'}, sub {
+		process_entry4(dclone($entry), @_);
+		$cv->send if (--$remaining_entries == 0);
+	    };
+	}
+	if (exists($entry->{'ipv6'})) {
+	    # we now only use it as a flag here
+	    delete $entry->{'ipv6'};
+	    $remaining_entries++;
+	    AnyEvent::DNS::aaaa $entry->{'site'}, sub {
+		process_entry6(dclone($entry), @_);
+		$cv->send if (--$remaining_entries == 0);
+	    };
+	}
+    } else {
+	$cv->send if (--$remaining_entries == 0);
+    }
 }
 
-for my $thr (threads->list()) {
-    $thr->join();
-}
+$cv->recv;
 
-if (!exists($db{'archive'}{'arch'}{'i386'}) || scalar(keys %{$db{'archive'}{'arch'}{'i386'}}) < 10) {
+if (!exists($db4->{'archive'}{'arch'}{'i386'}) || scalar(keys %{$db4->{'archive'}{'arch'}{'i386'}}) < 10) {
     print STDERR "error: not even 10 mirrors with i386 found on the archive list, not saving\n";
 } else {
     Mirror::DB::set($db_output);
-    Mirror::DB::store(\%db);
+    Mirror::DB::store(\%full_db);
 }
 
 exit;
@@ -201,12 +215,12 @@ sub parse_list($$) {
     return @data;
 }
 
-sub process_entry($) {
+sub query_dns_for_entry($) {
     my $entry = shift;
 
     $entry->{'type'} = lc ($entry->{'type'} || 'unknown');
 
-    return if ($entry->{'type'} =~ m/^(?:unknown|geodns)$/ && $entry->{'site'} ne 'security.debian.org');
+    return 0 if ($entry->{'type'} =~ m/^(?:unknown|geodns)$/ && $entry->{'site'} ne 'security.debian.org');
 
     if ($entry->{'site'} eq 'security.debian.org') {
 	# used to indicate that even if only this site has a newer
@@ -222,16 +236,17 @@ sub process_entry($) {
 	    next unless (exists($entry->{$type.'-rsync'}));
 	    next if ($exclude_mirror_types{$type});
 
-	    $db{$type}{'master'} = $entry->{'site'};
+	    $db4->{$type}{'master'} = $entry->{'site'};
+	    $db6->{$type}{'master'} = $entry->{'site'};
 	}
-	return;
+	return 0;
     }
 
     if (!defined($entry->{'site'})) {
 	print STDERR "warning: mirror without site:\n";
 	require Data::Dumper;
 	print STDERR Data::Dumper::Dumper($entry);
-	return;
+	return 0;
     }
 
     my $got_http = 0;
@@ -244,20 +259,22 @@ sub process_entry($) {
     unless ($got_http) {
 	print "info: $entry->{'site'} is not an HTTP mirror, skipping\n"
 	    if ($verbose);
-	return;
+	return 0;
     }
 
+    # By default consider all mirrors to have v4 connectivity
+    $entry->{'ipv4'} = undef;
     if (defined ($entry->{'ipv6'})) {
 	if ($entry->{'ipv6'} eq 'only') {
-	    print STDERR "warning: unsupported IPv6-only $entry->{'site'}\n";
-	    return;
+	    $entry->{'ipv6'} = undef;
+	    delete $entry->{'ipv4'};
 	} elsif ($entry->{'ipv6'} eq 'yes') {
 	    $entry->{'ipv6'} = undef;
 	} elsif ($entry->{'ipv6'} eq 'no') {
 	    delete $entry->{'ipv6'};
 	} else {
 	    print STDERR "warning: unknown ipv6 value: '$entry->{'ipv6'}'\n";
-	    return;
+	    return 0;
 	}
     }
 
@@ -274,67 +291,92 @@ sub process_entry($) {
 	if (!$missing) {
 	    print "info: $entry->{'site'} has Includes, all with their own entry, skipping\n"
 		if ($verbose);
-	    return;
+	    return 0;
 	}
     }
 
     if (defined ($entry->{'restricted-to'})) {
 	print STDERR "warning: skipping $entry->{'site'}, Restricted-To support is buggy\n";
-	return;
+	return 0;
 	if ($entry->{'restricted-to'} =~ m/^(?:strict-country|subnet)$/) {
 	    print STDERR "warning: unsupported Restricted-To $entry->{'restricted-to'}\n";
-	    return;
+	    return 0;
 	}
 	if ($entry->{'restricted-to'} !~ m/^(?:AS|country)$/) {
 	    print STDERR "warning: unknown Restricted-To value: '$entry->{'restricted-to'}'\n";
-	    return;
+	    return 0;
 	}
     } else {
 	$entry->{'restricted-to'} = '';
     }
 
-    my ($r, $as) = (undef, '');
+    return 1;
+}
 
-    $as = $entry->{'as'} if (defined($entry->{'as'}));
+sub process_entry6($@) {
+    my $entry = shift;
+    my @ips = @_;
+    my $name = $entry->{'site'}.'/ipv6';
 
-    my $attempts = 2;
-    my @ips;
-    while ($attempts--) {
-	@ips = fancy_get_host($entry->{'site'});
-	last if (@ips && scalar(@ips) > 0);
-    }
+    return process_entry_common($db6, $name, $entry,
+	    sub { return $g_as6->org_by_addr_v6(shift)},
+	    sub { return $g_city6->record_by_addr_v6(shift)},
+	    @_);
+}
+
+sub process_entry4($@) {
+    my $entry = shift;
+    my @ips = @_;
+    my $name = $entry->{'site'}.'/ipv4';
+
+    return process_entry_common($db4, $name, $entry,
+	    sub { return $g_as4->org_by_addr(shift)},
+	    sub { return $g_city4->record_by_addr(shift)},
+	    @_);
+}
+
+sub process_entry_common($$$$$@) {
+    my $db = shift;
+    my $name = shift;
+    my $entry = shift;
+    my $as_of_ip = shift;
+    my $grec_of_ip = shift;
+    my @ips = @_;
+
     if (!@ips || scalar(@ips) == 0) {
-	print STDERR "warning: host lookup for $entry->{'site'} failed\n";
+	print STDERR "warning: host lookup for $name failed\n";
 	return;
     }
 
+    my ($r, $as) = (undef, '');
+    $as = $entry->{'as'} if (defined($entry->{'as'}));
     # Consider: lookup all possible IPs and try to match them to a unique host
     # However: we can't control what IP the client will connect to, and
     #	we can't guarantee that accessing the mirror with a different
     #	Host will actually work. Meh.
     my %as_seen;
     for my $ip (@ips) {
-	my $m_record = $g_city->record_by_addr($ip);
+	my $m_record = &$grec_of_ip($ip);
 	# Split result, original format is: "AS123 Foo Bar corp"
-	my ($m_as) = split /\s+/, ($g_as->org_by_addr($ip) || '');
+	my ($m_as) = split /\s+/, (&$as_of_ip($ip) || '');
 
 	if (!defined($r)) {
 	    $r = $m_record;
 	} elsif ($r->city ne $m_record->city) {
-	    print STDERR "warning: ".$entry->{'site'}." resolves to IPs in different".
+	    print STDERR "warning: ".$name." resolves to IPs in different".
 			" cities (".$r->city." != ".$m_record->city.")\n";
 	}
 	if (!$as) {
 	    $as = $m_as;
 	} elsif (defined($m_as) && $as ne $m_as) {
-	    print STDERR "warning: ".$entry->{'site'}." resolves to multiple different".
+	    print STDERR "warning: ".$name." resolves to multiple different".
 			" AS' ($as != $m_as)\n" unless (exists($as_seen{$m_as}));
 	    $as_seen{$m_as} = 1;
 	}
     }
 
     if (!defined($r) || !$as) {
-	print STDERR "warning: GeoIP/AS db lookup failed for $entry->{'site'}\n";
+	print STDERR "warning: GeoIP/AS db lookup failed for $name\n";
 	return;
     }
     my $country = $r->country_code || 'A1';
@@ -349,13 +391,13 @@ sub process_entry($) {
     # AP: Asia/Pacific region
     if ($country =~ m/^(?:A1|A2|EU|AP)$/ || defined($entry->{'geoip-override'})) {
 	if (!defined($entry->{'geoip-override'})) {
-	    print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $entry->{'site'}\n";
+	    print STDERR "warning: non-definitive country ($country) entry in GeoIP db for $name\n";
 	    print STDERR "\tusing listed country ($listed_country)";
 	} else {
-	    print STDERR "warning: overriding country of $entry->{'site'}";
+	    print STDERR "warning: overriding country of $name";
 	}
 	$country = $listed_country;
-	$continent = $g_city->continent_code_by_country_code($country);
+	$continent = $g_city4->continent_code_by_country_code($country);
 
 	print STDERR ", fixing continent to '$continent'";
 
@@ -378,17 +420,13 @@ sub process_entry($) {
 	}
 
     } elsif ($listed_country ne $country) {
-	print STDERR "warning: listed country for $entry->{'site'} doesn't match GeoIP db\n";
+	print STDERR "warning: listed country for $name doesn't match GeoIP db\n";
 	print STDERR "\t$listed_country (listed) vs $country (db), ";
 	print STDERR "using geoip db's entry\n";
     }
 
     # Generate a unique id for this site
-    my $id;
-    {
-	lock($i);
-	$id = $i++;
-    }
+    my $id = $i++;
     # When used as hash key, it is converted to a string.
     # Better store it as a string everywhere:
     $id = sprintf('%x', $id);
@@ -408,7 +446,7 @@ sub process_entry($) {
 	    $entry->{'bandwidth'} = bandwidth_to_mb($entry->{'bandwidth'});
 	};
 	if ($@) {
-	    print STDERR "warning: $@ for $entry->{'site'}\n";
+	    print STDERR "warning: $@ for $name\n";
 	    delete $entry->{'bandwidth'};
 	}
     }
@@ -424,7 +462,7 @@ sub process_entry($) {
 	next unless (defined($entry->{$type.'-http'}));
 
 	if (!defined($entry->{$type.'-architecture'}) && $type eq 'archive') {
-	    print STDERR "warning: no $type-architecture list for $entry->{'site'}\n";
+	    print STDERR "warning: no $type-architecture list for $name\n";
 	    next;
 	}
 
@@ -435,48 +473,42 @@ sub process_entry($) {
 	my %archs = map { lc $_ => 1 }
 	    split(/\s+/, $entry->{$type.'-architecture'});
 
+	# Now store the results
 	unless ($mirror_recorded) {
-	    # Now store the results
-	    $semaphore{'main'}->down();
-	    $db{'all'}{$id} = $entry;
-	    $semaphore{'main'}->up();
+	    $db->{'all'}{$id} = $entry;
 	    $mirror_recorded = 1;
 	}
 
-	$semaphore{$type}->down();
 	# Create skeleton, if missing:
-	$db{$type}{'AS'}{$as} = shared_clone([])
-	    unless (exists ($db{$type}{'AS'}{$as}));
-	push @{$db{$type}{'AS'}{$as}}, $id;
+	$db->{$type}{'AS'}{$as} = []
+	    unless (exists ($db->{$type}{'AS'}{$as}));
+	push @{$db->{$type}{'AS'}{$as}}, $id;
 
 	unless ($entry->{'restricted-to'} eq 'AS') {
-	    $db{$type}{'country'}{$country} = shared_clone({})
-		unless (exists ($db{$type}{'country'}{$country}));
-	    $db{$type}{'country'}{$country}{$id} = undef;
+	    $db->{$type}{'country'}{$country} = {}
+		unless (exists ($db->{$type}{'country'}{$country}));
+	    $db->{$type}{'country'}{$country}{$id} = undef;
 
 	    unless ($entry->{'restricted-to'} eq 'country') {
-		$db{$type}{'continent'}{$continent} = shared_clone({})
-		    unless (exists ($db{$type}{'continent'}{$continent}));
-		$db{$type}{'continent'}{$continent}{$id} = undef;
+		$db->{$type}{'continent'}{$continent} = {}
+		    unless (exists ($db->{$type}{'continent'}{$continent}));
+		$db->{$type}{'continent'}{$continent}{$id} = undef;
 	    }
 	}
 
 	foreach my $arch (keys %archs) {
 	    # more skeletons...
-	    $db{$type}{'arch'}{$arch} = shared_clone({})
-		unless (exists ($db{$type}{'arch'}{$arch}));
+	    $db->{$type}{'arch'}{$arch} = {}
+		unless (exists ($db->{$type}{'arch'}{$arch}));
 
-	    $db{$type}{'arch'}{$arch}{$id} = undef;
+	    $db->{$type}{'arch'}{$arch}{$id} = undef;
 	}
-
-	$semaphore{$type}->up();
 	# end: now store the results
     }
 
     # remove any remaining fields we don't use
     my %wanted_fields = map { $_ => 1 } qw(
 	bandwidth
-	ipv6
 	lat
 	lon
 	site
@@ -495,14 +527,6 @@ sub process_entry($) {
 	}
 	delete $entry->{$key};
     }
-}
-
-sub fancy_get_host($) {
-    my $name = shift;
-
-    my @addresses = gethostbyname($name)
-	or return;
-    return map { inet_ntoa($_) } @addresses[4..$#addresses];
 }
 
 sub bandwidth_to_mb($) {

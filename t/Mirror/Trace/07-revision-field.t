@@ -5,9 +5,8 @@ use warnings;
 use Test::More tests => 10;
 
 use Mirror::Trace;
-use LWP::UserAgent;
 
-my $trace = Mirror::Trace->new(LWP::UserAgent->new(), 'http://0.0.0.0/');
+my $trace = Mirror::Trace->new('http://0.0.0.0/');
 
 my $trace_data = <<EOF;
 Mon Feb 27 09:13:54 UTC 2012
@@ -18,7 +17,7 @@ Upstream-mirror: my.upstream.tld
 Revision: i18n
 EOF
 
-ok($trace->_parse_trace($trace_data), 'Parse trace data');
+ok($trace->from_string($trace_data), 'Parse trace data');
 ok($trace->features('i18n'), 'Revised for i18n issue');
 # Trust the revision field, not the version:
 ok(!$trace->features('inrelease'), 'Revised for InRelease issue');
@@ -32,7 +31,7 @@ Upstream-mirror: my.upstream.tld
 Revision: i18n
 EOF
 
-ok($trace->_parse_trace($trace_data), 'Parse trace data');
+ok($trace->from_string($trace_data), 'Parse trace data');
 ok($trace->features('i18n'), 'Custom script revised for i18n issue');
 ok(!$trace->features('inrelease'), 'Custom script not revised for InRelease issue');
 
@@ -45,7 +44,7 @@ Upstream-mirror: [2001:610:1908:b000::148:10]
 Revision: i18n InRelease AUIP
 EOF
 
-ok($trace->_parse_trace($trace_data), 'Parse trace data');
+ok($trace->from_string($trace_data), 'Parse trace data');
 ok($trace->features('i18n'), 'Custom script revised for i18n issue');
 ok($trace->features('inrelease'), 'Custom script revised for InRelease issue');
 ok($trace->features('auip'), 'Custom script revised for AUIP check');

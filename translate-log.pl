@@ -27,6 +27,8 @@ use Storable qw(retrieve);
 
 use Getopt::Long;
 
+sub get_mirror($);
+
 my $db_store = '';
 my $translate_id = 1;
 my $translate_type = 0;
@@ -60,13 +62,13 @@ while (<>) {
 
 	if ($translate_id) {
 	    die "unknown site $id"
-		unless (exists($db->{'all'}{$id}));
-	    $replacement = $db->{'all'}{$id}{'site'};
+		unless (get_mirror($id));
+	    $replacement = get_mirror($id)->{'site'};
 	}
 	if ($translate_type) {
 	    die "unknown type $type"
-		unless (exists($db->{'all'}{$id}{"$type-http"}));
-	    $replacement .= $db->{'all'}{$id}{"$type-http"};
+		unless (exists(get_mirror($id)->{"$type-http"}));
+	    $replacement .= get_mirror($id)->{"$type-http"};
 	} else {
 	    $replacement .= "/$type";
 	}
@@ -77,5 +79,17 @@ while (<>) {
 	print;
     } else {
 	print;
+    }
+}
+
+sub get_mirror($) {
+    my $id = shift;
+
+    if (exists($db->{'ipv4'}{'all'}{$id})) {
+	return $db->{'ipv4'}{'all'}{$id};
+    } elsif (exists($db->{'ipv6'}{'all'}{$id})) {
+	return $db->{'ipv6'}{'all'}{$id};
+    } else {
+	return;
     }
 }

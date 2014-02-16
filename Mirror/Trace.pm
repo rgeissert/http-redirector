@@ -7,41 +7,26 @@ use Date::Parse;
 use vars qw($MIN_FTPSYNC_VERSION $MIN_DMSSYNC_VERSION);
 
 sub new {
-    my ($class, $ua, $base_url) = @_;
+    my ($class, $base_url) = @_;
     my $self = {};
     bless($self, $class);
 
     $MIN_FTPSYNC_VERSION = 80387;
     $MIN_DMSSYNC_VERSION = '0.1';
 
-    $self->{'ua'} = $ua if (defined($ua));
     $self->{'base_url'} = $base_url if (defined($base_url));
 
     return $self;
 }
 
-sub fetch {
+sub get_url {
     my $self = shift;
     my $file = shift;
 
-    my $req_url = $self->{'base_url'}.'project/trace/'.$file;
-
-    my $response = $self->{'ua'}->get($req_url);
-    unless ($response->is_success) {
-	$self->{'fetch_error'} = $response->status_line;
-	return 0;
-    }
-
-    my $trace = $response->decoded_content;
-    return $self->_parse_trace($trace);
+    return $self->{'base_url'}.'project/trace/'.$file;
 }
 
-sub fetch_error {
-    my $self = shift;
-    return $self->{'fetch_error'};
-}
-
-sub _parse_trace {
+sub from_string {
     my $self = shift;
     my $trace = shift;
 
