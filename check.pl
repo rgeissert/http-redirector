@@ -568,7 +568,7 @@ sub check_mirror($$) {
 			} else {
 			    my %httpd_features = ('keep-alive' => 0, 'ranges' => 0);
 			    if ($headers->{'connection'}) {
-				$httpd_features{'keep-alive'} = ($headers->{'connection'} eq 'keep-alive');
+				$httpd_features{'keep-alive'} = ($headers->{'connection'} =~ /^keep-alive$/i);
 			    } else {
 				$httpd_features{'keep-alive'} = ($headers->{'HTTPVersion'} eq '1.1');
 			    }
