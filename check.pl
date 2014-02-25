@@ -573,7 +573,7 @@ sub check_mirror($$) {
 				$httpd_features{'keep-alive'} = ($headers->{'HTTPVersion'} eq '1.1');
 			    }
 			    if ($headers->{'accept-ranges'}) {
-				$httpd_features{'ranges'} = ($headers->{'accept-ranges'} eq 'bytes');
+				$httpd_features{'ranges'} = ($headers->{'accept-ranges'} =~ /^bytes$/i );
 			    }
 
 			    while (my ($k, $v) = each %httpd_features) {
