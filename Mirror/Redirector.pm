@@ -66,7 +66,7 @@ our %this_host = map { $_ => 1 } qw(); # this host's hostname
 our $subrequest_method = ''; # alt: redirect (default) | sendfile | sendfile1.4 | accelredirect
 our $subrequest_prefix = 'serve/';
 
-my ($db, $peers_db);
+my ($_db, $db, $peers_db);
 my ($gdb4, $asdb4, $gdb6, $asdb6);
 
 sub new {
@@ -74,7 +74,9 @@ sub new {
     my $self = {};
     bless($self, $class);
 
-    $db = retrieve($db_store);
+    # $_db holds the full database, while $db holds only the
+    # part specific to the requested IP-family
+    $db = $_db = retrieve($db_store);
 
     return $self;
 }
@@ -151,15 +153,16 @@ sub run {
 	}
     }
 
-    # Make a shortcut
-    my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
-
     ####
     my $IP = $req->address;
     $IP = $self->get_local_ip($req) if ($IP eq '127.0.0.1');
     ####
 
     our $ipv6 = ($IP =~ m/:/);
+
+    $db = ($ipv6)? $_db->{'ipv6'} : $_db->{'ipv4'};
+    # Make a shortcut
+    my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
     # Handle IPv6 over IPv4 requests as if they originated from an IPv4
     if ($ipv6 && $IP =~ m/^200(2|1(?=:0:)):/) {
