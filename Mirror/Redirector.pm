@@ -433,8 +433,6 @@ sub run {
 
 	return 0 if (exists($mirror->{$mirror_type.'-disabled'}));
 
-	return 0 if ($ipv6 && !exists($mirror->{'ipv6'}));
-
 	return 0 if ($require_inrelease && exists($mirror->{$mirror_type.'-notinrelease'}));
 
 	return 0 if ($require_i18n && exists($mirror->{$mirror_type.'-noti18n'}));
