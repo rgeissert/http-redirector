@@ -43,6 +43,7 @@ Getting started
 
 Required packages:
     libanyevent-perl
+    libanyevent-http-perl
     libtimedate-perl
     libgeo-ip-perl
     libwww-perl
