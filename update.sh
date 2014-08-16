@@ -146,6 +146,13 @@ if $peers; then
 fi
 
 if $mirrors; then
+
+    cd mirrors.lst.d
+    wget -O Mirrors.masterlist.new \
+	'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
+    mv Mirrors.masterlist.new Mirrors.masterlist
+    cd - >/dev/null
+
     ./update.pl --db-output db.wip
     if $peers; then
 	./build-peers-db.pl --mirrors-db db.wip

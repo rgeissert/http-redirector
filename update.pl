@@ -41,7 +41,7 @@ my @mirror_types = qw(www volatile archive old nonus
 my %exclude_mirror_types = map { $_ => 1 } qw(nonus www volatile cdimage);
 
 # Options:
-my ($update_list, $threads) = (1, -1);
+my ($update_list, $threads) = (0, -1);
 our $verbose = 0;
 
 sub get_lists($);
@@ -59,19 +59,7 @@ GetOptions('update-list!' => \$update_list,
 	    'verbose' => \$verbose) or exit 1;
 
 if ($update_list) {
-    use LWP::UserAgent;
-    my $ua = LWP::UserAgent->new;
-    $ua->timeout(20);
-    $ua->protocols_allowed(['http', 'https']);
-
-    my $res = $ua->mirror(
-	'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co',
-	"$input_dir/Mirrors.masterlist.new");
-    if ($res->is_error) {
-	die("error: failed to fetch Mirrors.masterlist: ",$res->status_line,"\n");
-    }
-    rename("$input_dir/Mirrors.masterlist.new", "$input_dir/Mirrors.masterlist")
-	or die ("mv Mirrors.masterlist{.new,} failed: $?");
+    die("error: use update.sh to fetch/update the mirrors list\n");
 }
 
 my %all_sites;
