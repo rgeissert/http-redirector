@@ -416,7 +416,7 @@ sub run {
 	    # bytes, so ensure we don't exceed that limit. This can be
 	    # safely removed if/when those versions are not/no longer
 	    # supported
-	    while (length($link_header) > 355) {
+	    while (length($link_header) >= (360-length("Link: \n"))) {
 		pop @link_headers;
 		$link_header = join(', ', @link_headers);
 	    }
