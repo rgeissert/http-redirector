@@ -57,47 +57,54 @@ my %tags_good = (
 print "Mirrors db report\n";
 print "=================\n";
 
-for my $id (sort keys %{$db->{'all'}}) {
-    my $mirror = $db->{'all'}{$id};
-    my @mirror_types;
+for my $ipv (sort keys %{$db}) {
+    next unless (ref($db->{$ipv}) && exists($db->{$ipv}{'all'}));
 
-    print "\nMirror: $mirror->{site}\n";
+    my $postfix = '';
+    $postfix = "-$ipv" if ($ipv ne 'ipv4');
 
-    for my $k (keys %$mirror) {
-	next unless ($k =~ m/^(.+)-http$/);
-	push @mirror_types, $1;
-    }
-    for my $type (sort @mirror_types) {
-	$print_note_block = 1;
-	print "- Type: $type\n";
-	print "  Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
-	print "  State: ",(($mirror->{"$type-state"} eq "syncing")?"syncing":"synced"),"\n"
-	    if (defined($mirror->{"$type-state"}));
-	print "  Path: ",$mirror->{"$type-http"},"\n";
+    for my $id (sort keys %{$db->{'all'}}) {
+	my $mirror = $db->{'all'}{$id};
+	my @mirror_types;
 
-	foreach my $k (sort keys (%tags_bad)) {
-		print_note $tags_bad{$k}
-			if (exists($mirror->{$type.'-'.$k}));
+	print "\nMirror: $mirror->{site}$postfix\n";
+
+	for my $k (keys %$mirror) {
+	    next unless ($k =~ m/^(.+)-http$/);
+	    push @mirror_types, $1;
 	}
+	for my $type (sort @mirror_types) {
+	    $print_note_block = 1;
+	    print "- Type: $type\n";
+	    print "  Status: ",(exists($mirror->{"$type-disabled"})?"disabled":"enabled"),"\n";
+	    print "  State: ",(($mirror->{"$type-state"} eq "syncing")?"syncing":"synced"),"\n"
+		if (defined($mirror->{"$type-state"}));
+	    print "  Path: ",$mirror->{"$type-http"},"\n";
 
-	foreach my $k (sort keys (%tags_good)) {
-		print_note $tags_good{$k}
-			if (!exists($mirror->{$type.'-'.$k}));
-	}
+	    foreach my $k (sort keys (%tags_bad)) {
+		    print_note $tags_bad{$k}
+			    if (exists($mirror->{$type.'-'.$k}));
+	    }
 
-	for my $key (keys %{$mirror}) {
-	    next unless ($key =~ m/^\Q$type-\E/);
-	    if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
-		my $arch = $1;
-		next if (exists($mirror->{$type.'-archcheck-disabled'}));
-		next unless (exists($db->{$type}{'arch'}{$arch}));
+	    foreach my $k (sort keys (%tags_good)) {
+		    print_note $tags_good{$k}
+			    if (!exists($mirror->{$type.'-'.$k}));
+	    }
 
-		# If disabled by trace file:
-		if (defined($2)) {
-		    print_note "Dropped architecture: $arch, but listed";
-		# Don't report it twice:
-		} elsif (!exists($mirror->{"$type-$arch-trace-disabled"})) {
-		    print_note "Missing architecture: $arch, but listed";
+	    for my $key (keys %{$mirror}) {
+		next unless ($key =~ m/^\Q$type-\E/);
+		if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
+		    my $arch = $1;
+		    next if (exists($mirror->{$type.'-archcheck-disabled'}));
+		    next unless (exists($db->{$type}{'arch'}{$arch}));
+
+		    # If disabled by trace file:
+		    if (defined($2)) {
+			print_note "Dropped architecture: $arch, but listed";
+		    # Don't report it twice:
+		    } elsif (!exists($mirror->{"$type-$arch-trace-disabled"})) {
+			print_note "Missing architecture: $arch, but listed";
+		    }
 		}
 	    }
 	}
