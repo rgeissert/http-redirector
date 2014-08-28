@@ -153,7 +153,7 @@ if $mirrors; then
     mv Mirrors.masterlist.new Mirrors.masterlist
     cd - >/dev/null
 
-    ./update.pl --db-output db.wip
+    ./build-main-db.pl --db-output db.wip
     if $peers; then
 	./build-peers-db.pl --mirrors-db db.wip
     fi

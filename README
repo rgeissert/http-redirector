@@ -72,9 +72,9 @@ Keeping everything in shape
 ===========================
 
 update.sh should be run at least once a month.
-update.pl should be run whenever the master list changes[1]
+build-main-db.pl should be run whenever the master list changes[1]
 check.pl should be run multiple times a day[2]
-build-peers-db.pl should be run after every execution of update.pl or
+build-peers-db.pl should be run after every execution of build-main-db.pl or
 whenever the peers lists are updated[3]
 
 NOTE: update.sh will leave the new database in a file called "db.in"
@@ -82,12 +82,12 @@ to be renamed to "db" if it is the first time it is created. When
 updating the db of an in-production instance, the new db will be picked up
 by the next run of check.pl.
 
-NOTE: update.pl and check.pl do NOT lock the database. You must ensure
+NOTE: build-main-db.pl and check.pl do NOT lock the database. You must ensure
 that no more than one script is running at the same time.
 
 [1] the script rebuilds the database, so any info collected by check.pl
 regarding the availability of mirrors is lost.
-check.pl --check-everything should be run after update.pl, this is
+check.pl --check-everything should be run after build-main-db.pl, this is
 done automatically when running update.sh.
 
 [2] it really depends on the kind of setup one wants and the hosts that
