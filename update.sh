@@ -157,6 +157,6 @@ if $mirrors; then
     if $peers; then
 	./build-peers-db.pl --mirrors-db db.wip
     fi
-    ./check.pl -j 20 --db-store db.wip --db-output db.in --check-everything --disable-sites '' |
+    ./check.pl --db-store db.wip --db-output db.in --check-everything --disable-sites '' |
 	./translate-log.pl
 fi
