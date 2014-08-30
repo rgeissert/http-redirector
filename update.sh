@@ -149,7 +149,7 @@ if $mirrors; then
 
     cd mirrors.lst.d
     wget -O Mirrors.masterlist.new \
-	'http://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
+	'https://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
     mv Mirrors.masterlist.new Mirrors.masterlist
     cd - >/dev/null
 
