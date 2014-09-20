@@ -42,6 +42,7 @@ Getting started
 ===============
 
 Required packages:
+    moreutils
     libanyevent-perl
     libanyevent-http-perl
     libev-perl (recommended; or another event loop supported by AE)
