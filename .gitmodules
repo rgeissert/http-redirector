@@ -1,0 +1,4 @@
+[submodule "bgp/zebra-dump-parser"]
+	path = bgp/zebra-dump-parser
+	url = https://github.com/rgeissert/zebra-dump-parser.git
+	branch = httpredir-config
