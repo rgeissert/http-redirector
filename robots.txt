@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /debian/
+Disallow: /debian-cd/
+Disallow: /debian-backports/
+Disallow: /debian-ports/
+Disallow: /debian-security/
+Disallow: /debian.list
+Disallow: /debian-backports.list
+Disallow: /debian-ports.list
+Disallow: /debian-security.list
