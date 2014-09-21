@@ -5,3 +5,5 @@ geoip
 tmon.out
 nytprof*
 peers.lst.d/*.lst
+bgp/latest-bview.gz
+bgp/zdp-stdout-*
