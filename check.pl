@@ -102,7 +102,7 @@ $| = 1;
 $AnyEvent::HTTP::MAX_RECURSE = 0;
 $AnyEvent::HTTP::TIMEOUT = 10;
 $AnyEvent::HTTP::MAX_PER_HOST = 1;
-$AnyEvent::HTTP::USERAGENT = "MirrorChecker/0.2 ";
+$AnyEvent::HTTP::USERAGENT = "MirrorChecker/0.2 (+http://httpredir.debian.org/bot.html) ";
 
 our $db;
 my $full_db = undef;
