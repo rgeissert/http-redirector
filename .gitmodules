@@ -1,0 +1,3 @@
+[submodule "bgp/zebra-dump-parser"]
+	path = bgp/zebra-dump-parser
+	url = https://github.com/rfc1036/zebra-dump-parser.git
