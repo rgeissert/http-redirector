@@ -91,6 +91,13 @@ for my $ipv (sort keys %{$db}) {
 			    if (!exists($mirror->{$type.'-'.$k}));
 	    }
 
+	    if (defined($mirror->{"$type-master"}) and defined($mirror->{"$type-site"})) {
+		my $delay = int(($mirror->{"$type-site"} - $mirror->{"$type-master"})/60);
+		my $last_update = localtime($mirror->{"$type-site"});
+		print_note "Last update: $last_update";
+		print_note "Sync delay: $delay min";
+	    }
+
 	    for my $key (keys %{$mirror}) {
 		next unless ($key =~ m/^\Q$type-\E/);
 		if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
