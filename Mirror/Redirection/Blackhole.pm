@@ -21,6 +21,7 @@ sub should_blackhole {
 	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|xz|gz)$,
 	    ));
 	return 1 if ($url =~ m,^dists/squeeze-updates/(?:main|contrib|non-free)/i18n/,);
+	return 1 if ($url =~ m,^dists/squeeze-lts/(?:main|contrib|non-free)/binary-(?!i386|amd64),);
 	return 1 if ($url =~ m,^dists/squeeze, && (
 	    $url eq 'dists/squeeze/InRelease' ||
 	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|xz)$, ||
