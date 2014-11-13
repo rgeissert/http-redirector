@@ -12,6 +12,7 @@ sub should_blackhole {
     my $mirror_type = shift;
 
     if ($mirror_type eq 'archive') {
+	return 1 if ($url =~ m,^dists/[^/]+/(?:main|contrib|non-free)/binary-[^/]+/Packages$,);
 	return 1 if ($url =~ m,^dists/sid, && (
 	    $url =~ m,/(?:main|contrib|non-free)/binary-[^/]+/Packages\.(?:lzma|bz2)$, ||
 	    $url =~ m,/(?:main|contrib|non-free)/i18n/Translation[^/]+\.(?:lzma|gz)$,
