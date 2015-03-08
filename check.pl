@@ -53,6 +53,7 @@ sub mirror_provides_arch($$$);
 sub mirror_types_to_check($);
 sub store_not_too_much($$$);
 sub disabled_this_session($$);
+sub call_end($);
 
 my $db_store = 'db';
 my $db_output = $db_store;
@@ -329,6 +330,15 @@ sub head_url($$$) {
     };
 }
 
+sub call_end($) {
+    my $cb = shift;
+
+    &$cb(1);
+    $cv->end;
+
+    return 1;
+}
+
 sub test_arch($$$$) {
     my ($base_url, $type, $arch, $cb) = @_;
     my $format;
@@ -345,7 +355,7 @@ sub test_arch($$$$) {
 	$format = 'dists/stable/updates/main/binary-%s/Packages.gz';
     } else {
 	# unknown/unsupported type
-	return;
+	return call_end($cb);
     }
 
     # FIXME: we should really check more than just the standard
@@ -367,12 +377,12 @@ sub test_source($$$) {
 	$format = 'dists/oldstable-backports/main/source/Release';
     } elsif ($type eq 'ports') {
 	# no sources for ports
-	return 1;
+	return call_end($cb);
     } elsif ($type eq 'security') {
 	$format = 'dists/stable/updates/main/source/Sources.gz';
     } else {
 	# unknown/unsupported type
-	return;
+	return call_end($cb);
     }
 
     my $url = $base_url . $format;
@@ -397,7 +407,7 @@ sub test_areas($$$) {
 	$format = 'dists/stable/updates/%s/';
     } else {
 	# unknown/unsupported type
-	return;
+	return call_end($cb);
     }
 
     my $remaining_areas = scalar(@areas);
@@ -440,7 +450,7 @@ sub test_stages($$$$) {
 	$format = 'dists/stable/updates/Release';
     } else {
 	# unknown/unsupported type, say we succeeded
-	return 1;
+	return call_end($cb);
     }
 
     my $url = $base_url . $format;
