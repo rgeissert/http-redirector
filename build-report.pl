@@ -60,11 +60,12 @@ print "=================\n";
 for my $ipv (sort keys %{$db}) {
     next unless (ref($db->{$ipv}) && exists($db->{$ipv}{'all'}));
 
+    my $ldb = $db->{$ipv};
     my $postfix = '';
     $postfix = "-$ipv" if ($ipv ne 'ipv4');
 
-    for my $id (sort keys %{$db->{'all'}}) {
-	my $mirror = $db->{'all'}{$id};
+    for my $id (sort keys %{$ldb->{'all'}}) {
+	my $mirror = $ldb->{'all'}{$id};
 	my @mirror_types;
 
 	print "\nMirror: $mirror->{site}$postfix\n";
@@ -91,12 +92,19 @@ for my $ipv (sort keys %{$db}) {
 			    if (!exists($mirror->{$type.'-'.$k}));
 	    }
 
+	    if (defined($mirror->{"$type-master"}) and defined($mirror->{"$type-site"})) {
+		my $delay = int(($mirror->{"$type-site"} - $mirror->{"$type-master"})/60);
+		my $last_update = localtime($mirror->{"$type-site"});
+		print_note "Last update: $last_update";
+		print_note "Sync delay: $delay min";
+	    }
+
 	    for my $key (keys %{$mirror}) {
 		next unless ($key =~ m/^\Q$type-\E/);
 		if ($key =~ m/^\Q$type-\E(.+?)(-trace)?-disabled$/) {
 		    my $arch = $1;
 		    next if (exists($mirror->{$type.'-archcheck-disabled'}));
-		    next unless (exists($db->{$type}{'arch'}{$arch}));
+		    next unless (exists($ldb->{$type}{'arch'}{$arch}));
 
 		    # If disabled by trace file:
 		    if (defined($2)) {
