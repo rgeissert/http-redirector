@@ -26,7 +26,8 @@ Live instance
 =============
 
 There's a live instance of this code (but not necessarily the latest
-and greatest revision) at http://http.debian.net/
+and greatest revision) at http://httpredir.debian.org/ (previously,
+http.debian.net)
 
 There's some more documentation there. It should be imported into the
 repository, however.
@@ -51,8 +52,9 @@ Required packages:
     libwww-perl
     liburi-perl
     libplack-perl
-    liblinux-inotify2-perl (for plackup -R)
+    liblinux-inotify2-perl (for plackup -R, for local tests only)
     starman (if using that server for the application)
+    twiggy (alternative server)
     wget
 
 Run ./update.sh, it will download the geoip databases, the mirrors
@@ -69,11 +71,20 @@ You can pass request parameters in the first argument to the script.
 To fake the IP address of the request, set the REMOTE_ADDR env var when
 calling it. No other CGI-like env var is recognised.
 
+Getting started for development
+===============================
+
+Required packages (in addition to the ones above):
+    libtest-trap-perl
+
 Keeping everything in shape
 ===========================
 
-update.sh should be run at least once a month.
-build-main-db.pl should be run whenever the master list changes[1]
+update.sh should be run at least once a month[1], this allows the
+changes to the mirror list(s) to be reflected. By default it will run:
+ - build-main-db.pl
+ - build-peers-db.pl
+ - check.pl
 check.pl should be run multiple times a day[2]
 build-peers-db.pl should be run after every execution of build-main-db.pl or
 whenever the peers lists are updated[3]
@@ -163,7 +174,7 @@ better mirror.
 
 In order to use it in this mode, a few things need to be setup.
 
-On redir.pl:
+Mirror::Redirector:
 * Set the subrequest_method variable as appropriate:
  - redirect: works on any httpd, but requires another roundtrip
  - sendfile: for apache with mod_xsendfile, lighttpd 1.5, cherokee
