@@ -15,10 +15,9 @@ GetOptions('db-output=s' => \$db_output,
 
 $file = $db_output.'.dump' if (!defined($file));
 
-my $db;
-my $VAR1;
+our $VAR1;
 
-die ("failed to import '$file'") unless ($db = do $file);
+die ("failed to import '$file'") unless (do $file);
 
 Mirror::DB::set($db_output);
-Mirror::DB::store($db);
+Mirror::DB::store($VAR1);
