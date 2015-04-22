@@ -155,7 +155,7 @@ sub run {
 
     ####
     my $IP = $req->address;
-    $IP = $self->get_local_ip($req) if ($IP eq '127.0.0.1');
+    $IP = $self->get_local_ip($req) if ($IP eq '127.0.0.1' || !$IP);
     ####
 
     our $ipv6 = ($IP =~ m/:/);
