@@ -240,6 +240,15 @@ sub query_dns_for_entry($) {
     my $got_http = 0;
     foreach my $type (@mirror_types) {
 	next if ($exclude_mirror_types{$type});
+
+	# some mirrors should not appear in public lists, so they are
+	# added as "unlisted" entries. Internally, consider them to be
+	# just like any other mirror
+	if (exists($entry->{$type.'-unlisted-http'})) {
+	    $entry->{$type.'-http'} = $entry->{$type.'-unlisted-http'};
+	    delete $entry->{$type.'-unlisted-http'};
+	}
+
 	next unless (exists($entry->{$type.'-http'}));
 
 	$got_http = 1;
