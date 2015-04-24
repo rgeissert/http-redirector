@@ -159,11 +159,6 @@ sub run {
     ####
 
     our $ipv6 = ($IP =~ m/:/);
-
-    $db = ($ipv6)? $_db->{'ipv6'} : $_db->{'ipv4'};
-    # Make a shortcut
-    my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
-
     # Handle IPv6 over IPv4 requests as if they originated from an IPv4
     if ($ipv6 && $IP =~ m/^200(2|1(?=:0:)):/) {
 	my $tunnel_type = $1;
@@ -178,6 +173,10 @@ sub run {
 	    $IP = join('.', hex($1), hex($2), hex($3), hex($4));
 	}
     }
+
+    $db = ($ipv6)? $_db->{'ipv6'} : $_db->{'ipv4'};
+    # Make a shortcut
+    my $rdb = $db->{$mirror_type} or die("Invalid mirror type: $mirror_type");
 
     my ($geo_rec, $as);
     our ($lat, $lon);
