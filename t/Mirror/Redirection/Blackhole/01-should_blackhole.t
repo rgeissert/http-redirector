@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 use Mirror::Redirection::Blackhole;
 
@@ -20,6 +20,9 @@ ok(should_blackhole('dists/wheezy/main/binary-i386/Packages.xz', 'archive'),
 
 ok(should_blackhole('dists/squeeze/InRelease', 'archive'),
     "squeeze didn't include InRelease files, so blackhole them");
+
+ok(should_blackhole('dists/sid/main/binary-amd64/Packages', 'archive'),
+    "uncompressed Packages files are not provided, so blackhole them");
 
 # Should not blackhole
 ok(!should_blackhole('dists/wheezy/main/binary-i386/Packages.bz2', 'archive'),

@@ -221,8 +221,8 @@ sub query_dns_for_entry($) {
 
     if ($entry->{'type'} eq 'origin') {
 	foreach my $type (@mirror_types) {
-	    next unless (exists($entry->{$type.'-rsync'}));
 	    next if ($exclude_mirror_types{$type});
+	    next unless (exists($entry->{$type.'-rsync'}));
 
 	    $db4->{$type}{'master'} = $entry->{'site'};
 	    $db6->{$type}{'master'} = $entry->{'site'};
@@ -239,8 +239,17 @@ sub query_dns_for_entry($) {
 
     my $got_http = 0;
     foreach my $type (@mirror_types) {
-	next unless (exists($entry->{$type.'-http'}));
 	next if ($exclude_mirror_types{$type});
+
+	# some mirrors should not appear in public lists, so they are
+	# added as "unlisted" entries. Internally, consider them to be
+	# just like any other mirror
+	if (exists($entry->{$type.'-unlisted-http'})) {
+	    $entry->{$type.'-http'} = $entry->{$type.'-unlisted-http'};
+	    delete $entry->{$type.'-unlisted-http'};
+	}
+
+	next unless (exists($entry->{$type.'-http'}));
 
 	$got_http = 1;
     }
