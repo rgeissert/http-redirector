@@ -114,6 +114,7 @@ sub run {
     my $env = shift;
     my $req = Plack::Request->new($env);
     our $res = $req->new_response;
+    $res->header('Server', 'http-redirector');
 
     my $request_method = $req->method || 'HEAD';
     # abort POST and other requests ASAP
