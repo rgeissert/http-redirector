@@ -27,7 +27,6 @@ use Geo::IP;
 use Storable qw(retrieve);
 use Mirror::Math;
 use Mirror::AS;
-use Mirror::Redirection::Permanent;
 use Mirror::Redirection::Blackhole;
 use Mirror::Request;
 use URI::Escape qw(uri_escape);
@@ -127,7 +126,6 @@ sub run {
     our $xtra_headers = 1;
     our $add_links = 1;
     our $mirror_type = 'archive';
-    our $permanent_redirect = 1;
 
     my @output;
     our @archs = ();
@@ -237,10 +235,6 @@ sub run {
     if ($mirror_type ne 'old') {
 	$require_inrelease = ($url =~ m,/InRelease$,);
 	$require_i18n = ($url =~ m,^dists/.+/i18n/,);
-    }
-
-    if ($permanent_redirect) {
-	$permanent_redirect = is_permanent($url, $mirror_type);
     }
 
     Mirror::Math::set_metric($metric);
@@ -503,13 +497,12 @@ sub run {
 	}
 
 	$res->content_type('text/plain');
+
+	# Redirects can be cached by clients and proxies for 7:30 minutes
 	$res->header('Cache-control', 'max-age=450');
-	my $rcode;
-	if ($permanent_redirect) {
-	    $rcode = 301;
-	} else {
-	    $rcode = 302;
-	}
+
+	# All redirects are temporary
+	my $rcode = '307';
 	$res->redirect(url_for_mirror($host).$real_url, $rcode);
 	return;
     }
