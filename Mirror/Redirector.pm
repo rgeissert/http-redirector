@@ -502,6 +502,7 @@ sub run {
 	}
 
 	$res->content_type('text/plain');
+	$res->header('Cache-control', 'max-age=450');
 	my $rcode;
 	if ($permanent_redirect) {
 	    $rcode = 301;
