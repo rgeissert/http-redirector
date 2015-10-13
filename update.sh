@@ -60,6 +60,8 @@ if ! $geoip && ! $mirrors && ! $peers && ! $bgp; then
     exit 1
 fi
 
+dir=/etc/ssl/ca-debian
+test -d $dir && cadebian="--ca-directory=$dir"
 if $geoip; then
     compression=gz
     if which unxz >/dev/null; then
@@ -148,7 +150,7 @@ fi
 if $mirrors; then
 
     cd mirrors.lst.d
-    wget -O Mirrors.masterlist.new \
+    wget $cadebian -O Mirrors.masterlist.new \
 	'https://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
     mv Mirrors.masterlist.new Mirrors.masterlist
     cd - >/dev/null
