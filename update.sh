@@ -60,6 +60,11 @@ if ! $geoip && ! $mirrors && ! $peers && ! $bgp; then
     exit 1
 fi
 
+dir=/etc/ssl/ca-debian
+test -d $dir && cadebian="--ca-directory=$dir"
+dir=/etc/ssl/ca-global
+test -d $dir && caglobal="--ca-directory=$dir"
+
 if $geoip; then
     compression=gz
     if which unxz >/dev/null; then
@@ -69,7 +74,7 @@ if $geoip; then
     mkdir -p geoip
     cd geoip
     for db in asnum/GeoIPASNum.dat.gz GeoLiteCity.dat.$compression asnum/GeoIPASNumv6.dat.gz GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz; do
-	wget -U '' -N http://geolite.maxmind.com/download/geoip/database/$db
+	wget $caglobal -U '' -N https://geolite.maxmind.com/download/geoip/database/$db
 	db="$(basename "$db")"
 	case "$db" in
 	    *.gz|*.xz)
@@ -148,7 +153,7 @@ fi
 if $mirrors; then
 
     cd mirrors.lst.d
-    wget -O Mirrors.masterlist.new \
+    wget $cadebian -O Mirrors.masterlist.new \
 	'https://anonscm.debian.org/viewvc/webwml/webwml/english/mirror/Mirrors.masterlist?view=co'
     mv Mirrors.masterlist.new Mirrors.masterlist
     cd - >/dev/null
