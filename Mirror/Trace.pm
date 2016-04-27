@@ -50,7 +50,7 @@ sub from_string {
 
 	$archs = $val if ($key eq 'Architectures');
 	$revisions = $val if ($key eq 'Revision');
-	$software = "$line" if ($key eq 'Used ftpsync version');
+	$software = $line if ($key eq 'Used ftpsync version');
     }
 
     if (defined($revisions)) {
