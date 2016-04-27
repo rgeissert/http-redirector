@@ -40,12 +40,17 @@ sub from_string {
     return 0
 	unless ($date =~ m/^\w{3} \s+ \w{3} \s+ \d{1,2} \s+ (?:\d{2}:){2}\d{2} \s+ (?:UTC|GMT) \s+ \d{4}$/x);
 
+    # feed-back the second line in case it can be parsed as a header:value string
+    unshift @trace_lines, $software
+	if (defined($software) && $software =~ m/:/);
+
     for my $line (@trace_lines) {
 	return 0 unless ($line =~ m/^([\w -]+):(.*)\s*$/);
 	my ($key, $val) = ($1, $2);
 
 	$archs = $val if ($key eq 'Architectures');
 	$revisions = $val if ($key eq 'Revision');
+	$software = $line if ($key eq 'Used ftpsync version');
     }
 
     if (defined($revisions)) {

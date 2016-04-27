@@ -61,9 +61,18 @@ if ! $geoip && ! $mirrors && ! $peers && ! $bgp; then
 fi
 
 dir=/etc/ssl/ca-debian
-test -d $dir && cadebian="--ca-directory=$dir"
+if [ -d $dir ]; then
+    cadebian="--ca-directory=$dir"
+else
+    cadebian=
+fi
+
 dir=/etc/ssl/ca-global
-test -d $dir && caglobal="--ca-directory=$dir"
+if [ -d $dir ]; then
+    caglobal="--ca-directory=$dir"
+else
+    caglobal=
+fi
 
 if $geoip; then
     compression=gz
